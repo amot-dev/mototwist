@@ -3,10 +3,9 @@ from fastapi import Request
 from fastapi.responses import HTMLResponse
 from fastapi.templating import Jinja2Templates
 from geoalchemy2 import Geometry
-from math import ceil
 from shapely.geometry import LineString, Point
 from shapely.ops import nearest_points
-from sqlalchemy import and_, false, func, or_, select, type_coerce
+from sqlalchemy import and_, false, or_, select, type_coerce
 from sqlalchemy.exc import MultipleResultsFound, NoResultFound
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.sql.expression import ColumnExpressionArgument
@@ -15,7 +14,7 @@ from typing import Any
 from app.config import logger
 from app.models import Rating, PavedRating, Twist, UnpavedRating, User
 from app.schemas.twists import (
-    FilterOwnership, FilterPavement, FilterRatings, FilterVisibility,
+    FilterOwnership, FilterPavement, FilterRatings,
     TwistBasic, TwistDropdown, TwistFilterParameters, TwistListItem, TwistUltraBasic
 )
 from app.schemas.types import Coordinate, Waypoint
@@ -157,22 +156,8 @@ async def render_list(
         # If user is not logged in, they can't have rated Twists
         statement = statement.where(false())
 
-    if filter.visible_ids is not None:
-        if filter.visibility == FilterVisibility.VISIBLE:
-            statement = statement.where(Twist.id.in_(filter.visible_ids))
-        elif filter.visibility == FilterVisibility.HIDDEN:
-            statement = statement.where(Twist.id.notin_(filter.visible_ids))
-
     # Pagination
-    print(settings.DEFAULT_TWISTS_PER_PAGE)
-    matched_twists = await session.scalar(
-        select(func.count()).select_from(statement.subquery())
-    )
-    total_pages = ceil(matched_twists / settings.DEFAULT_TWISTS_PER_PAGE) if matched_twists else 1
-
     page = filter.page
-    if page > total_pages:
-        page = total_pages
     offset = (page - 1) * settings.DEFAULT_TWISTS_PER_PAGE
 
     # Ordering
@@ -188,7 +173,7 @@ async def render_list(
 
     # Querying
     results = await session.execute(
-        statement.order_by(*order_criteria).limit(settings.DEFAULT_TWISTS_PER_PAGE).offset(offset)
+        statement.order_by(*order_criteria).limit(filter.pages * settings.DEFAULT_TWISTS_PER_PAGE).offset(offset)
     )
     twists = [TwistListItem.model_validate(result) for result in results.all()]
 
@@ -214,15 +199,16 @@ async def render_list(
         "request": request,
         "twists": twists,
         "open_twist_id": open_twist_id,
-        "current_page": page,
-        "total_pages": total_pages,
+        "start_page": filter.page,
+        "next_page": filter.page + filter.pages,
+        "twists_per_page": settings.DEFAULT_TWISTS_PER_PAGE
     }
 
     # If the dropdown context was generated, merge it into the main context
     if dropdown_context:
         list_context.update(dropdown_context)
 
-    return templates.TemplateResponse("fragments/twists/paginated_list.html", list_context)
+    return templates.TemplateResponse("fragments/twists/list.html", list_context)
 
 
 async def render_single_list_item(
@@ -246,7 +232,9 @@ async def render_single_list_item(
 
     return templates.TemplateResponse("fragments/twists/list.html", {
         "request": request,
-        "twists": [twist_list_item]
+        "twists": [twist_list_item],
+        "start_page": 1,
+        "twists_per_page": 1
     })
 
 

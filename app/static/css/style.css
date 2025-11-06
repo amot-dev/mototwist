@@ -652,51 +652,6 @@ aside {
     }
 }
 
-#twist-list-pagination {
-    display: flex;
-    gap: var(--padding-xs);
-    justify-content: center;
-    margin-top: auto;
-    padding: var(--padding-md);
-
-    .pagination-arrow,
-    .pagination-number {
-        border: none;
-        border-radius: var(--radius-sm);
-        padding: var(--padding-sm);
-        font-weight: bold;
-        color: var(--text-muted);
-        background-color: transparent;
-        cursor: pointer;
-
-        transition: all var(--transition-fast);
-
-        &:hover {
-            color: var(--text-offwhite);
-            background-color: var(--panel-slate-hover);
-        }
-    }
-
-    .pagination-arrow {
-        padding: var(--padding-sm) var(--padding-xs);
-
-        &:disabled {
-            color: var(--bg-charcoal);
-            background-color: transparent;
-            cursor: not-allowed;
-        }
-    }
-
-    .pagination-number.is-current {
-        color: var(--text-offwhite);
-        background-color: var(--accent-blue);
-    }
-
-    .pagination-ellipsis {
-        padding: var(--padding-sm) 0;
-        color: var(--text-muted);
-    }
-}
 
 /* --- Twists Dropdown --- */
 
@@ -1151,6 +1106,26 @@ aside {
 }
 
 
+/* --- Manual Update Button --- */
+
+#manual-update-button {
+    position: fixed;
+    bottom: var(--padding-sm);
+    left: 50%;
+    z-index: 1000;
+    opacity: 0;
+    box-shadow: var(--shadow-flash);
+    border-radius: var(--radius-md);
+
+    transform: translateX(-50%);
+    transition: opacity var(--transition-fade);
+}
+
+#manual-update-button.button--visible {
+    opacity: 1;
+}
+
+
 /* --- Mobile Design --- */
 /*
     Sidebar converts to a bottom tab, modals are full screen
@@ -1179,23 +1154,6 @@ aside {
     #twist-list {
         flex-grow: 0;
         overflow-y: visible;
-    }
-
-    .twist-list-pagination {
-        padding: var(--padding-xl);
-
-        .pagination-arrow,
-        .pagination-number {
-            padding: var(--padding-lg) var(--padding-md);
-        }
-
-        .pagination-arrow {
-            padding: var(--padding-lg) var(--padding-sm);
-        }
-
-        .pagination-ellipsis {
-            padding: var(--padding-lg) var(--padding-xs);
-        }
     }
 
     .modal {

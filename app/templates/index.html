@@ -28,15 +28,15 @@
     <h1>MotoTwist</h1>
     {% include "fragments/twists/creation_buttons.html" %}
 
-    <form class="filter-form"
+    <form id="twist-filter-form"
+        class="filter-form"
         hx-get="/twists/templates/list"
-        hx-ext="morph"
         hx-target="#twist-list"
-        hx-swap="morph:innerHTML"
+        hx-swap="innerHTML"
         hx-trigger="change,
             keyup changed delay:500ms from:#twist-search-input,
             search from:#twist-search-input,
-            mapCenterChange delay:500ms from:body,
+            manualTwistUpdate from:body,
             authChange from:body"
         hx-indicator="#search-indicator">
 
@@ -83,15 +83,6 @@
                         <input type="radio" id="ratings_unrated_twists" name="ratings" value="unrated">
                         <label for="ratings_unrated_twists">Unrated</label>
                     </div>
-
-                    <div class="filter-group" title="Filter Twists by visibility on the map">
-                        <input type="radio" id="vis_all_twists" name="visibility" value="all" checked>
-                        <label for="vis_all_twists">All</label>
-                        <input type="radio" id="vis_visible_twists" name="visibility" value="visible">
-                        <label for="vis_visible_twists">Visible</label>
-                        <input type="radio" id="vis_hidden_twists" name="visibility" value="hidden">
-                        <label for="vis_hidden_twists">Hidden</label>
-                    </div>
                 </fieldset>
             </div>
         </details>
@@ -103,6 +94,12 @@
 </aside>
 
 <div id="map"></div>
+
+<button id="manual-update-button" class="button button-block"
+    onclick="htmx.trigger(document.body, 'manualTwistUpdate');">
+
+    <i class="fa-solid fa-arrows-rotate"></i> Update Twists
+</button>
 
 <dialog id="modal-login" class="modal">
     {% call render_modal_content("Login") %}

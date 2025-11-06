@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, Query, Request
+from fastapi import APIRouter, Depends, Request
 from fastapi.responses import HTMLResponse, JSONResponse
 import json
 from sqlalchemy import delete, select
@@ -143,19 +143,17 @@ async def serve_creation_buttons(
 async def serve_list(
     request: Request,
     filter: TwistFilterParameters = Depends(),
-    visible_ids: list[int] | None = Query(None),
     user: User | None = Depends(current_active_user_optional),
     session: AsyncSession = Depends(get_db)
 ) -> HTMLResponse:
     """
     Serve an HTML fragment containing the sorted list of Twists.
     """
-    # Unfortunately, Pydantic doesn't play nicely with visible_ids being a list when used as a Dependency
-    filter.visible_ids = visible_ids
 
     events = {
-        "twistsLoaded": ""
+        "twistsLoaded": f"{filter.page}"
     }
+
     response = response = await render_list(request, session, user, filter)
     response.headers["HX-Trigger-After-Swap"] = json.dumps(events)
     return response
