@@ -263,24 +263,24 @@ export function registerTwistListeners(map) {
         const twistId = twistItem.dataset.twistId;
         if (!twistId) throw new Error("Critical element .twist-item is missing twistId data!");
 
-        twistListClickCount++;
-        if (twistListClickCount === 1) {
-            twistListClickTimer = setTimeout(function() {
-                twistListClickCount = 0;
-                if (!(event.target instanceof Element)) return;
+        // Toggle visibility or dropdown on single click
+        if (event.target.closest('.visibility-toggle')) {
+            // Clicked on the eye icon
+            const visibility = twistItem.classList.contains('is-visible');
+            const icon = twistItem.querySelector('.visibility-toggle i');
+            if (!icon) throw new Error("Critical element .visibility-toggle icon is missing!");
 
-                // Toggle visibility or dropdown on single click
-                if (event.target.closest('.visibility-toggle')) {
-                    // Clicked on the eye icon
-                    const visibility = twistItem.classList.contains('is-visible');
-                    const icon = twistItem.querySelector('.visibility-toggle i');
-                    if (!icon) throw new Error("Critical element .visibility-toggle icon is missing!");
+            twistItem.classList.toggle('is-visible', !visibility);
+            icon.classList.toggle('fa-eye', !visibility);
+            icon.classList.toggle('fa-eye-slash', visibility);
+            setTwistVisibility(map, twistId, !visibility);
+        } else if (event.target.closest('.twist-header')) {
+            twistListClickCount++;
+            if (twistListClickCount === 1) {
+                twistListClickTimer = setTimeout(function() {
+                    twistListClickCount = 0;
+                    if (!(event.target instanceof Element)) return;
 
-                    twistItem.classList.toggle('is-visible', !visibility);
-                    icon.classList.toggle('fa-eye', !visibility);
-                    icon.classList.toggle('fa-eye-slash', visibility);
-                    setTwistVisibility(map, twistId, !visibility);
-                } else if (event.target.closest('.twist-header')) {
                     activeTwistId = null;
 
                     // Clicked on the Twist header
@@ -305,18 +305,19 @@ export function registerTwistListeners(map) {
                             htmx.trigger(twistHeader, 'loadDropdown');
                         }
                     }
-                }
-            }, doubleClickTimeout);
-        } else if (twistListClickCount === 2) {
-            clearTimeout(twistListClickTimer);
-            twistListClickCount = 0;
+                }, doubleClickTimeout);
+            } else if (twistListClickCount === 2) {
+                console.log("double click")
+                clearTimeout(twistListClickTimer);
+                twistListClickCount = 0;
 
-            // Show the Twist on the map on double click
-            showTwistOnMap(map, twistId)
+                // Show the Twist on the map on double click
+                showTwistOnMap(map, twistId)
 
-            // Clear text selection
-            const selection = document.getSelection();
-            if(selection) selection.empty();
+                // Clear text selection
+                const selection = document.getSelection();
+                if(selection) selection.empty();
+            }
         }
     });
 

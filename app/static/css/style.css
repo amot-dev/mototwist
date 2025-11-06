@@ -592,16 +592,12 @@ aside {
 #twist-list {
     flex-grow: 1;
     overflow-y: auto;
-
-    display: flex;
-    flex-direction: column;
 }
 #twist-list::-webkit-scrollbar {
     display: none;  /* Temporary fix to get rid of Chrome's disgusting scrollbar */
 }
 
 .twist-item {
-    flex-shrink: 0;
     border-bottom: var(--border-default);
 
     &[data-paved="false" i] {
