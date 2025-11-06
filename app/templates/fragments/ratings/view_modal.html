@@ -1,34 +1,9 @@
-{% from "fragments/_macros.html" import render_modal_content, render_rating %}
+{% from "fragments/_macros.html" import render_modal_content %}
 
 {% call render_modal_content(twist.name) %}
 <div id="rating-list" data-paved="{{ twist.is_paved | lower }}">
     {% if rating_list.items %}
-    {% for rating in rating_list.items %}
-    <div class="rating-card scroll-shut-on-delete">
-        <header>
-            <h3>{{ rating.formatted_date }}<span class="author"> by {{ rating.author_name }}</span></h3>
-            {% if rating.can_delete_rating %}
-            <button class="button button-link"
-                hx-delete="/twists/{{ twist.id }}/ratings/{{ rating.id }}"
-                hx-target="closest .rating-card"
-                hx-swap="outerHTML swap:500ms">
-
-                <i class="fa-solid fa-trash"></i>
-            </button>
-            {% endif %}
-        </header>
-        <ul>
-            {% for criterion_name, rating_value in rating.criteria.items() %}
-            {{ render_rating(
-                criterion_name,
-                rating_value,
-                rating_list.criteria_descriptions[criterion_name],
-                criterion_max_value
-            ) }}
-            {% endfor %}
-        </ul>
-    </div>
-    {% endfor %}
+    {% include "fragments/ratings/view_list.html" %}
     {% else %}
     <p>No ratings yet</p>
     {% endif %}

@@ -180,7 +180,7 @@ class Rating:
     CRITERION_MAX_VALUE = 10
 
 
-class PavedRating(SerializationMixin, Base):
+class PavedRating(SerializationMixin, Base, Rating):
     __tablename__ = "paved_ratings"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
@@ -206,7 +206,7 @@ class PavedRating(SerializationMixin, Base):
         return f"[{self.id}] (Paved)"
 
 
-class UnpavedRating(SerializationMixin, Base):
+class UnpavedRating(SerializationMixin, Base, Rating):
     __tablename__ = "unpaved_ratings"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True)

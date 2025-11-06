@@ -5,9 +5,10 @@ from fastapi.templating import Jinja2Templates
 from humanize import ordinal
 from sqlalchemy import false, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import selectinload
 from typing import cast, Literal
 
-from app.models import Rating, PavedRating, Twist, UnpavedRating, User
+from app.models import Rating, PavedRating, UnpavedRating, User
 from app.schemas.ratings import (
     CRITERIA_NAMES_PAVED, CRITERIA_NAMES_UNPAVED, RATING_CRITERIA_PAVED, RATING_CRITERIA_UNPAVED,
     AverageRating, RatingList, RatingListItem
@@ -113,13 +114,30 @@ async def render_rate_modal(
 
 async def render_view_modal(
     request: Request,
+    session: AsyncSession,
     user: User | None,
-    twist: Twist,
-    ratings: list[PavedRating] | list[UnpavedRating]
+    twist: TwistBasic,
+    offset: int
 ) -> HTMLResponse:
     """
     Build and return the TemplateResponse for the rate modal.
     """
+    Rating = PavedRating if twist.is_paved else UnpavedRating
+
+    # Collect ratings in order, offset and limited by settings
+    result = await session.scalars(
+        select(Rating)
+        .where(Rating.twist_id == twist.id)
+        .order_by(Rating.rating_date.desc())
+        .offset(offset)
+        .limit(settings.RATINGS_FETCHED_PER_QUERY)
+        .options(
+            selectinload(Rating.author).load_only(User.name)
+        )
+    )
+    ratings = result.all()
+
+    # Build list items
     rating_list_items: list[RatingListItem] = []
     for rating in ratings:
         # Pre-format the date for easier display in the template
@@ -143,6 +161,7 @@ async def render_view_modal(
             }
         ))
 
+    # Compile list with criteria descriptions
     rating_list = RatingList(
         criteria_descriptions={
             criteria.name: criteria.desc or ""
@@ -151,9 +170,20 @@ async def render_view_modal(
         items=rating_list_items
     )
 
-    return templates.TemplateResponse("fragments/ratings/view_modal.html", {
-        "request": request,
-        "twist": twist,
-        "rating_list": rating_list,
-        "criterion_max_value": Rating.CRITERION_MAX_VALUE
-    })
+    # For offset 0 (beginning), use the template including the header, otherwise just the list
+    if offset == 0:
+        return templates.TemplateResponse("fragments/ratings/view_modal.html", {
+            "request": request,
+            "twist": twist,
+            "rating_list": rating_list,
+            "next_offset": offset + settings.RATINGS_FETCHED_PER_QUERY,
+            "criterion_max_value": Rating.CRITERION_MAX_VALUE
+        })
+    else:
+        return templates.TemplateResponse("fragments/ratings/view_list.html", {
+            "request": request,
+            "twist": twist,
+            "rating_list": rating_list,
+            "next_offset": offset + settings.RATINGS_FETCHED_PER_QUERY,
+            "criterion_max_value": Rating.CRITERION_MAX_VALUE
+        })

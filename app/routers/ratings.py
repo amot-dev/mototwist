@@ -5,7 +5,6 @@ import json
 from sqlalchemy import delete, func, select
 from sqlalchemy.exc import MultipleResultsFound, NoResultFound
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.orm import load_only, selectinload
 from typing import Annotated, Literal
 
 from app.config import logger
@@ -189,6 +188,7 @@ async def serve_rate_modal(
 async def serve_view_modal(
     request: Request,
     twist_id: int,
+    offset: int = Query(0),
     user: User | None = Depends(current_active_user_optional),
     session: AsyncSession = Depends(get_db)
 ) -> HTMLResponse:
@@ -196,31 +196,13 @@ async def serve_view_modal(
     Serve an HTML fragment containing a modal to view the ratings for a given Twist.
     """
     try:
-        result = await session.scalars(
-            select(Twist).where(Twist.id == twist_id).options(
-                load_only(Twist.name, Twist.is_paved),
-                selectinload(Twist.paved_ratings)
-                        .selectinload(PavedRating.author)
-                        .load_only(User.name),
-                selectinload(Twist.unpaved_ratings)
-                    .selectinload(UnpavedRating.author)
-                    .load_only(User.name)
-            )
+        result = await session.execute(
+            select(*TwistBasic.fields).where(Twist.id == twist_id)
         )
-        twist = result.one()
+        twist = TwistBasic.model_validate(result.one())
     except NoResultFound:
         raise_http(f"Twist with id '{twist_id}' not found", status_code=404)
     except MultipleResultsFound:
         raise_http(f"Multiple twists found for id '{twist_id}'", status_code=500)
 
-    if twist.is_paved:
-        ratings = twist.paved_ratings
-    else:
-        ratings = twist.unpaved_ratings
-
-    # Sort ratings with most recent first
-    sorted_ratings: list[PavedRating] | list[UnpavedRating] = sorted(
-        ratings, key=lambda r: r.rating_date, reverse=True
-    ) if ratings else []
-
-    return await render_view_modal(request, user, twist, sorted_ratings)
+    return await render_view_modal(request, session, user, twist, offset)
