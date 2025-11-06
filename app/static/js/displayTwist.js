@@ -249,10 +249,11 @@ export function registerTwistListeners(map) {
                     const visibility = twistItem.classList.contains('is-visible');
                     const icon = twistItem.querySelector('.visibility-toggle i');
                     if (!icon) throw new Error("Critical element .visibility-toggle icon is missing!");
+                    console.log(`need to set visibility to ${visibility} for ${twistId}`)
 
-                    twistItem.classList.toggle('is-visible', visibility);
-                    icon.classList.toggle('fa-eye', visibility);
-                    icon.classList.toggle('fa-eye-slash', !visibility);
+                    twistItem.classList.toggle('is-visible', !visibility);
+                    icon.classList.toggle('fa-eye', !visibility);
+                    icon.classList.toggle('fa-eye-slash', visibility);
                     setTwistVisibility(map, twistId, !visibility);
                 } else if (event.target.closest('.twist-header')) {
                     activeTwistId = null;
