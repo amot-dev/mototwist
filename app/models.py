@@ -146,6 +146,9 @@ class User(SQLAlchemyBaseUserTableUUID, SerializationMixin, Base):
     paved_ratings: Mapped[list["PavedRating"]] = relationship("PavedRating", back_populates="author")
     unpaved_ratings: Mapped[list["UnpavedRating"]] = relationship("UnpavedRating", back_populates="author")
 
+    def __repr__(self):
+        return f"[{self.id}] {self.email}"
+
 
 class Twist(SerializationMixin, Base):
     __tablename__ = "twists"

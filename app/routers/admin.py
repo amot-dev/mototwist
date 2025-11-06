@@ -209,7 +209,11 @@ async def render_settings_modal(
     )
     users = result.all()
 
-    return templates.TemplateResponse("fragments/admin/settings_modal.html", {
+    response = templates.TemplateResponse("fragments/admin/settings_modal.html", {
         "request": request,
         "users": users
     })
+
+    # Prevent browser caching
+    response.headers["Cache-Control"] = "no-store, no-cache, must-revalidate"
+    return response
