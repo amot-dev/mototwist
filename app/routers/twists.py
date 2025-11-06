@@ -151,11 +151,14 @@ async def serve_list(
     """
 
     events = {
-        "twistsLoaded": f"{filter.page}"
+        "twistsLoaded": json.dumps({
+            "startPage": filter.page,
+            "numPages": filter.pages
+        })
     }
 
     response = response = await render_list(request, session, user, filter)
-    response.headers["HX-Trigger-After-Swap"] = json.dumps(events)
+    response.headers["HX-Trigger-After-Settle"] = json.dumps(events)
     return response
 
 
