@@ -158,7 +158,7 @@ async def render_list(
 
     # Pagination
     page = filter.page
-    offset = (page - 1) * settings.DEFAULT_TWISTS_PER_PAGE
+    offset = (page - 1) * settings.DEFAULT_TWISTS_LOADED
 
     # Ordering
     order_criteria: list[ColumnExpressionArgument[Any]] = []
@@ -173,7 +173,7 @@ async def render_list(
 
     # Querying
     results = await session.execute(
-        statement.order_by(*order_criteria).limit(filter.pages * settings.DEFAULT_TWISTS_PER_PAGE).offset(offset)
+        statement.order_by(*order_criteria).limit(filter.pages * settings.DEFAULT_TWISTS_LOADED).offset(offset)
     )
     twists = [TwistListItem.model_validate(result) for result in results.all()]
 
@@ -201,7 +201,7 @@ async def render_list(
         "open_twist_id": open_twist_id,
         "start_page": filter.page,
         "next_page": filter.page + filter.pages,
-        "twists_per_page": settings.DEFAULT_TWISTS_PER_PAGE
+        "twists_per_page": settings.DEFAULT_TWISTS_LOADED
     }
 
     # If the dropdown context was generated, merge it into the main context

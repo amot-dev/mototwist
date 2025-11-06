@@ -19,8 +19,8 @@ class Settings(BaseSettings):
     OSM_URL: str = "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
     OSRM_URL: str = "https://router.project-osrm.org"
     TWIST_SIMPLIFICATION_TOLERANCE_M: int = Field(default=0)
-    DEFAULT_TWISTS_PER_PAGE: int = Field(default=20, gt=1)
-    MAX_TWISTS_PER_PAGE: int = Field(default=100, gt=1)
+    DEFAULT_TWISTS_LOADED: int = Field(default=20, gt=1)
+    MAX_TWISTS_LOADED: int = Field(default=100, gt=1)
 
     # User Options
     MOTOTWIST_ADMIN_EMAIL: str = "admin@admin.com"
@@ -90,9 +90,9 @@ class Settings(BaseSettings):
 
     @model_validator(mode='after')
     def check_max_gt_default(self) -> Self:
-        if self.DEFAULT_TWISTS_PER_PAGE > self.MAX_TWISTS_PER_PAGE:
+        if self.DEFAULT_TWISTS_LOADED > self.MAX_TWISTS_LOADED:
             raise ValueError(
-                f"DEFAULT_TWISTS_PER_PAGE ({self.DEFAULT_TWISTS_PER_PAGE}) must be less than MAX_TWISTS_PER_PAGE ({self.MAX_TWISTS_PER_PAGE})"
+                f"DEFAULT_TWISTS_LOADED ({self.DEFAULT_TWISTS_LOADED}) must be less than MAX_TWISTS_LOADED ({self.MAX_TWISTS_LOADED})"
             )
         return self
 
