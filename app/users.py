@@ -4,7 +4,7 @@ from fastapi_users.authentication import AuthenticationBackend, CookieTransport,
 from fastapi_users.db import SQLAlchemyUserDatabase
 from fastapi_users.exceptions import FastAPIUsersException
 from fastapi_users.schemas import BaseUserCreate
-import redis.asyncio
+from redis import asyncio as aioredis
 from sqlalchemy.ext.asyncio import AsyncSession
 from typing import Any, AsyncGenerator
 from uuid import UUID
@@ -64,7 +64,7 @@ async def get_user_manager(
 
 
 cookie_transport = CookieTransport(cookie_name="mototwist", cookie_max_age=3600)
-redis_client = redis.asyncio.from_url(settings.REDIS_URL, decode_responses=True)  # pyright: ignore [reportUnknownMemberType]
+redis_client = aioredis.from_url(settings.REDIS_URL, decode_responses=True)  # pyright: ignore [reportUnknownMemberType]
 
 def get_redis_strategy() -> RedisStrategy[User, UUID]:
     return RedisStrategy(redis_client, lifetime_seconds=3600)

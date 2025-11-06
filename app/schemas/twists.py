@@ -32,14 +32,11 @@ class FilterRatings(str, Enum):
     RATED = "rated"
     UNRATED = "unrated"
 
-class FilterVisibility(str, Enum):
-    ALL = "all"
-    VISIBLE = "visible"
-    HIDDEN = "hidden"
-
 
 class TwistFilterParameters(BaseModel):
     # Display
+    page: int = Field(1, gt=0)
+    pages: int = Field(1, gt=0)
     open_id: int | None = None
 
     # Filtering
@@ -47,8 +44,6 @@ class TwistFilterParameters(BaseModel):
     ownership: FilterOwnership = FilterOwnership.ALL
     pavement: FilterPavement = FilterPavement.ALL
     ratings: FilterRatings = FilterRatings.ALL
-    visibility: FilterVisibility = FilterVisibility.ALL
-    visible_ids: list[int] | None = None
 
     # Ordering
     map_center: Coordinate | None = None

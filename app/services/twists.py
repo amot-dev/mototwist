@@ -14,7 +14,7 @@ from typing import Any
 from app.config import logger
 from app.models import Rating, PavedRating, Twist, UnpavedRating, User
 from app.schemas.twists import (
-    FilterOwnership, FilterPavement, FilterRatings, FilterVisibility,
+    FilterOwnership, FilterPavement, FilterRatings,
     TwistBasic, TwistDropdown, TwistFilterParameters, TwistListItem, TwistUltraBasic
 )
 from app.schemas.types import Coordinate, Waypoint
@@ -156,11 +156,9 @@ async def render_list(
         # If user is not logged in, they can't have rated Twists
         statement = statement.where(false())
 
-    if filter.visible_ids is not None:
-        if filter.visibility == FilterVisibility.VISIBLE:
-            statement = statement.where(Twist.id.in_(filter.visible_ids))
-        elif filter.visibility == FilterVisibility.HIDDEN:
-            statement = statement.where(Twist.id.notin_(filter.visible_ids))
+    # Pagination
+    page = filter.page
+    offset = (page - 1) * settings.DEFAULT_TWISTS_LOADED
 
     # Ordering
     order_criteria: list[ColumnExpressionArgument[Any]] = []
@@ -174,7 +172,9 @@ async def render_list(
     order_criteria.append(Twist.name)
 
     # Querying
-    results = await session.execute(statement.order_by(*order_criteria))
+    results = await session.execute(
+        statement.order_by(*order_criteria).limit(filter.pages * settings.DEFAULT_TWISTS_LOADED).offset(offset)
+    )
     twists = [TwistListItem.model_validate(result) for result in results.all()]
 
     # Prepare open Twist dropdown if needed
@@ -199,6 +199,9 @@ async def render_list(
         "request": request,
         "twists": twists,
         "open_twist_id": open_twist_id,
+        "start_page": filter.page,
+        "next_page": filter.page + filter.pages,
+        "twists_per_page": settings.DEFAULT_TWISTS_LOADED
     }
 
     # If the dropdown context was generated, merge it into the main context
@@ -229,7 +232,9 @@ async def render_single_list_item(
 
     return templates.TemplateResponse("fragments/twists/list.html", {
         "request": request,
-        "twists": [twist_list_item]
+        "twists": [twist_list_item],
+        "start_page": 1,
+        "twists_per_page": 1
     })
 
 

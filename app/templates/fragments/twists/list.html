@@ -1,8 +1,17 @@
 {% for twist in twists %}
 <li id="twist-item-{{ twist.id }}"
-    class="twist-item scroll-shut-on-delete"
+    class="twist-item scroll-shut-on-delete {% if start_page == 1 and loop.index <= twists_per_page %}is-visible{% endif %}"
     data-twist-id="{{ twist.id }}"
-    data-paved="{{ twist.is_paved }}">
+    data-paved="{{ twist.is_paved }}"
+
+    {% if loop.last and loop.length > 1 %}
+        hx-get="/twists/templates/list"
+        hx-swap="afterend"
+        hx-trigger="intersect once"
+        hx-include="#twist-filter-form"
+        hx-vals='{"page": {{ next_page }} }'
+    {% endif %}
+    >
 
     <header class="twist-header"
         hx-get="/twists/{{ twist.id }}/templates/dropdown"
@@ -20,7 +29,7 @@
             {% endif %}
         </span>
         <span class="visibility-toggle" title="Toggle visibility">
-            <i class="far fa-eye"></i>
+            <i class="far {% if start_page == 1 and loop.index <= twists_per_page %}fa-eye{% else %}fa-eye-slash{% endif %}"></i>
         </span>
     </header>
     {% if twist.id == open_twist_id %}

@@ -5,7 +5,7 @@ import {
     endIcon,
     waypointIcon
 } from './map.js';
-import { doubleClickTimeout, getRootProperty } from './utils.js';
+import { debounce, doubleClickTimeout, getRootProperty } from './utils.js';
 
 
 // Object to store the map layers
@@ -15,74 +15,7 @@ const mapLayers = {};
 const accentBlue = getRootProperty('--accent-blue');
 const accentOrange = getRootProperty('--accent-orange');
 
-
-/**
- * Gets the current set of visible Twist IDs from localStorage.
- * @returns {Set<string>} A Set of visible Twist IDs.
- */
-function getVisibleIdSet() {
-    const visibleIdsFromStorage = JSON.parse(localStorage.getItem('visibleTwists') || "[]");
-    return new Set(visibleIdsFromStorage);
-}
-
-
-/**
- * Saves a Set of Twist IDs back to localStorage.
- *
- * @param {Set<string>} idSet The Set of visible Twist IDs to save.
- */
-function saveVisibleIdSet(idSet) {
-    localStorage.setItem('visibleTwists', JSON.stringify(Array.from(idSet)));
-}
-
-
-/**
- * Toggles the visibility of a single Twist ID in localStorage.
- * This is the main function for user clicks.
- *
- * @param {string} twistId The ID of the Twist to toggle.
- * @return The new visibility of the Twist.
- */
-function toggleVisibilityInStorage(twistId) {
-    const visibleIdSet = getVisibleIdSet();
-
-    let visible = false;
-    if (visibleIdSet.has(twistId)) {
-        visibleIdSet.delete(twistId);
-    } else {
-        visibleIdSet.add(twistId);
-        visible = true;
-    }
-
-    saveVisibleIdSet(visibleIdSet);
-    return visible;
-}
-
-
-/**
- * Ensures a Twist is marked as visible in localStorage.
- * Used when a new Twist is created.
- *
- * @param {string} twistId The ID of the Twist to make visible.
- */
-function addVisibilityToStorage(twistId) {
-    const visibleIdSet = getVisibleIdSet();
-    visibleIdSet.add(twistId);
-    saveVisibleIdSet(visibleIdSet);
-}
-
-
-/**
- * Removes a Twist's visibility from localStorage.
- * Used when a Twist is deleted.
- *
- * @param {string} twistId The ID of the Twist to remove.
- */
-function removeVisibilityFromStorage(twistId) {
-    const visibleIdSet = getVisibleIdSet();
-    visibleIdSet.delete(twistId);
-    saveVisibleIdSet(visibleIdSet);
-}
+let numPagesLoaded = 1;
 
 
 /**
@@ -117,6 +50,11 @@ async function loadTwistLayer(map, twistId, show = false) {
     // If layer already exists, don't re-load it
     if (mapLayers[twistId]) return;
 
+    // Add empty layer to the map
+    const twistLayer = L.featureGroup();
+    mapLayers[twistId] = twistLayer;
+    twistLayer.addTo(map);
+
     // Fetch Twist data
     try {
         const response = await fetch(`/twists/${twistId}/geometry`);
@@ -149,12 +87,10 @@ async function loadTwistLayer(map, twistId, show = false) {
                 .bindPopup(`<b>${twist_data.name}</b>${point.name ? `<br>${point.name}` : ''}`);
         });
 
-        // Group all layers together
-        const twistLayer = L.featureGroup([routeLine, ...waypointMarkers]);
+        // Group all layers together (already on the map)
+        routeLine.addTo(twistLayer);
+        waypointMarkers.forEach(marker => marker.addTo(twistLayer));
 
-        // Store and add the complete layer to the map
-        mapLayers[twistId] = twistLayer;
-        twistLayer.addTo(map);
         if (show) showTwistOnMap(map, twistId);
 
     } catch (error) {
@@ -162,13 +98,14 @@ async function loadTwistLayer(map, twistId, show = false) {
         flash(`Failed to load route for Twist '${twistId}'`, { duration: 5000, type: 'error' })
 
         // Ensure a failed layer doesn't stick around
+        map.removeLayer(twistLayer);
         delete mapLayers[twistId];
     }
 }
 
 
 /**
- * Set the visibility state of a Twist layer and update its UI.
+ * Set the visibility state of a Twist layer.
  *
  * @param {L.Map} map The map to set the visibility of a Twist on.
  * @param {string} twistId The ID of the Twist to modify.
@@ -177,17 +114,6 @@ async function loadTwistLayer(map, twistId, show = false) {
  */
 async function setTwistVisibility(map, twistId, makeVisible, show = false) {
     const layer = mapLayers[twistId];
-
-    // Update eye icon
-    const twistItem = document.querySelector(`.twist-item[data-twist-id='${twistId}']`);
-    if (twistItem) {
-        const icon = twistItem.querySelector('.visibility-toggle i');
-        if (!icon) throw new Error("Critical element .visibility-toggle icon is missing!");
-
-        twistItem.classList.toggle('is-visible', makeVisible);
-        icon.classList.toggle('fa-eye', makeVisible);
-        icon.classList.toggle('fa-eye-slash', !makeVisible);
-    }
 
     // Unload if hiding
     if (!makeVisible) {
@@ -206,27 +132,6 @@ async function setTwistVisibility(map, twistId, makeVisible, show = false) {
         // First time showing this layer, load the Twist data
         await loadTwistLayer(map, twistId, show);
     }
-}
-
-
-/**
- * Iterates over Twists in the list and sets their visibility
- * based on what's saved in localStorage.
- *
- * @param {L.Map} map The map to set the visibility of Twists on.
- */
-function applyTwistVisibilityFromStorage(map) {
-    const visibleIdSet = getVisibleIdSet();
-
-    /** @type {NodeListOf<HTMLElement>} */
-    const allTwistItems = document.querySelectorAll('.twist-item');
-    allTwistItems.forEach(item => {
-        const twistId = item.dataset.twistId;
-        if (!twistId) throw new Error("Critical element .twist-item is missing twistId data!");
-
-        const shouldBeVisible = visibleIdSet.has(twistId);
-        setTwistVisibility(map, twistId, shouldBeVisible);
-    });
 }
 
 
@@ -270,9 +175,48 @@ function getVisualMapCenter(map) {
  * @returns {void}
  */
 export function registerTwistListeners(map) {
-    // Listen for the custom event sent from the server after the Twist list is initially loaded
-    document.body.addEventListener('twistsLoaded', () => {
-        applyTwistVisibilityFromStorage(map);
+    const manualUpdateButton = document.getElementById('manual-update-button');
+    if (!manualUpdateButton) throw new Error("Critical element #manual-update-button is missing!");
+
+    // Listen for the custom event sent from the server after a Twist list chunk is received
+    document.body.addEventListener('twistsLoaded', (event) => {
+        const customEvent = /** @type {CustomEvent<{value: string}>} */ (event);
+        const detail = JSON.parse(customEvent.detail.value);
+        const startPage = Number(detail.startPage);
+        const numPages = Number(detail.numPages);
+
+        manualUpdateButton.classList.remove('button--visible');
+
+        // Only the first scroll is automatically visible
+        if (startPage === 1) {
+            numPagesLoaded = numPages;
+
+            /** @type {NodeListOf<HTMLElement>} */
+            const visibleTwistItems = document.querySelectorAll('.twist-item.is-visible');
+
+            // Set of IDs of first page Twists
+            const visibleTwistIds = new Set();
+            visibleTwistItems.forEach(item => {
+                const twistId = item.dataset.twistId;
+                if (!twistId) throw new Error("Critical element .twist-item is missing twistId data!");
+
+                visibleTwistIds.add(twistId);
+            });
+
+            // Set visibility for first page Twists
+            visibleTwistIds.forEach(twistId => {
+                setTwistVisibility(map, twistId, true);
+            });
+
+            // Unset visibility for Twists no longer on the first page
+            Object.keys(mapLayers).forEach(mapTwistId => {
+                if (!visibleTwistIds.has(mapTwistId)) {
+                    setTwistVisibility(map, mapTwistId, false);
+                }
+            });
+        } else {
+            numPagesLoaded += numPages;
+        }
     });
 
     // Listen for the custom event sent from the server after a new Twist is created
@@ -282,24 +226,26 @@ export function registerTwistListeners(map) {
         const newTwistId = customEvent.detail.value;
         if (newTwistId) {
             stopTwistCreation(map);
-            addVisibilityToStorage(newTwistId);
             setTwistVisibility(map, newTwistId, true, true);
         }
     });
 
     // Listen for the custom event sent from the server after a Twist is deleted
-    document.body.addEventListener('twistDeleted', (event) => {
+    document.body.addEventListener('twistDeleted', async (event) => {
         const customEvent = /** @type {CustomEvent<{value: string}>} */ (event);
 
         const deletedTwistId = customEvent.detail.value;
         if (deletedTwistId) {
-            removeVisibilityFromStorage(deletedTwistId);
-            setTwistVisibility(map, deletedTwistId, false);
+            await setTwistVisibility(map, deletedTwistId, false);
+        }
+
+        if (mapLayers[deletedTwistId]) {
+            delete mapLayers[deletedTwistId];
         }
     });
 
     const twistList = document.getElementById('twist-list');
-    if (!twistList) throw new Error("Critical element .twist-list is missing!");
+    if (!twistList) throw new Error("Critical element #twist-list is missing!");
 
     /** @type {string | null} */
     let activeTwistId = null;
@@ -317,18 +263,24 @@ export function registerTwistListeners(map) {
         const twistId = twistItem.dataset.twistId;
         if (!twistId) throw new Error("Critical element .twist-item is missing twistId data!");
 
-        twistListClickCount++;
-        if (twistListClickCount === 1) {
-            twistListClickTimer = setTimeout(function() {
-                twistListClickCount = 0;
-                if (!(event.target instanceof Element)) return;
+        // Toggle visibility or dropdown on single click
+        if (event.target.closest('.visibility-toggle')) {
+            // Clicked on the eye icon
+            const visibility = twistItem.classList.contains('is-visible');
+            const icon = twistItem.querySelector('.visibility-toggle i');
+            if (!icon) throw new Error("Critical element .visibility-toggle icon is missing!");
 
-                // Toggle visibility or dropdown on single click
-                if (event.target.closest('.visibility-toggle')) {
-                    // Clicked on the eye icon
-                    let visibility = toggleVisibilityInStorage(twistId);
-                    setTwistVisibility(map, twistId, visibility);
-                } else if (event.target.closest('.twist-header')) {
+            twistItem.classList.toggle('is-visible', !visibility);
+            icon.classList.toggle('fa-eye', !visibility);
+            icon.classList.toggle('fa-eye-slash', visibility);
+            setTwistVisibility(map, twistId, !visibility);
+        } else if (event.target.closest('.twist-header')) {
+            twistListClickCount++;
+            if (twistListClickCount === 1) {
+                twistListClickTimer = setTimeout(function() {
+                    twistListClickCount = 0;
+                    if (!(event.target instanceof Element)) return;
+
                     activeTwistId = null;
 
                     // Clicked on the Twist header
@@ -353,36 +305,39 @@ export function registerTwistListeners(map) {
                             htmx.trigger(twistHeader, 'loadDropdown');
                         }
                     }
-                }
-            }, doubleClickTimeout);
-        } else if (twistListClickCount === 2) {
-            clearTimeout(twistListClickTimer);
-            twistListClickCount = 0;
+                }, doubleClickTimeout);
+            } else if (twistListClickCount === 2) {
+                console.log("double click")
+                clearTimeout(twistListClickTimer);
+                twistListClickCount = 0;
 
-            // Show the Twist on the map on double click
-            showTwistOnMap(map, twistId)
+                // Show the Twist on the map on double click
+                showTwistOnMap(map, twistId)
 
-            // Clear text selection
-            const selection = document.getSelection();
-            if(selection) selection.empty();
+                // Clear text selection
+                const selection = document.getSelection();
+                if(selection) selection.empty();
+            }
         }
     });
 
-    // Order Twist list on map move ending (debounced on htmx listen side)
-    map.on('moveend', function() {
-        htmx.trigger(document.body, 'mapCenterChange')
-    });
+    // Show button to manually update Twists on map move
+    map.on('moveend', debounce(() => {
+        manualUpdateButton.classList.add('button--visible');
+    }, 500));
 
     // Include additional parameters for Twist list requests
     document.body.addEventListener('htmx:configRequest', function(event) {
-        const customEvent = /** @type {CustomEvent<{path: string, parameters: Record<string, any>}>} */ (event);
+        const customEvent = /** @type {CustomEvent<{path: string, parameters: Record<string, any>, triggeringEvent: Event | null}>} */ (event);
 
         // Check if this is a request to the Twist list endpoint
         if (customEvent.detail.path === '/twists/templates/list') {
-            // Only add visibleIds if they exist or they will be needed
-            const visibleIds = Array.from(getVisibleIdSet());
-            if (visibleIds.length > 0 && customEvent.detail.parameters['visibility'] != 'all') {
-                customEvent.detail.parameters['visible_ids'] = visibleIds;
+            // Maintain current list on authChange
+            const trigger = customEvent.detail.triggeringEvent;
+            if (trigger) {
+                if (trigger.type === 'authChange') {
+                    customEvent.detail.parameters['pages'] = numPagesLoaded;
+                }
             }
 
             if (activeTwistId) customEvent.detail.parameters['open_id'] = activeTwistId;

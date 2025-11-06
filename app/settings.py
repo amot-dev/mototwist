@@ -1,7 +1,7 @@
 import logging
-from pydantic import Field, computed_field, field_validator
+from pydantic import Field, computed_field, field_validator, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
-from typing import Any
+from typing import Any, Self
 
 
 class Settings(BaseSettings):
@@ -19,6 +19,9 @@ class Settings(BaseSettings):
     OSM_URL: str = "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
     OSRM_URL: str = "https://router.project-osrm.org"
     TWIST_SIMPLIFICATION_TOLERANCE_M: int = Field(default=0)
+    DEFAULT_TWISTS_LOADED: int = Field(default=20, gt=1)
+    MAX_TWISTS_LOADED: int = Field(default=100, gt=1)
+    RATINGS_FETCHED_PER_QUERY: int = Field(default=20, gt=1)
 
     # User Options
     MOTOTWIST_ADMIN_EMAIL: str = "admin@admin.com"
@@ -62,7 +65,7 @@ class Settings(BaseSettings):
         upper_value = value.upper()
         if upper_value not in valid_levels:
             raise ValueError(
-                f"Invalid LOG_LEVEL: '{value}'. "
+                f"Invalid LOG_LEVEL: '{value}'"
                 f"Must be one of {valid_levels}"
             )
         return upper_value
@@ -84,7 +87,15 @@ class Settings(BaseSettings):
                 return int(value.strip().rstrip("mM"))
             except (ValueError, TypeError):
                 raise ValueError(f"Invalid tolerance value: '{value}'")
-        raise TypeError("Tolerance value must be a string or integer.")
+        raise TypeError("Tolerance value must be a string or integer")
+
+    @model_validator(mode='after')
+    def check_max_gt_default(self) -> Self:
+        if self.DEFAULT_TWISTS_LOADED > self.MAX_TWISTS_LOADED:
+            raise ValueError(
+                f"DEFAULT_TWISTS_LOADED ({self.DEFAULT_TWISTS_LOADED}) must be less than MAX_TWISTS_LOADED ({self.MAX_TWISTS_LOADED})"
+            )
+        return self
 
 
 # Create a single, importable instance of the settings

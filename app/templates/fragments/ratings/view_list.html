@@ -1,0 +1,34 @@
+{% from "fragments/_macros.html" import render_rating %}
+
+{% for rating in rating_list.items %}
+<div class="rating-card scroll-shut-on-delete"
+{% if loop.last %}
+    hx-get="/twists/{{ twist.id }}/ratings/templates/view-modal?offset={{ next_offset }}"
+    hx-swap="afterend"
+    hx-trigger="intersect once"
+{% endif %}
+>
+    <header>
+        <h3>{{ rating.formatted_date }}<span class="author"> by {{ rating.author_name }}</span></h3>
+        {% if rating.can_delete_rating %}
+        <button class="button button-link"
+            hx-delete="/twists/{{ twist.id }}/ratings/{{ rating.id }}"
+            hx-target="closest .rating-card"
+            hx-swap="outerHTML swap:500ms">
+
+            <i class="fa-solid fa-trash"></i>
+        </button>
+        {% endif %}
+    </header>
+    <ul>
+        {% for criterion_name, rating_value in rating.criteria.items() %}
+        {{ render_rating(
+            criterion_name,
+            rating_value,
+            rating_list.criteria_descriptions[criterion_name],
+            criterion_max_value
+        ) }}
+        {% endfor %}
+    </ul>
+</div>
+{% endfor %}

@@ -593,6 +593,9 @@ aside {
     flex-grow: 1;
     overflow-y: auto;
 }
+#twist-list::-webkit-scrollbar {
+    display: none;  /* Temporary fix to get rid of Chrome's disgusting scrollbar */
+}
 
 .twist-item {
     border-bottom: var(--border-default);
@@ -1096,6 +1099,26 @@ aside {
     100% {
         transform: rotate(360deg);
     }
+}
+
+
+/* --- Manual Update Button --- */
+
+#manual-update-button {
+    position: fixed;
+    bottom: var(--padding-sm);
+    left: 50%;
+    z-index: 1000;
+    opacity: 0;
+    box-shadow: var(--shadow-flash);
+    border-radius: var(--radius-md);
+
+    transform: translateX(-50%);
+    transition: opacity var(--transition-fade);
+}
+
+#manual-update-button.button--visible {
+    opacity: 1;
 }
 
 
