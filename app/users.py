@@ -62,12 +62,11 @@ async def get_user_manager(
     yield UserManager(user_db)
 
 
-
-cookie_transport = CookieTransport(cookie_name="mototwist", cookie_max_age=3600)
+cookie_transport = CookieTransport(cookie_name="mototwist", cookie_max_age=settings.AUTH_COOKIE_MAX_AGE)
 redis_client = aioredis.from_url(settings.REDIS_URL, decode_responses=True)  # pyright: ignore [reportUnknownMemberType]
 
 def get_redis_strategy() -> RedisStrategy[User, UUID]:
-    return RedisStrategy(redis_client, lifetime_seconds=3600)
+    return RedisStrategy(redis_client, lifetime_seconds=settings.AUTH_COOKIE_MAX_AGE)
 
 auth_backend = AuthenticationBackend(
     name="cookie-auth",

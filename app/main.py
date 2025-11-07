@@ -18,9 +18,10 @@ from app.config import logger, tags_metadata
 from app.database import apply_migrations, create_automigration, get_db, wait_for_db
 from app.models import User
 from app.routers import admin, auth, debug, ratings, twists, users
+from app.schemas.auth import AuthStatus
 from app.schemas.users import UserCreate
 from app.settings import Settings, settings
-from app.users import UserManager, current_active_user_optional, get_user_db
+from app.users import UserManager, auth_backend, current_active_user_optional, get_user_db, redis_client
 from app.utility import format_loc_for_user, raise_http, sort_schema_names, update_schema_name
 
 
@@ -90,6 +91,48 @@ async def log_process_time(
     process_time = (time() - start_time) * 1000
 
     logger.debug(f"Request processing took {process_time:.2f}ms")
+
+    return response
+
+
+@app.middleware("http")
+async def dispatch(
+    request: Request,
+    call_next: Callable[[Request], Awaitable[Response]]
+) -> Response:
+    request.state.force_session_renewal = False
+    response = await call_next(request)
+
+    # Skip if cookie is session cookie and does not need renewal
+    if not settings.AUTH_COOKIE_MAX_AGE:
+        return response
+
+    # Skip if we are not forcing renewal and the sliding window is disabled
+    if not request.state.force_session_renewal and not settings.AUTH_SLIDING_WINDOW_ENABLED:
+        return response
+
+    # Perform sliding session logic only if a token exists
+    token = request.cookies.get("mototwist")
+    if token:
+        redis_key = f"fastapi_users_token:{token}"
+        remaining_seconds = await redis_client.ttl(redis_key)
+
+        # Calculate the threshold value (20% of the max age)
+        refresh_threshold = settings.AUTH_COOKIE_MAX_AGE * 0.2
+
+        # Check if the remaining time is low
+        meets_refresh_threshold = remaining_seconds < refresh_threshold
+        is_warned = remaining_seconds < settings.AUTH_EXPIRY_WARNING_OFFSET
+        if remaining_seconds > 0 and (meets_refresh_threshold or is_warned):
+            # Refresh the Redis Token
+            await redis_client.expire(redis_key, settings.AUTH_COOKIE_MAX_AGE)
+
+            # Send a new Set-Cookie header to the browser
+            cookie_response = await auth_backend.transport.get_login_response(token)
+            cookie = cookie_response.headers.get("Set-Cookie")
+            if cookie:
+                response.headers["Set-Cookie"] = cookie
+                response.headers["HX-Trigger"] = AuthStatus.RENEWED
 
     return response
 

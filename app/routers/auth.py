@@ -9,7 +9,7 @@ from typing import Annotated
 from uuid import UUID
 
 from app.models import User
-from app.schemas.auth import ResetPasswordForm
+from app.schemas.auth import AuthStatus, ResetPasswordForm
 from app.users import UserManager, auth_backend, current_active_user_optional, get_user_manager, get_redis_strategy
 from app.utility import raise_http
 
@@ -52,6 +52,7 @@ async def login(
     cookie = cookie_response.headers.get("Set-Cookie")
     if cookie:
         response.headers["Set-Cookie"] = cookie
+        response.headers["HX-Trigger"] = AuthStatus.RENEWED
 
     response.headers["HX-Trigger-After-Swap"] = json.dumps(events)
     return response
@@ -68,24 +69,42 @@ async def logout(
     Logout and serve an HTML fragment containing the auth widget.
     """
     flash_message = "You have been logged out"
+    response = templates.TemplateResponse("fragments/auth/widget.html", {
+        "request": request,
+        "user": None
+    })
 
     if user:
         # Get the session token from the request cookie
         token = request.cookies.get("mototwist")
         if token:
-            await auth_backend.logout(strategy, user, token)
+            # Create the (empty) session cookie and attach it to a response
+            cookie_response = await auth_backend.logout(strategy, user, token)
+
+            # Copy cookie into template response
+            cookie = cookie_response.headers.get("Set-Cookie")
+            if cookie:
+                response.headers["Set-Cookie"] = cookie
+                response.headers["HX-Trigger"] = AuthStatus.CLEARED
+
             flash_message = f"See you soon, {user.name}!"
 
     events = {
         "flashMessage": flash_message,
         "authChange": ""
     }
-    response = templates.TemplateResponse("fragments/auth/widget.html", {
-        "request": request,
-        "user": None
-    })
     response.headers["HX-Trigger-After-Swap"] = json.dumps(events)
     return response
+
+
+@router.post("/refresh")
+def refresh(request: Request) -> HTMLResponse:
+    """
+    Force a refresh of the auth token via middleware.
+    """
+    # Force renewal and return blank response
+    request.state.force_session_renewal = True
+    return HTMLResponse()
 
 
 @router.get("/register", tags=["Index", "Templates"], response_class=HTMLResponse)

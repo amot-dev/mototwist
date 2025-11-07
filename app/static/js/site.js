@@ -1,4 +1,5 @@
 import { registerFlashListeners } from './flash.js';
+import { registerSessionListeners } from './session.js';
 import { registerCopyButtonListener, validateFormsInScope } from './utils.js';
 
 /**
@@ -17,5 +18,6 @@ function registerGlobalFormValidation() {
 }
 
 registerFlashListeners();
+registerSessionListeners('mototwist');
 registerGlobalFormValidation();
 registerCopyButtonListener();

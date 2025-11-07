@@ -65,6 +65,9 @@ Below is an overview of all available environment variables for MotoTwist.
 | `MOTOTWIST_ADMIN_PASSWORD` | The password to assign to the initial admin user. Only affects initial container setup. Do not set to final wanted password. | `"password"` |
 | `ALLOW_USER_REGISTRATION` | Whether or not users are allowed to register for your instance. If `False`, users may only be created by an administrator. | `False` |
 | `DELETED_USER_NAME` | The name to use for resources created by a now deleted user. Prevents creating new users with this name. | `"Deleted User"` |
+| `AUTH_COOKIE_MAX_AGE` | The number of seconds a login session should be valid. Set to 0 to disable the limit. | `3600` |
+| `AUTH_SLIDING_WINDOW_ENABLED` | Whether or not login sessions should silently re-authenticate themselves. Even if disabled, users can renew their sessions via the expirty warning if that is enabled. | `True` |
+| `AUTH_EXPIRY_WARNING_OFFSET` | The number of seconds before the login session ends that the user is warned about it. Set to 0 to disable the warning | `300` |
 
 #### Database Options
 

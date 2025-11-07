@@ -10,6 +10,8 @@
     <script>
         const OSM_URL = "{{ settings.OSM_URL | safe }}";
         const OSRM_URL = "{{ settings.OSRM_URL | safe }}";
+        const AUTH_COOKIE_MAX_AGE = "{{ settings.AUTH_COOKIE_MAX_AGE | safe }}"
+        const AUTH_EXPIRY_WARNING_OFFSET = "{{ settings.AUTH_EXPIRY_WARNING_OFFSET | safe }}"
     </script>
     {% endif %}
 

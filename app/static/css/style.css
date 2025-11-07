@@ -1066,31 +1066,39 @@ aside {
         margin-bottom var(--transition-fade),
         padding-top var(--transition-fade),
         padding-bottom var(--transition-fade);
-}
 
-.flash-item.flash-item--visible {
-    opacity: 1;
-    max-height: 100px;
-    margin-bottom: 10px;
-    box-shadow: var(--shadow-flash);
-    padding: var(--padding-md) var(--padding-lg);
-}
-.flash-item--error {
-    background-color: var(--accent-orange);
-    border-color: var(--accent-orange);
-}
-.flash-item--loading::after {
-    content: '';
-    display: inline-block;
-    width: 1em;
-    height: 1em;
-    margin-left: 8px;
-    border: 2px solid rgba(255, 255, 255, 0.4);
-    border-top-color: white;
-    border-radius: 50%;
-    vertical-align: bottom;
+    &.flash-item--visible {
+        opacity: 1;
+        max-height: 100px;
+        margin-bottom: 10px;
+        box-shadow: var(--shadow-flash);
+        padding: var(--padding-md) var(--padding-lg);
+    }
+    &.flash-item--error {
+        background-color: var(--accent-orange);
+        border-color: var(--accent-orange);
+    }
+    &.flash-item--loading::after {
+        content: '';
+        display: inline-block;
+        width: 1em;
+        height: 1em;
+        margin-left: 8px;
+        border: 2px solid rgba(255, 255, 255, 0.4);
+        border-top-color: white;
+        border-radius: 50%;
+        vertical-align: bottom;
 
-    animation: spin 0.8s linear infinite;
+        animation: spin 0.8s linear infinite;
+    }
+
+    & .button-link {
+        color: inherit;
+
+        &:hover {
+            color: var(--text-offwhite);
+        }
+    }
 }
 @keyframes spin {
     0% {

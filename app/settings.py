@@ -28,6 +28,9 @@ class Settings(BaseSettings):
     MOTOTWIST_ADMIN_PASSWORD: str = "password"
     ALLOW_USER_REGISTRATION: bool = False
     DELETED_USER_NAME: str = "Deleted User"
+    AUTH_COOKIE_MAX_AGE: int | None = Field(default=3600, ge=0)
+    AUTH_SLIDING_WINDOW_ENABLED: bool = True
+    AUTH_EXPIRY_WARNING_OFFSET: int = Field(default=300, ge=0)
 
     # Database Options
     POSTGRES_HOST: str = "db"
@@ -88,6 +91,14 @@ class Settings(BaseSettings):
             except (ValueError, TypeError):
                 raise ValueError(f"Invalid tolerance value: '{value}'")
         raise TypeError("Tolerance value must be a string or integer")
+
+    @field_validator("AUTH_COOKIE_MAX_AGE", mode="after")
+    @classmethod
+    def to_session_cookie(cls, v: int | None) -> int | None:
+        if not v:
+            return None
+
+        return v
 
     @model_validator(mode='after')
     def check_max_gt_default(self) -> Self:

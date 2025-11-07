@@ -35,6 +35,9 @@ export function flash(message, options = {}) {
     assertedFlashContainer.showPopover();
     assertedFlashContainer.appendChild(flashElement);
 
+    // Force HTMX to process the new element in case there is HTMX content
+    htmx.process(flashElement);
+
     // Force reflow to ensure the transition from opacity 0 -> 1 always plays
     // Track start time for persistent elements to ensure they exist for at least 500ms ()
     const startTime = Date.now();
