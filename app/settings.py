@@ -36,7 +36,7 @@ class Settings(BaseSettings):
     AUTH_EXPIRY_WARNING_OFFSET: int = Field(default=300, ge=0, exclude=False)
 
     # Email Options
-    EMAIL_ENABLED: bool = Field(default=False, exclude=True)
+    EMAIL_ENABLED: bool = Field(default=False, exclude=False)
     SMTP_HOST: str = Field(default="", exclude=True)
     SMTP_PORT: int = Field(default=587, exclude=True)
     SMTP_USERNAME: str = Field(default="", exclude=True)

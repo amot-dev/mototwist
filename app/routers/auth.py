@@ -9,7 +9,7 @@ from uuid import UUID
 from app.config import templates
 from app.events import EventSet
 from app.models import User
-from app.schemas.auth import ResetPasswordForm, VerifyAccountForm
+from app.schemas.auth import ForgotPasswordForm, ResetPasswordForm, VerifyAccountForm
 from app.services.auth import login_and_set_response_cookie, logout_and_set_response_cookie
 from app.users import UserManager, current_active_user_optional, get_user_manager, get_redis_strategy
 from app.utility import raise_http
@@ -145,6 +145,30 @@ async def verify_account(
         request.session["flash"] = "Successfully verified account!"
 
     return Response(headers={"HX-Redirect": "/"})
+
+
+@router.post("/forgot-password", response_class=Response)
+async def send_forgot_password_email(
+    request: Request,
+    forgot_form: Annotated[ForgotPasswordForm, Form()],
+    user_manager: UserManager = Depends(get_user_manager),
+) -> Response:
+    """
+    Send a forgot password email.
+    """
+    try:
+        user = await user_manager.get_by_email(forgot_form.email)
+        await user_manager.forgot_password(user, request=request)
+    except (UserInactive, UserNotExists):
+        pass
+
+    response = HTMLResponse(content="")
+
+    response.headers["HX-Trigger-After-Swap"] = EventSet(
+        EventSet.FLASH("Reset password link sent"),
+        EventSet.CLOSE_MODAL
+    ).dump()
+    return response
 
 
 @router.get("/reset-password", tags=["Index", "Templates"], response_class=HTMLResponse)

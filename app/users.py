@@ -71,6 +71,7 @@ class UserManager(UUIDIDMixin, BaseUserManager[User, UUID]):
             context = {
                 "css_block": f"<style>\n{self._css_text}\n</style>",
                 "title": title,
+                "message": "If you did not initiate this request, feel free to ignore this message.",
                 "action": "Reset Password",
                 "action_label": "Please reset your password",
                 "action_url": f"{settings.MOTOTWIST_BASE_URL}/reset-password?token={token}"

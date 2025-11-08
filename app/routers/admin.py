@@ -66,7 +66,7 @@ async def create_user(
 
     # Generate a password-reset token for the new user
     user_manager.user_forgot_password = False
-    await user_manager.forgot_password(user)
+    await user_manager.forgot_password(user, request=request)
 
     # Send verification email
     if settings.EMAIL_ENABLED:

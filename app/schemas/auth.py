@@ -1,6 +1,10 @@
 from pydantic import BaseModel
 
 
+class ForgotPasswordForm(BaseModel):
+    email: str
+
+
 class ResetPasswordForm(BaseModel):
     token: str
     password: str

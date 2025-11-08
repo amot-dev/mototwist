@@ -121,7 +121,15 @@
                 <input type="password" id="password" name="password" required>
             </div>
 
+            {% if SETTINGS.EMAIL_ENABLED %}
+            <button class="button button-very-small button-link"
+                onclick="document.querySelector('#modal-forgot-password').showModal()">
+
+                Forgot password?
+            </button>
+            {% endif %}
             {% if SETTINGS.ALLOW_USER_REGISTRATION %}
+            {% if SETTINGS.EMAIL_ENABLED %}<br>{% endif %}
             <a href="/register" class="button button-very-small button-link">
                 Don't have an account? Register!
             </a>
@@ -130,6 +138,22 @@
             {% endif %}
 
             {{ render_form_buttons(submit_text="Login") }}
+        </form>
+    {% endcall %}
+</dialog>
+
+<dialog id="modal-forgot-password" class="modal">
+    {% call render_modal_content("Forgot Password") %}
+        <form class="modal-form" method="dialog"
+            hx-post="/forgot-password"
+            hx-swap="none">
+
+            <div class="form-group">
+                <label for="email">Email</label>
+                <input type="email" id="email" name="email" required>
+            </div>
+
+            {{ render_form_buttons(submit_text="Send Reset Password Link") }}
         </form>
     {% endcall %}
 </dialog>
