@@ -126,12 +126,12 @@ export function registerFlashListeners() {
         if (!(flashContainer instanceof HTMLElement)) throw new Error("Critical element .flash-container is missing!");
 
         // Check if the data attribute exists
-        const message = flashContainer.dataset.flashMessage;
+        const message = flashContainer.dataset.initialFlashMessage;
         if (message) {
             flash(message, { duration: 3000 });
 
             // Cleanup dataset
-            delete flashContainer.dataset.flashMessage;
+            delete flashContainer.dataset.initialFlashMessage;
         }
     });
 }
