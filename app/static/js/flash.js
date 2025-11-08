@@ -31,7 +31,7 @@ export function flash(message, options = {}) {
     flashElement.classList.add(`flash-item--${type}`); // e.g., flash-item--error
     flashElement.innerHTML = message;
 
-    // Force show the flash container popover over existing elements
+    // Force show the flash container popover over existing dialogs
     assertedFlashContainer.hidePopover();
     assertedFlashContainer.showPopover();
     assertedFlashContainer.appendChild(flashElement);
@@ -74,6 +74,18 @@ export function flash(message, options = {}) {
         return manualRemove;
     }
 }
+
+/**
+ * Forces the flash container popover to show over newly opened dialogs
+ */
+const forceFlashSuperiority = () => {
+    const assertedFlashContainer = /** @type {HTMLElement} */ (flashContainer);
+    setTimeout(() => {
+        assertedFlashContainer.hidePopover();
+        console.log("hidden")
+        assertedFlashContainer.showPopover();
+    }, 0)
+};
 
 
 /**
@@ -134,5 +146,24 @@ export function registerFlashListeners() {
             // Cleanup dataset
             delete flashContainer.dataset.initialFlashMessage;
         }
+    });
+
+    // Force the flash container to appear over newly opened dialogs
+    document.querySelectorAll('dialog').forEach(dialog => {
+        // Save a reference to the native methods
+        const nativeShowModal = dialog.showModal;
+        const nativeShow = dialog.show;
+
+        // Redefine showModal() to force flash superiority first
+        dialog.showModal = function(...args) {
+            forceFlashSuperiority();
+            nativeShowModal.apply(dialog, args);
+        };
+
+        // Redefine show() to force flash superiority first
+        dialog.show = function(...args) {
+            forceFlashSuperiority();
+            nativeShow.apply(dialog, args);
+        };
     });
 }
