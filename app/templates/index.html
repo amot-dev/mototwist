@@ -36,8 +36,8 @@
         hx-trigger="change,
             keyup changed delay:500ms from:#twist-search-input,
             search from:#twist-search-input,
-            manualTwistUpdate from:body,
-            authChange from:body"
+            {{ EVENTS.REFRESH_TWISTS }} from:body,
+            {{ EVENTS.AUTH_CHANGE }} from:body"
         hx-indicator="#search-indicator">
 
         <div class="search-container">
@@ -95,8 +95,8 @@
 
 <div id="map"></div>
 
-<button id="manual-update-button" class="button button-block"
-    onclick="htmx.trigger(document.body, 'manualTwistUpdate');">
+<button id="refresh-twists-button" class="button button-block"
+    onclick="htmx.trigger(document.body, '{{ EVENTS.REFRESH_TWISTS }}');">
 
     <i class="fa-solid fa-magnifying-glass"></i> Search this area
 </button>
@@ -118,7 +118,7 @@
                 <input type="password" id="password" name="password" required>
             </div>
 
-            {% if settings.ALLOW_USER_REGISTRATION %}
+            {% if SETTINGS.ALLOW_USER_REGISTRATION %}
             <a href="/register" class="button button-very-small button-link">
                 Don't have an account? Register!
             </a>
@@ -141,7 +141,7 @@
         <ul class="info-list">
             <li>
                 <span>Current Version</span>
-                <strong>{{ settings.MOTOTWIST_VERSION }}</strong>
+                <strong>{{ SETTINGS.MOTOTWIST_VERSION }}</strong>
             </li>
             <li>
                 <span>Latest Version</span>
@@ -149,9 +149,9 @@
             </li>
             <li>
                 <span>Source Code</span>
-                <a href="https://github.com/{{ settings.MOTOTWIST_UPSTREAM }}" target="_blank" class="button-link">View on GitHub</a>
+                <a href="https://github.com/{{ SETTINGS.MOTOTWIST_UPSTREAM }}" target="_blank" class="button-link">View on GitHub</a>
             </li>
-            {% if settings.DEBUG_MODE %}
+            {% if SETTINGS.DEBUG_MODE %}
             <li>
                 <span>API Docs</span>
                 <a href="/docs" target="_blank" class="button-link">View API Docs</a>
@@ -170,7 +170,7 @@
 <dialog id="modal-profile" class="modal modal-dynamic"
     hx-get="/users/templates/profile-modal"
     hx-target="this"
-    hx-trigger="updateProfileModal from:body"
+    hx-trigger="{{ EVENTS.RELOAD_PROFILE }} from:body"
     hx-swap="innerHTML">
 
     <p>Loading...</p>

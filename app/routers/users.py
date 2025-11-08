@@ -1,13 +1,12 @@
 from fastapi import APIRouter, Depends, Form, Request
 from fastapi.responses import HTMLResponse, Response
-from fastapi.templating import Jinja2Templates
 from fastapi_users.exceptions import InvalidPasswordException, UserNotExists
-import json
 from sqlalchemy.ext.asyncio import AsyncSession
 from typing import Annotated
 
-from app.config import logger
+from app.config import logger, templates
 from app.database import get_db
+from app.events import EventSet
 from app.models import User
 from app.schemas.users import UserCreate, UserCreateForm, UserUpdate, UserUpdateForm
 from app.services.admin import is_last_active_admin
@@ -15,7 +14,6 @@ from app.users import InvalidUsernameException, UserManager, current_active_user
 from app.utility import raise_http
 
 
-templates = Jinja2Templates(directory="templates")
 router = APIRouter(
     prefix="/users",
     tags=["Users"]
@@ -103,15 +101,14 @@ async def update_user(
     else:
         flash_message = "No changes made"
 
-    events = {
-        "flashMessage": flash_message,
-        "updateProfileModal": ""
-    }
     response = templates.TemplateResponse("fragments/auth/widget.html", {
         "request": request,
         "user": user
     })
-    response.headers["HX-Trigger-After-Swap"] = json.dumps(events)
+    response.headers["HX-Trigger-After-Swap"] = EventSet(
+        EventSet.FLASH(flash_message),
+        EventSet.RELOAD_PROFILE,
+    ).dump()
     return response
 
 
@@ -131,16 +128,15 @@ async def delete_user(
 
     await user_manager.delete(user, request=request)
 
-    events = {
-        "flashMessage": "Account deleted!",
-        "authChange": "",
-        "closeModal": ""
-    }
     response = templates.TemplateResponse("fragments/auth/widget.html", {
         "request": request,
         "user": None
     })
-    response.headers["HX-Trigger-After-Swap"] = json.dumps(events)
+    response.headers["HX-Trigger-After-Swap"] = EventSet(
+        EventSet.FLASH("Account deleted!"),
+        EventSet.AUTH_CHANGE,
+        EventSet.CLOSE_MODAL
+    ).dump()
     return response
 
 
@@ -160,16 +156,15 @@ async def deactivate_user(
 
     await user_manager.update(UserUpdate(is_active=False), user, request=request)
 
-    events = {
-        "flashMessage": "Account deactivated!",
-        "authChange": "",
-        "closeModal": ""
-    }
     response = templates.TemplateResponse("fragments/auth/widget.html", {
         "request": request,
         "user": None
     })
-    response.headers["HX-Trigger-After-Swap"] = json.dumps(events)
+    response.headers["HX-Trigger-After-Swap"] = EventSet(
+        EventSet.FLASH("Account deactivated!"),
+        EventSet.AUTH_CHANGE,
+        EventSet.CLOSE_MODAL
+    ).dump()
     return response
 
 
@@ -182,12 +177,11 @@ async def render_profile_modal(
     Serve an HTML fragment containing the current user's profile modal.
     """
 
-    events = {
-        "profileLoaded": ""
-    }
     response = templates.TemplateResponse("fragments/users/profile_modal.html", {
         "request": request,
         "user": user
     })
-    response.headers["HX-Trigger-After-Swap"] = json.dumps(events)
+    response.headers["HX-Trigger-After-Swap"] = EventSet(
+        EventSet.PROFILE_LOADED
+    ).dump()
     return response

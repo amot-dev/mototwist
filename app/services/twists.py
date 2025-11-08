@@ -1,7 +1,6 @@
 from copy import deepcopy
 from fastapi import Request
 from fastapi.responses import HTMLResponse
-from fastapi.templating import Jinja2Templates
 from geoalchemy2 import Geometry
 from shapely.geometry import LineString, Point
 from shapely.ops import nearest_points
@@ -11,7 +10,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.sql.expression import ColumnExpressionArgument
 from typing import Any
 
-from app.config import logger
+from app.config import logger, templates
 from app.models import Rating, PavedRating, Twist, UnpavedRating, User
 from app.schemas.twists import (
     FilterOwnership, FilterPavement, FilterRatings,
@@ -91,9 +90,6 @@ def simplify_route(coordinates: list[Coordinate]) -> list[Coordinate]:
     simplified_coordinates = [Coordinate(lat=x, lng=y) for x, y in simplified_line.coords]
 
     return simplified_coordinates
-
-
-templates = Jinja2Templates(directory="templates")
 
 
 async def render_creation_buttons(

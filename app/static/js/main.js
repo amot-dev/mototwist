@@ -1,9 +1,10 @@
-import { initMap } from './map.js';
-import { registerTwistListeners } from './displayTwist.js';
+import { EVENTS } from './constants.js';
 import {
     overrideXHR,
     registerTwistCreationListeners
 } from './createTwist.js';
+import { registerTwistListeners } from './displayTwist.js';
+import { initMap } from './map.js';
 import { getFormDataAsString } from './utils.js';
 
 
@@ -23,7 +24,7 @@ import { getFormDataAsString } from './utils.js';
  */
 function registerServerCommandListeners() {
     // Listen for the custom event sent from the server when a form needs to be cleared
-    document.body.addEventListener('resetForm', () => {
+    document.body.addEventListener(EVENTS.RESET_FORM, () => {
         const activeModals = document.querySelectorAll('.modal[open]');
         activeModals.forEach(modal => {
             /** @type {NodeListOf<HTMLFormElement>} */
@@ -33,7 +34,7 @@ function registerServerCommandListeners() {
     });
 
     // Listen for the custom event sent from the server when a modal needs to be closed
-    document.body.addEventListener('closeModal', () => {
+    document.body.addEventListener(EVENTS.CLOSE_MODAL, () => {
         /** @type {NodeListOf<HTMLDialogElement>} */
         const activeModals = document.querySelectorAll('.modal[open]');
         activeModals.forEach(modal => {
@@ -49,7 +50,7 @@ function registerServerCommandListeners() {
     if (!(profileModal instanceof HTMLElement)) throw new Error("Critical element #modal-profile is missing!");
 
     // Listen for the custom event sent from the server when the profile is loaded
-    document.body.addEventListener('profileLoaded', () => {
+    document.body.addEventListener(EVENTS.PROFILE_LOADED, () => {
         // Handle multiple forms if multiple forms exist
         /** @type {NodeListOf<HTMLFormElement>} */
         const profileForms = profileModal.querySelectorAll('.modal-form')

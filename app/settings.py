@@ -1,5 +1,5 @@
 import logging
-from pydantic import Field, computed_field, field_validator, model_validator
+from pydantic import Field, field_validator, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 from typing import Any, Self
 
@@ -8,51 +8,53 @@ class Settings(BaseSettings):
     """
     Manages application settings using environment variables.
     Settings are loaded from a .env file and environment variables.
+    Settings that need to be exposed to the front-end need to be
+    explicitly not excluded.
     """
     # Configure Pydantic to load from a .env file if it exists
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")
 
 
     # Application Options
-    MOTOTWIST_BASE_URL: str = "http://localhost:8000"
-    MOTOTWIST_SECRET_KEY: str = "mototwist"
-    OSM_URL: str = "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-    OSRM_URL: str = "https://router.project-osrm.org"
-    TWIST_SIMPLIFICATION_TOLERANCE_M: int = Field(default=0)
-    DEFAULT_TWISTS_LOADED: int = Field(default=20, gt=1)
-    MAX_TWISTS_LOADED: int = Field(default=100, gt=1)
-    RATINGS_FETCHED_PER_QUERY: int = Field(default=20, gt=1)
+    MOTOTWIST_BASE_URL: str = Field(default="http://localhost:8000", exclude=True)
+    MOTOTWIST_SECRET_KEY: str = Field(default="mototwist", exclude=True)
+    OSM_URL: str = Field(default="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", exclude=False)
+    OSRM_URL: str = Field(default="https://router.project-osrm.org", exclude=False)
+    TWIST_SIMPLIFICATION_TOLERANCE_M: int = Field(default=0, exclude=True)
+    DEFAULT_TWISTS_LOADED: int = Field(default=20, gt=1, exclude=True)
+    MAX_TWISTS_LOADED: int = Field(default=100, gt=1, exclude=True)
+    RATINGS_FETCHED_PER_QUERY: int = Field(default=20, gt=1, exclude=True)
 
     # User Options
-    MOTOTWIST_ADMIN_EMAIL: str = "admin@admin.com"
-    MOTOTWIST_ADMIN_PASSWORD: str = "password"
-    ALLOW_USER_REGISTRATION: bool = False
-    DELETED_USER_NAME: str = "Deleted User"
-    AUTH_COOKIE_MAX_AGE: int | None = Field(default=3600, ge=0)
-    AUTH_SLIDING_WINDOW_ENABLED: bool = True
-    AUTH_EXPIRY_WARNING_OFFSET: int = Field(default=300, ge=0)
+    MOTOTWIST_ADMIN_EMAIL: str = Field(default="admin@admin.com", exclude=True)
+    MOTOTWIST_ADMIN_PASSWORD: str = Field(default="password", exclude=True)
+    ALLOW_USER_REGISTRATION: bool = Field(default=False, exclude=False)
+    DELETED_USER_NAME: str = Field(default="Deleted User", exclude=True)
+    AUTH_COOKIE_MAX_AGE: int | None = Field(default=3600, ge=0, exclude=False)
+    AUTH_SLIDING_WINDOW_ENABLED: bool = Field(default=True, exclude=True)
+    AUTH_EXPIRY_WARNING_OFFSET: int = Field(default=300, ge=0, exclude=False)
 
     # Database Options
-    POSTGRES_HOST: str = "db"
-    POSTGRES_PORT: int = 5432
-    POSTGRES_DB: str = "mototwist"
-    POSTGRES_USER: str = "mototwist"
-    POSTGRES_PASSWORD: str = "password"
+    POSTGRES_HOST: str = Field(default="db", exclude=True)
+    POSTGRES_PORT: int = Field(default=5432, exclude=True)
+    POSTGRES_DB: str = Field(default="mototwist", exclude=True)
+    POSTGRES_USER: str = Field(default="mototwist", exclude=True)
+    POSTGRES_PASSWORD: str = Field(default="password", exclude=True)
 
-    REDIS_URL: str = "redis://redis:6379"
+    REDIS_URL: str = Field(default="redis://redis:6379", exclude=True)
 
     # Developer Options
-    LOG_LEVEL: str = "INFO"
-    DEBUG_MODE: bool = False
-    UVICORN_RELOAD: bool = False
-    MOTOTWIST_UPSTREAM: str = "amot-dev/mototwist"
+    LOG_LEVEL: str = Field(default="INFO", exclude=True)
+    DEBUG_MODE: bool = Field(default=False, exclude=False)
+    UVICORN_RELOAD: bool = Field(default=False, exclude=True)
+    MOTOTWIST_UPSTREAM: str = Field(default="amot-dev/mototwist", exclude=False)
 
     # Do not change unless you want to be rate-limited by the GitHub API during development
     # This is set properly by GitHub Actions during the release flow
-    MOTOTWIST_VERSION: str = "dev"
+    MOTOTWIST_VERSION: str = Field(default="dev", exclude=False)
 
 
-    @computed_field
+    # @computed_field - by dropping computed_field, this field is exclude=True
     @property
     def SQLALCHEMY_DATABASE_URL(self) -> str:
         """Construct the database URL from individual components."""

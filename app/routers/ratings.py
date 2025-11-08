@@ -1,7 +1,6 @@
 from datetime import date
 from fastapi import APIRouter, Depends, Form, Query, Request
 from fastapi.responses import HTMLResponse
-import json
 from sqlalchemy import delete, func, select
 from sqlalchemy.exc import MultipleResultsFound, NoResultFound
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -9,6 +8,7 @@ from typing import Annotated, Literal
 
 from app.config import logger
 from app.database import get_db
+from app.events import EventSet
 from app.models import Twist, PavedRating, UnpavedRating, User
 from app.schemas.ratings import CRITERIA_NAMES_PAVED, CRITERIA_NAMES_UNPAVED, TwistRateForm
 from app.schemas.twists import TwistBasic, TwistUltraBasic
@@ -63,13 +63,12 @@ async def create_rating(
     await session.commit()
     logger.debug(f"Created rating '{new_rating}'")
 
-    events = {
-        "flashMessage": "Twist rated successfully!",
-        "closeModal": "",
-        "refreshAverages": f"{twist_id}"
-    }
     response = HTMLResponse(content="")
-    response.headers["HX-Trigger-After-Swap"] = json.dumps(events)
+    response.headers["HX-Trigger-After-Swap"] = EventSet(
+        EventSet.FLASH("Twist rated successfully!"),
+        EventSet.CLOSE_MODAL,
+        EventSet.REFRESH_AVERAGES(twist_id)
+    ).dump()
     return response
 
 
@@ -130,11 +129,10 @@ async def delete_rating(
     else:
         response = HTMLResponse(content="<p>No ratings yet</p>")
 
-    events = {
-        "flashMessage": "Rating removed successfully!",
-        "refreshAverages": f"{twist_id}"
-    }
-    response.headers["HX-Trigger-After-Swap"] = json.dumps(events)
+    response.headers["HX-Trigger-After-Swap"] = EventSet(
+        EventSet.FLASH("Rating removed successfully!"),
+        EventSet.REFRESH_AVERAGES(twist_id)
+    ).dump()
     return response
 
 

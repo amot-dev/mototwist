@@ -2,7 +2,6 @@ from asyncio import gather
 from datetime import date, timedelta
 from fastapi import APIRouter, Depends, File, Form, Request, UploadFile
 from fastapi.responses import HTMLResponse, Response, StreamingResponse
-from fastapi.templating import Jinja2Templates
 from io import BytesIO
 import json
 from random import choice, choices, randint
@@ -12,17 +11,16 @@ from sqlalchemy.orm import Mapped
 from typing import Annotated, cast
 from uuid import UUID
 
+from app.config import templates
 from app.database import get_db
 from app.models import PavedRating, Twist, UnpavedRating, User
 from app.schemas.debug import SeedRatingsForm
 from app.schemas.types import Coordinate, Waypoint
 from app.services.debug import create_random_rating, generate_weights, reset_id_sequences_for
-from app.settings import settings
 from app.users import current_active_user_optional, current_admin_user
 from app.utility import raise_http
 
 
-templates = Jinja2Templates(directory="templates")
 router = APIRouter(
     prefix="/debug",
     tags=["Debug"]
@@ -314,6 +312,5 @@ async def serve_menu_button(
     """
     return templates.TemplateResponse("fragments/debug/menu_button.html", {
         "request": request,
-        "user": user,
-        "settings": settings
+        "user": user
     })

@@ -17,7 +17,7 @@
     hx-ext="morph"
     hx-target="next .averages-list"
     hx-swap="morph:innerHTML"
-    hx-trigger="change, refreshAverages[event.detail.value == '{{ twist_id }}'] from:body">
+    hx-trigger="change, {{ EVENTS.REFRESH_AVERAGES }}[event.detail.value == '{{ twist_id }}'] from:body">
 
     <fieldset class="filter-fieldset">
         <div class="filter-group" title="Filter between all or your Twists">

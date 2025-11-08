@@ -1110,9 +1110,9 @@ aside {
 }
 
 
-/* --- Manual Update Button --- */
+/* --- Refresh Twists Button --- */
 
-#manual-update-button {
+#refresh-twists-button {
     position: fixed;
     bottom: var(--padding-sm);
     left: 50%;
@@ -1123,10 +1123,10 @@ aside {
 
     transform: translateX(-50%);
     transition: opacity var(--transition-fade);
-}
 
-#manual-update-button.button--visible {
-    opacity: 1;
+    &.button--visible {
+        opacity: 1;
+    }
 }
 
 

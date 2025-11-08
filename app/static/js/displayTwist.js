@@ -1,3 +1,4 @@
+import { EVENTS } from './constants.js';
 import { stopTwistCreation } from './createTwist.js';
 import { flash } from './flash.js';
 import {
@@ -175,11 +176,11 @@ function getVisualMapCenter(map) {
  * @returns {void}
  */
 export function registerTwistListeners(map) {
-    const manualUpdateButton = document.getElementById('manual-update-button');
-    if (!manualUpdateButton) throw new Error("Critical element #manual-update-button is missing!");
+    const manualUpdateButton = document.getElementById('refresh-twists-button');
+    if (!manualUpdateButton) throw new Error("Critical element #refresh-twists-button is missing!");
 
     // Listen for the custom event sent from the server after a Twist list chunk is received
-    document.body.addEventListener('twistsLoaded', (event) => {
+    document.body.addEventListener(EVENTS.TWISTS_LOADED, (event) => {
         const customEvent = /** @type {CustomEvent<{value: string}>} */ (event);
         const detail = JSON.parse(customEvent.detail.value);
         const startPage = Number(detail.startPage);
@@ -220,7 +221,7 @@ export function registerTwistListeners(map) {
     });
 
     // Listen for the custom event sent from the server after a new Twist is created
-    document.body.addEventListener('twistAdded', (event) => {
+    document.body.addEventListener(EVENTS.TWIST_ADDED, (event) => {
         const customEvent = /** @type {CustomEvent<{value: string}>} */ (event);
 
         const newTwistId = customEvent.detail.value;
@@ -231,7 +232,7 @@ export function registerTwistListeners(map) {
     });
 
     // Listen for the custom event sent from the server after a Twist is deleted
-    document.body.addEventListener('twistDeleted', async (event) => {
+    document.body.addEventListener(EVENTS.TWIST_DELETED, async (event) => {
         const customEvent = /** @type {CustomEvent<{value: string}>} */ (event);
 
         const deletedTwistId = customEvent.detail.value;
@@ -302,7 +303,7 @@ export function registerTwistListeners(map) {
                         // Load content if needed
                         if (twistDropdown.querySelector('.loading')) {
                             const twistHeader = twistItem.querySelector('.twist-header')
-                            htmx.trigger(twistHeader, 'loadDropdown');
+                            htmx.trigger(twistHeader, EVENTS.LOAD_DROPDOWN);
                         }
                     }
                 }, doubleClickTimeout);
@@ -335,7 +336,7 @@ export function registerTwistListeners(map) {
             // Maintain current list on authChange
             const trigger = customEvent.detail.triggeringEvent;
             if (trigger) {
-                if (trigger.type === 'authChange') {
+                if (trigger.type === EVENTS.AUTH_CHANGE) {
                     customEvent.detail.parameters['pages'] = numPagesLoaded;
                 }
             }

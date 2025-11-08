@@ -1,6 +1,6 @@
 <div id="twist-creation-buttons"
     hx-get="/twists/templates/creation-buttons"
-    hx-trigger="authChange from:body"
+    hx-trigger="{{ EVENTS.AUTH_CHANGE }} from:body"
     hx-swap="outerHTML">
 
     {% if user %}

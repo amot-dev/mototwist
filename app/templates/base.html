@@ -6,12 +6,15 @@
     <title>{% block title %}MotoTwist{% endblock %}</title>
     <link rel="icon" type="image/x-icon" href="static/images/favicon.ico">
 
-    {% if settings %}
-    <script>
-        const OSM_URL = "{{ settings.OSM_URL | safe }}";
-        const OSRM_URL = "{{ settings.OSRM_URL | safe }}";
-        const AUTH_COOKIE_MAX_AGE = "{{ settings.AUTH_COOKIE_MAX_AGE | safe }}"
-        const AUTH_EXPIRY_WARNING_OFFSET = "{{ settings.AUTH_EXPIRY_WARNING_OFFSET | safe }}"
+    {% if SETTINGS %}
+    <script id="settings-json" type="application/json">
+        {{ SETTINGS | tojson | safe }}
+    </script>
+    {% endif %}
+
+    {% if EVENTS %}
+    <script id="events-json" type="application/json">
+        {{ EVENTS | tojson | safe }}
     </script>
     {% endif %}
 

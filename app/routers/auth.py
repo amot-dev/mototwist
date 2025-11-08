@@ -1,19 +1,19 @@
 from fastapi import APIRouter, Depends, Form, Request, Response
 from fastapi.responses import HTMLResponse, Response
 from fastapi.security import OAuth2PasswordRequestForm
-from fastapi.templating import Jinja2Templates
 from fastapi_users.authentication import RedisStrategy
 from fastapi_users.exceptions import InvalidResetPasswordToken, UserInactive, UserNotExists
-import json
 from typing import Annotated
 from uuid import UUID
 
+from app.config import templates
+from app.events import EventSet
 from app.models import User
-from app.schemas.auth import AuthStatus, ResetPasswordForm
+from app.schemas.auth import ResetPasswordForm
 from app.users import UserManager, auth_backend, current_active_user_optional, get_user_manager, get_redis_strategy
 from app.utility import raise_http
 
-templates = Jinja2Templates(directory="templates")
+
 router = APIRouter(
     prefix="",
     tags=["Authentication"]
@@ -35,11 +35,6 @@ async def login(
     if not user or not user.is_active:
         raise_http("Invalid credentials or deactivated account", status_code=401)
 
-    events = {
-        "flashMessage": f"Welcome back, {user.name}!",
-        "authChange": "",
-        "closeModal": ""
-    }
     response = templates.TemplateResponse("fragments/auth/widget.html", {
         "request": request,
         "user": user
@@ -52,9 +47,13 @@ async def login(
     cookie = cookie_response.headers.get("Set-Cookie")
     if cookie:
         response.headers["Set-Cookie"] = cookie
-        response.headers["HX-Trigger"] = AuthStatus.RENEWED
+        response.headers["HX-Trigger"] = EventSet(EventSet.SESSION_SET).dump()
 
-    response.headers["HX-Trigger-After-Swap"] = json.dumps(events)
+    response.headers["HX-Trigger-After-Swap"] = EventSet(
+        EventSet.FLASH(f"Welcome back, {user.name}!"),
+        EventSet.AUTH_CHANGE,
+        EventSet.CLOSE_MODAL
+    ).dump()
     return response
 
 
@@ -85,15 +84,14 @@ async def logout(
             cookie = cookie_response.headers.get("Set-Cookie")
             if cookie:
                 response.headers["Set-Cookie"] = cookie
-                response.headers["HX-Trigger"] = AuthStatus.CLEARED
+                response.headers["HX-Trigger"] = EventSet(EventSet.SESSION_CLEARED).dump()
 
             flash_message = f"See you soon, {user.name}!"
 
-    events = {
-        "flashMessage": flash_message,
-        "authChange": ""
-    }
-    response.headers["HX-Trigger-After-Swap"] = json.dumps(events)
+    response.headers["HX-Trigger-After-Swap"] = EventSet(
+        EventSet.FLASH(flash_message),
+        EventSet.AUTH_CHANGE
+    ).dump()
     return response
 
 

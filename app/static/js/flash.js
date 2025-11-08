@@ -1,3 +1,4 @@
+import { EVENTS } from './constants.js';
 import { getRootProperty, parseDuration } from './utils.js';
 
 /** @type {HTMLUListElement | null} */
@@ -93,7 +94,7 @@ export function flash(message, options = {}) {
  */
 export function registerFlashListeners() {
     // Listen for the flashMessage event from the server
-    document.body.addEventListener('flashMessage', (event) => {
+    document.body.addEventListener(EVENTS.FLASH, (event) => {
         const customEvent = /** @type {CustomEvent<{value: string}>} */ (event);
 
         flash(customEvent.detail.value, { duration: 3000 });

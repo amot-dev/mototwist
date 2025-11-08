@@ -1,8 +1,6 @@
 from fastapi import APIRouter, Depends, Form, Request
 from fastapi.responses import HTMLResponse
-from fastapi.templating import Jinja2Templates
 from fastapi_users.exceptions import UserNotExists
-import json
 from secrets import choice
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -10,7 +8,9 @@ from string import ascii_letters, digits
 from typing import Annotated
 from uuid import UUID
 
+from app.config import templates
 from app.database import get_db
+from app.events import EventSet
 from app.models import User
 from app.schemas.admin import UserCreateFormAdmin
 from app.schemas.users import UserCreate, UserUpdate
@@ -20,7 +20,6 @@ from app.users import InvalidUsernameException, UserManager, current_admin_user,
 from app.utility import raise_http
 
 
-templates = Jinja2Templates(directory="templates")
 router = APIRouter(
     prefix="/admin",
     tags=["Administration"]
@@ -65,16 +64,15 @@ async def create_user(
     # Generate a password-reset token for the new user
     await user_manager.forgot_password(user)
 
-    events = {
-        "flashMessage": "User created!",
-        "resetForm": ""
-    }
     response = templates.TemplateResponse("fragments/admin/settings_user.html", {
         "request": request,
         "user": user,
         "reset_password_link": f"{settings.MOTOTWIST_BASE_URL}/reset-password?token={user_manager.generated_token}"
     })
-    response.headers["HX-Trigger-After-Swap"] = json.dumps(events)
+    response.headers["HX-Trigger-After-Swap"] = EventSet(
+        EventSet.FLASH("User created!"),
+        EventSet.RESET_FORM
+    ).dump()
     return response
 
 
@@ -104,12 +102,11 @@ async def delete_user(
 
     await user_manager.delete(user, request=request)
 
-    events = {
-        "flashMessage": "User deleted!",
-        "authChange": ""
-    }
     response = HTMLResponse(content="")
-    response.headers["HX-Trigger-After-Swap"] = json.dumps(events)
+    response.headers["HX-Trigger-After-Swap"] = EventSet(
+        EventSet.FLASH("User deleted!"),
+        EventSet.AUTH_CHANGE
+    ).dump()
     return response
 
 
@@ -141,14 +138,13 @@ async def toggle_user_active(
     user_updates.is_active = not user.is_active
     await user_manager.update(user_updates, user, request=request)
 
-    events = {
-        "authChange": ""
-    }
     response = templates.TemplateResponse("fragments/admin/settings_user.html", {
         "request": request,
         "user": user
     })
-    response.headers["HX-Trigger-After-Swap"] = json.dumps(events)
+    response.headers["HX-Trigger-After-Swap"] = EventSet(
+        EventSet.AUTH_CHANGE
+    ).dump()
     return response
 
 
@@ -180,14 +176,13 @@ async def toggle_user_admin(
     user_updates.is_superuser = not user.is_superuser
     await user_manager.update(user_updates, user, request=request)
 
-    events = {
-        "authChange": ""
-    }
     response = templates.TemplateResponse("fragments/admin/settings_user.html", {
         "request": request,
         "user": user
     })
-    response.headers["HX-Trigger-After-Swap"] = json.dumps(events)
+    response.headers["HX-Trigger-After-Swap"] = EventSet(
+        EventSet.AUTH_CHANGE
+    ).dump()
     return response
 
 

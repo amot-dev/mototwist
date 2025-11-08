@@ -1,7 +1,10 @@
+from fastapi.templating import Jinja2Templates
 import logging.config
 from typing import Any
 
+from app.events import EventKey
 from app.settings import settings
+
 
 # Configure logging
 LOGGING_CONFIG: dict[str, Any] = {
@@ -37,6 +40,12 @@ logging.setLogRecordFactory(record_factory)
 
 # Set app logger
 logger = logging.getLogger("mototwist")
+
+
+# Configure templates
+templates = Jinja2Templates(directory="templates")
+templates.env.globals["EVENTS"] = { key.name: key.value for key in EventKey }  # type: ignore[reportUnknownVariableType]
+templates.env.globals["SETTINGS"] = settings.model_dump()  # type: ignore[reportUnknownVariableType]
 
 
 # Configure documentation tag order

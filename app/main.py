@@ -3,9 +3,8 @@ from fastapi import Depends, FastAPI, Request, Response
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import HTMLResponse
 from fastapi.staticfiles import StaticFiles
-from fastapi.templating import Jinja2Templates
+
 from httpx import AsyncClient, HTTPStatusError
-import json
 from pydantic_core import ErrorDetails
 from sqlalchemy import func, select
 from starlette.middleware.sessions import SessionMiddleware
@@ -14,11 +13,11 @@ from time import time
 from typing import Awaitable, Callable, cast
 import uvicorn
 
-from app.config import logger, tags_metadata
+from app.config import logger, tags_metadata, templates
 from app.database import apply_migrations, create_automigration, get_db, wait_for_db
+from app.events import EventSet
 from app.models import User
 from app.routers import admin, auth, debug, ratings, twists, users
-from app.schemas.auth import AuthStatus
 from app.schemas.users import UserCreate
 from app.settings import Settings, settings
 from app.users import UserManager, auth_backend, current_active_user_optional, get_user_db, redis_client
@@ -69,7 +68,6 @@ app = FastAPI(
     openapi_tags=tags_metadata
 )
 app.mount("/static", StaticFiles(directory="static"), name="static")
-templates = Jinja2Templates(directory="templates")
 
 
 @app.exception_handler(RequestValidationError)
@@ -132,7 +130,7 @@ async def dispatch(
             cookie = cookie_response.headers.get("Set-Cookie")
             if cookie:
                 response.headers["Set-Cookie"] = cookie
-                response.headers["HX-Trigger"] = AuthStatus.RENEWED
+                response.headers["HX-Trigger"] = EventSet(EventSet.SESSION_SET).dump()
 
     return response
 
@@ -157,8 +155,7 @@ async def render_index_page(
     return templates.TemplateResponse("index.html", {
         "request": request,
         "user": user,
-        "flash_message": flash_message,
-        "settings": settings
+        "flash_message": flash_message
     })
 
 
@@ -193,15 +190,13 @@ async def get_latest_version(request: Request) -> HTMLResponse:
         )
 
     if settings.MOTOTWIST_VERSION != latest_version:
-        events = {
-            "flashMessage": f"MotoTwist {latest_version} is now available!"
-        }
         response = templates.TemplateResponse("fragments/new_version.html", {
             "request": request,
-            "latest_version": latest_version,
-            "upstream": settings.MOTOTWIST_UPSTREAM
+            "latest_version": latest_version
         })
-        response.headers["HX-Trigger-After-Swap"] = json.dumps(events)
+        response.headers["HX-Trigger-After-Swap"] = EventSet(
+            EventSet.FLASH(f"MotoTwist {latest_version} is now available!")
+        ).dump()
         return response
     return HTMLResponse(content=f"<strong>{latest_version}</strong>")
 

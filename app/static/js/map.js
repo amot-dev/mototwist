@@ -1,3 +1,4 @@
+import { SETTINGS } from './constants.js';
 import { debounce } from './utils.js';
 
 
@@ -109,7 +110,7 @@ export function initMap() {
     map.on('zoomend', debounce(() => saveMapView(map), 500));
 
     // Add a tile layer
-    L.tileLayer(OSM_URL, {
+    L.tileLayer(SETTINGS.OSM_URL, {
         attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
     }).addTo(map);
 

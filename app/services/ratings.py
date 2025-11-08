@@ -1,13 +1,13 @@
 from datetime import date, timedelta
 from fastapi import Request
 from fastapi.responses import HTMLResponse
-from fastapi.templating import Jinja2Templates
 from humanize import ordinal
 from sqlalchemy import false, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 from typing import cast, Literal
 
+from app.config import templates
 from app.models import Rating, PavedRating, UnpavedRating, User
 from app.schemas.ratings import (
     CRITERIA_NAMES_PAVED, CRITERIA_NAMES_UNPAVED, RATING_CRITERIA_PAVED, RATING_CRITERIA_UNPAVED,
@@ -67,9 +67,6 @@ async def calculate_average_rating(
         for key, value in averages._asdict().items()  # pyright: ignore [reportPrivateUsage]
         if value is not None
     }
-
-
-templates = Jinja2Templates(directory="templates")
 
 
 async def render_averages(

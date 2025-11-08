@@ -1,4 +1,6 @@
+import { EVENTS, SETTINGS } from './constants.js';
 import { flash } from './flash.js';
+
 
 /** @type {number | null} */
 let warningTimerId = null;
@@ -41,7 +43,7 @@ function resetTimers() {
 function triggerAuthExpiry() {
     resetTimers();
     localStorage.removeItem('sessionExpiry');
-    htmx.trigger(document.body, 'authChange');
+    htmx.trigger(document.body, EVENTS.AUTH_CHANGE);
     flash('You have been logged out', { duration: 5000, type: 'info' });
 }
 
@@ -86,7 +88,6 @@ function startLiveCountdown(initialRemainingSeconds) {
  */
 function setSessionTimers() {
     const storedExpiry = localStorage.getItem('sessionExpiry');
-    console.log(storedExpiry)
     if (!storedExpiry) return;
 
     const storedExpiry_s = parseInt(storedExpiry);
@@ -105,7 +106,7 @@ function setSessionTimers() {
     }, timeRemaining_s * 1000);
 
     // Immediately return if not setting a warning
-    const expiry_offset = parseInt(AUTH_EXPIRY_WARNING_OFFSET)
+    const expiry_offset = SETTINGS.AUTH_EXPIRY_WARNING_OFFSET
     if (expiry_offset === 0) return;
 
     // If we are already past the warning point but still valid, start the countdown immediately
@@ -132,15 +133,15 @@ export function registerSessionListeners() {
     setSessionTimers();
 
     // Listen for logout
-    document.body.addEventListener('authCleared', () => {
+    document.body.addEventListener(EVENTS.SESSION_CLEARED, () => {
         resetTimers();
         localStorage.removeItem('sessionExpiry');
     });
 
-    // Listen for login
-    document.body.addEventListener('authRenewed', () => {
-        // Assume the full lifetime has been restored.
-        const newExpiry_s = Math.floor(Date.now() / 1000) + parseInt(AUTH_COOKIE_MAX_AGE);
+    // Listen for login/refresh
+    document.body.addEventListener(EVENTS.SESSION_SET, () => {
+        // Assume the full lifetime has been restored
+        const newExpiry_s = Math.floor(Date.now() / 1000) + SETTINGS.AUTH_COOKIE_MAX_AGE;
         localStorage.setItem('sessionExpiry', newExpiry_s.toString());
         setSessionTimers();
     });

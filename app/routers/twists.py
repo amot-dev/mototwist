@@ -1,12 +1,12 @@
 from fastapi import APIRouter, Depends, Request
 from fastapi.responses import HTMLResponse, JSONResponse
-import json
 from sqlalchemy import delete, select
 from sqlalchemy.exc import MultipleResultsFound, NoResultFound
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.config import logger
 from app.database import get_db
+from app.events import EventSet
 from app.models import Twist, User
 from app.schemas.twists import TwistBasic, TwistCreateForm, TwistDropdown, TwistFilterParameters, TwistGeometry
 from app.services.twists import render_creation_buttons, render_delete_modal, render_list, render_single_list_item, render_twist_dropdown, simplify_route, snap_waypoints_to_route
@@ -49,13 +49,12 @@ async def create_twist(
     logger.debug(f"Created Twist '{twist}' for User '{user.id}'")
 
     # Render the twist list fragment with the new data
-    events = {
-        "flashMessage": "Twist created successfully!",
-        "twistAdded":  str(twist.id),
-        "closeModal": ""
-    }
     response = await render_single_list_item(request, session, user, twist.id)
-    response.headers["HX-Trigger-After-Swap"] = json.dumps(events)
+    response.headers["HX-Trigger-After-Swap"] = EventSet(
+        EventSet.FLASH("Twist created successfully!"),
+        EventSet.TWIST_ADDED(twist.id),
+        EventSet.CLOSE_MODAL
+    ).dump()
     return response
 
 
@@ -96,13 +95,12 @@ async def delete_twist(
     logger.debug(f"Deleted Twist with id '{twist_id}'")
 
     # Empty response to "delete" the list item
-    events = {
-        "flashMessage": "Twist deleted successfully!",
-        "twistDeleted":  str(twist_id),
-        "closeModal": ""
-    }
     response = HTMLResponse(content="")
-    response.headers["HX-Trigger-After-Swap"] = json.dumps(events)
+    response.headers["HX-Trigger-After-Swap"] = EventSet(
+        EventSet.FLASH("Twist deleted successfully!"),
+        EventSet.TWIST_DELETED(twist_id),
+        EventSet.CLOSE_MODAL
+    ).dump()
     return response
 
 
@@ -150,15 +148,10 @@ async def serve_list(
     Serve an HTML fragment containing the sorted list of Twists.
     """
 
-    events = {
-        "twistsLoaded": json.dumps({
-            "startPage": filter.page,
-            "numPages": filter.pages
-        })
-    }
-
     response = response = await render_list(request, session, user, filter)
-    response.headers["HX-Trigger-After-Settle"] = json.dumps(events)
+    response.headers["HX-Trigger-After-Settle"] = EventSet(
+        EventSet.TWISTS_LOADED(filter.page, filter.pages)
+    ).dump()
     return response
 
 

@@ -18,6 +18,6 @@ function registerGlobalFormValidation() {
 }
 
 registerFlashListeners();
-registerSessionListeners('mototwist');
+registerSessionListeners();
 registerGlobalFormValidation();
 registerCopyButtonListener();

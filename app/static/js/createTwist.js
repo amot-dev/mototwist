@@ -1,10 +1,11 @@
+import { EVENTS, SETTINGS } from './constants.js';
+import { flash } from './flash.js';
 import {
     startIcon,
     endIcon,
     shapingPointIcon,
     waypointIcon
 } from './map.js';
-import { flash } from './flash.js';
 import { getRootProperty } from './utils.js';
 
 
@@ -70,7 +71,7 @@ async function updateRoute(map) {
 
     // Format coordinates and call the OSRM API
     const coordinates = waypoints.map(waypoint => `${waypoint.latlng.lng},${waypoint.latlng.lat}`).join(';');
-    const url = `${OSRM_URL}/route/v1/driving/${coordinates}?overview=full&geometries=geojson`;
+    const url = `${SETTINGS.OSRM_URL}/route/v1/driving/${coordinates}?overview=full&geometries=geojson`;
 
     try {
         const response = await fetch(url, { signal });
@@ -422,7 +423,7 @@ export function registerTwistCreationListeners(map) {
     registerTwistCreationButtonListeners(map);
 
     // Listen for the custom event sent from the server after an auth change
-    document.body.addEventListener('authChange', () => {
+    document.body.addEventListener(EVENTS.AUTH_CHANGE, () => {
         stopTwistCreation(map);
     });
 
