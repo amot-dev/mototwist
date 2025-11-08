@@ -1,11 +1,12 @@
+from css_inline import CSSInliner
 from fastapi import Depends, Request
 from fastapi_users import BaseUserManager, FastAPIUsers, UUIDIDMixin
 from fastapi_users.authentication import AuthenticationBackend, CookieTransport, RedisStrategy
 from fastapi_users.db import SQLAlchemyUserDatabase
 from fastapi_users.exceptions import FastAPIUsersException
 from fastapi_users.schemas import BaseUserCreate
-from pathlib import Path
 from redis import asyncio as aioredis
+import sass
 from sqlalchemy.ext.asyncio import AsyncSession
 from typing import Any, AsyncGenerator, cast
 from uuid import UUID
@@ -17,6 +18,7 @@ from app.models import User
 from app.schemas.users import UserCreate
 from app.settings import settings
 
+
 class InvalidUsernameException(FastAPIUsersException):
     pass
 
@@ -25,9 +27,18 @@ class UserManager(UUIDIDMixin, BaseUserManager[User, UUID]):
     reset_password_token_secret = settings.MOTOTWIST_SECRET_KEY
     verification_token_secret = settings.MOTOTWIST_SECRET_KEY
 
+
+    # Not using sass, but CSSInliner doesn't support nested blocks
+    try:
+        _css_text = sass.compile(filename="static/css/style.css")
+    except FileNotFoundError:
+        _css_text = ""
+
+
     def __init__(self, *args: Any, **kwargs: Any):
         super().__init__(*args, **kwargs)
         self.generated_token: str | None = None
+
 
     async def create(self, user_create: BaseUserCreate, safe: bool = False, request: Request | None = None) -> User:
         if isinstance(user_create, UserCreate):
@@ -45,24 +56,21 @@ class UserManager(UUIDIDMixin, BaseUserManager[User, UUID]):
 
         return created_user
 
+
     async def on_after_forgot_password(self, user: User, token: str, request: Request | None = None) -> None:
         logger.debug(f"Generated forgot password token for {user.id}")
         self.generated_token = token
 
+
     async def on_after_request_verify(self, user: User, token: str, request: Request | None = None) -> None:
         logger.debug(f"Generated verification token for {user.id}")
 
-        try:
-            css_text = Path("static/css/style.css").read_text()
-        except FileNotFoundError:
-            css_text = ""
-
-        content= cast(str, templates.get_template("fragments/auth/verification_email.html").render({  # pyright: ignore [reportUnknownMemberType]
-            "token": token,
-            "css_block": f"<style>\n{css_text}\n</style>"
+        content = cast(str, templates.get_template("fragments/auth/verification_email.html").render({  # pyright: ignore [reportUnknownMemberType]
+            "css_block": f"<style>\n{self._css_text}\n</style>",
+            "token": token
         }))
 
-        await SMTPEmailTransport.send_mail(user.email, "Verify your account", content)
+        await SMTPEmailTransport.send_mail(user.email, "Verify your account", CSSInliner().inline(content))
 
 
 async def get_user_db(
@@ -80,8 +88,10 @@ async def get_user_manager(
 cookie_transport = CookieTransport(cookie_name="mototwist", cookie_max_age=settings.AUTH_COOKIE_MAX_AGE)
 redis_client = aioredis.from_url(settings.REDIS_URL, decode_responses=True)  # pyright: ignore [reportUnknownMemberType]
 
+
 def get_redis_strategy() -> RedisStrategy[User, UUID]:
     return RedisStrategy(redis_client, lifetime_seconds=settings.AUTH_COOKIE_MAX_AGE)
+
 
 auth_backend = AuthenticationBackend(
     name="cookie-auth",
@@ -94,6 +104,7 @@ fastapi_users = FastAPIUsers[User, UUID](
     get_user_manager,
     [auth_backend],
 )
+
 
 current_active_user = fastapi_users.current_user(active=True)
 current_active_user_optional = fastapi_users.current_user(active=True, optional=True)

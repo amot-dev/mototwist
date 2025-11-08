@@ -1,5 +1,6 @@
 alembic
 asyncpg
+css-inline
 fastapi
 fastapi-users[sqlalchemy]
 GeoAlchemy2
@@ -7,6 +8,7 @@ httpx
 humanize
 itsdangerous
 jinja2
+libsass
 pydantic-settings
 python-multipart
 redis[hiredis]
