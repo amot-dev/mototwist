@@ -16,7 +16,7 @@ class Settings(BaseSettings):
 
 
     # Application Options
-    MOTOTWIST_INSTANCE_NAME: str = Field(default="MotoTwist", exclude=True)
+    MOTOTWIST_INSTANCE_NAME: str = Field(default="MotoTwist", exclude=False)
     MOTOTWIST_BASE_URL: str = Field(default="http://localhost:8000", exclude=True)
     MOTOTWIST_SECRET_KEY: str = Field(default="mototwist", exclude=True)
     OSM_URL: str = Field(default="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", exclude=False)

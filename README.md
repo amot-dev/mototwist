@@ -6,6 +6,7 @@ MotoTwist is the ultimate companion for every motorcycle enthusiast. Discover, t
 
 Share your favorite roads with a community of fellow riders and find your next great adventure, recommended by those who've ridden it before.
 
+
 ## Screenshots
 ![A screenshot of MotoTwist, featuring an expanded Twist and the filter dropdown](docs/screenshot-filters.png)
 ![A screenshot of MotoTwist, features an expanded unapaved Twist and a few unexpanded Twists](docs/screenshot-unpaved.png)
@@ -19,6 +20,7 @@ To get this application running, you will need to have **Docker** and **Docker C
 
 * **Docker:** [Installation Guide](https://docs.docker.com/get-docker/)
 * **Docker Compose:** [Installation Guide](https://docs.docker.com/compose/install/)
+
 
 ### Installation
 
@@ -38,14 +40,17 @@ To get this application running, you will need to have **Docker** and **Docker C
 4.  **Access the application:**
     Open your web browser and navigate to `http://localhost:8000`.
 
+
 ### Environment Variables
 
 Below is an overview of all available environment variables for MotoTwist.
 
+
 #### Application Options
 
-| Variable | Description | Default   |
+| Variable | Description | Default |
 | - | - | - |
+| `MOTOTWIST_INSTANCE_NAME` | The friendly name for your instance. Used in email templates and the site title/header. | `"MotoTwist"` |
 | `MOTOTWIST_BASE_URL` | The base URL at which MotoTwist is expecting to be hosted. | **This must be changed for production!** | `"http://localhost:8000"` |
 | `MOTOTWIST_SECRET_KEY` | A long, random string used to cryptographically sign session cookies, preventing tampering. **This must be changed for production!** | `"changethis"` |
 | `OSM_URL` | The URL template for the OpenStreetMap tile server, which provides the visual base map. | `"https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"` |
@@ -58,8 +63,9 @@ Below is an overview of all available environment variables for MotoTwist.
 > [!WARNING]
 > Keep in mind the [OSM Tile Policy](https://operations.osmfoundation.org/policies/tiles/) and [OSRM Usage Policy](https://map.project-osrm.org/about.html) if you do not plan on changing OSM_URL and/or OSRM_URL.
 
+
 #### User Options
-| Variable | Description | Default   |
+| Variable | Description | Default |
 | - | - | - |
 | `MOTOTWIST_ADMIN_EMAIL` | The email to use for creating the initial admin user. Only affects initial container setup. **This should be changed for production!** | `"admin@admin.com"` |
 | `MOTOTWIST_ADMIN_PASSWORD` | The password to assign to the initial admin user. Only affects initial container setup. Do not set to final wanted password. | `"password"` |
@@ -69,11 +75,24 @@ Below is an overview of all available environment variables for MotoTwist.
 | `AUTH_SLIDING_WINDOW_ENABLED` | Whether or not login sessions should silently re-authenticate themselves. Even if disabled, users can renew their sessions via the expirty warning if that is enabled. | `True` |
 | `AUTH_EXPIRY_WARNING_OFFSET` | The number of seconds before the login session ends that the user is warned about it. Set to 0 to disable the warning | `300` |
 
+
+#### Email Options
+| Variable | Description | Default |
+| - | - | - |
+| `EMAIL_ENABLED` | Set to `True` to enable all email functionality (e.g., verification, password resets). Requires setting all `SMTP_` variables. | `False` |
+| `SMTP_HOST` | The hostname of your SMTP server. Required if `EMAIL_ENABLED` is `True`. | `"smtp.example.com"` |
+| `SMTP_PORT` | The port for your SMTP server. Typically 587 (TLS) or 465 (SSL). | `587` |
+| `SMTP_USERNAME` | The username for authenticating with your SMTP server. Required if `EMAIL_ENABLED` is `True`. | `"changethis"` |
+| `SMTP_PASSWORD` | The password for authenticating with your SMTP server. Required if `EMAIL_ENABLED` is `True`. | `"changethis"` |
+| `SMTP_FROM_EMAIL` | The email address to use in the 'From' field for all outgoing emails. Must be a valid email for your SMTP server. | `"noreply@example.com"` |
+| `SMTP_USE_TLS` | Whether to use Transport Layer Security (TLS) when connecting to the SMTP host. Should be `True` for port 587. | `True` |
+
+
 #### Database Options
 
 These variables are required to connect to the PostgreSQL database.
 
-| Variable | Description | Default   |
+| Variable | Description | Default |
 | - | - | - |
 | `POSTGRES_HOST` | The hostname of the database server. In Docker, this should match the service name. | `"db"` |
 | `POSTGRES_PORT` | The port the database is running on. | `5432` |
@@ -82,20 +101,36 @@ These variables are required to connect to the PostgreSQL database.
 | `POSTGRES_PASSWORD` | The password for the database connection. **This must be changed for production!** | `"changethis"` |
 | `REDIS_URL` | The URL to use to connect to Redis. Do not change unless you have an external instance. | `"redis://redis:6379"` |
 
+
 #### Developer Options
 
 These settings are useful for local development and debugging.
 
-| Variable | Description | Default   |
+| Variable | Description | Default |
 | - | - | - |
 | `LOG_LEVEL` | Sets the application's logging level. Common values are `DEBUG`, `INFO`, `WARNING`. | `INFO` |
 | `DEBUG_MODE` | Enables the Debug Menu for administrators. Useful for saving/loading the database state. | `False` |
 | `UVICORN_RELOAD` | If set to `true`, the server will automatically restart when code changes are detected. (Also requires mounting the source as a bind mount). | `False` |
 | `MOTOTWIST_UPSTREAM` | Sets the repository to check updates from. Modify the default if you are making a fork. | `"amot-dev/mototwist"` |
 
-### Usage
 
-1.  **Drawing a New Twist:**
+### Usage
+1. **User Management:**
+    Twists may be viewed without an account, but creating a Twist requires one. If enabled by an admin, you can create your own account from the login modal.
+
+    a)  **Verification:**
+        New accounts need to be verified if `EMAIL_ENABLED` is `True`. Most actions can only be performed by verified users.
+
+    b)  **Deactivation:**
+        Accounts may be deactivated. Only an admin can reactivate it.
+
+    c)  **Deletion:**
+        Accounts may be deleted. It will be gone forever, but Twists and ratings will remain.
+
+    d)  **Promotion:**
+        Only an admin can create or promote more admins. Initially, MotoTwist starts up with exactly one admin user.
+
+2.  **Drawing a New Twist:**
     When you a creating a Twist, your map cursor will be a crosshair. Waypoints can be placed, dragged, named, hidden, and deleted.
 
     a)  **Placing Waypoints:**
@@ -105,33 +140,41 @@ These settings are useful for local development and debugging.
         Clicking and holding a waypoint will allow you to move it around.
 
     c)  **Naming Waypoints:**
-        Clicking on a waypoint will reveal a number of options, including naming. I recommend naming all non-hidden waypoints.
+        Clicking on a waypoint will allow naming it. The first and last waypoints must be named.
 
-    d)  **Hiding Waypoints:**
-        Waypoints other than the first and last can be hidden. These waypoints will be used to determine the Twist's final route, but will not be part of the Twist itself. Use these as you would use dragging the route in Google Maps to achieve your desired route.
+    d)  **Shaping Points:**
+        Waypoints other than the first and last are shaping points by default. These waypoints will be used to determine the Twist's final route, but will never be displayed. Use these as you would use dragging the route in Google Maps to achieve your desired route. You may name them to have them be displayed as part of the Twist.
 
     e)  **Deleting Waypoints:**
-        Finally, any waypoint can be deleted. Keep in mind that at least two waypoints are required to create a Twist.
+        Clicking on a waypoint will allow deleting it. Keep in mind that at least two waypoints are required to create a Twist.
 
-2.  **Entering Twist Details:**
+3.  **Entering Twist Details:**
     Once your route is ready, additional details can be specified for the Twist, including the name and whether it is paved or unpaved.
 
 > [!TIP]
 > Twists should be predominantly paved or unpaved. If they're a combination of both, select whichever was "the main attraction" of the Twist, as each type has different criteria they're rated on. If both segments are fun, consider splitting the Twist!
 
-3.  **Rating Twists:**
+4.  **Rating Twists:**
     From the sidebar, you can now rate your Twist! There's a number of different criteria you can rate it on, and hovering over each will give a brief description.
 
 > [!TIP]
 > With some, but minimal, technical knowledge, the available criteria can be changed! Eventually this may be configurable via environment variables. See [#11](https://github.com/amot-dev/mototwist/issues/11).
 
-4.  **General Use:**
+5.  **Searching/Filtering:**
+    Twists may be searched and filtered by a few different criteria. Ratings can be filtered.
 
-    a) Twists can be shown and hidden. Clicking on a Twist will take you to it, as well as reveal rating information.
+6.  **General Use:**
 
-    b) Waypoints and tracks on the map can be clicked to show their name.
+    a) Clicking on a Twist will reveal more information about it.
 
-    c) Twists and ratings can be deleted (but not modified).
+    b) Double clicking on a Twist will take you to it on the map.
+
+    c) Twists can be hidden.
+
+    d) Twists and Waypoints on the map can be clicked to show their name.
+
+    e) Twists and ratings can be deleted (but not modified).
+
 
 ## Developing
 
@@ -152,7 +195,13 @@ Follow these steps to set up and run the application in development mode.
 4.  **Access the application:**
     Open your web browser and navigate to `http://localhost:8000`.
 
-5.  **Start Developing:**
+5.  **Load mock data:**
+    With debug mode enabled, admin users will have access to the debug page, which allows saving and loading the current database state, as well as seed ratings.
+
+> [!TIP]
+> Saving ratings is mostly useless unless you're using debug mode to migrate your data. Prefer saving Twists and seeding rating data after loading.
+
+6.  **Start Developing:**
     More thorough documentation for this is coming (maybe), but I'm sure you can figure it out.
 
 > [!TIP]
@@ -161,7 +210,21 @@ Follow these steps to set up and run the application in development mode.
 > docker compose run --service-ports mototwist
 > ```
 
-6.  **Migrate the database if needed:**
+> [!TIP]
+> Email functionality can be tested with MailHog (included by `docker-compose.override.yml`):
+> ```bash
+> # Email Options
+> EMAIL_ENABLED=True
+> SMTP_HOST="mailhog"
+> SMTP_PORT=1025
+> SMTP_USERNAME="anything"
+> SMTP_PASSWORD="anything"
+> SMTP_FROM_EMAIL="anything@anything.com"
+> SMTP_USE_TLS=False
+> ```
+> Navigate to `http://localhost:8025` to view the fake inbox.
+
+7.  **Migrate the database if needed:**
     If you make any model changes, you'll need to make a migration from them. All migrations are applied to the database on container restart.
     ```bash
     docker compose run --rm mototwist create-migration "Your very descriptive message"
