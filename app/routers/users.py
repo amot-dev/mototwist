@@ -104,6 +104,7 @@ async def update_user(
     else:
         flash_message = "No changes made"
 
+    # Still returns auth widget because the user's name may have changed but AUTH_CHANGE will not be sent off
     response = templates.TemplateResponse("fragments/auth/widget.html", {
         "request": request,
         "user": user
@@ -130,10 +131,7 @@ async def delete_user(
     if await is_last_active_admin(session, user):
         raise_http("Cannot delete the last active administrator", status_code=403)
 
-    response = templates.TemplateResponse("fragments/auth/widget.html", {
-        "request": request,
-        "user": None
-    })
+    response = HTMLResponse(content="")
 
     await logout_and_set_response_cookie(request, response, strategy=strategy, user=user)
     await user_manager.delete(user, request=request)
@@ -161,10 +159,7 @@ async def deactivate_user(
     if await is_last_active_admin(session, user):
         raise_http("Cannot disable the last active administrator", status_code=403)
 
-    response = templates.TemplateResponse("fragments/auth/widget.html", {
-        "request": request,
-        "user": None
-    })
+    response = HTMLResponse(content="")
 
     await logout_and_set_response_cookie(request, response, strategy=strategy, user=user)
     await user_manager.update(UserUpdate(is_active=False), user, request=request)

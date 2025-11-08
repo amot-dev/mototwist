@@ -36,10 +36,7 @@ async def login(
     if not user or not user.is_active:
         raise_http("Invalid credentials or deactivated account", status_code=401)
 
-    response = templates.TemplateResponse("fragments/auth/widget.html", {
-        "request": request,
-        "user": user
-    })
+    response = HTMLResponse(content="")
 
     await login_and_set_response_cookie(response, strategy=strategy, user=user)
 
@@ -54,7 +51,6 @@ async def login(
 @router.post("/logout", response_class=HTMLResponse)
 async def logout(
     request: Request,
-    response: Response,
     user: User | None = Depends(current_active_user_optional),
     strategy: RedisStrategy[User, UUID] = Depends(get_redis_strategy),
 ) -> HTMLResponse:
@@ -62,10 +58,7 @@ async def logout(
     Logout and serve an HTML fragment containing the auth widget.
     """
     flash_message = "You have been logged out"
-    response = templates.TemplateResponse("fragments/auth/widget.html", {
-        "request": request,
-        "user": None
-    })
+    response = HTMLResponse(content="")
 
     if user:
         await logout_and_set_response_cookie(request, response, strategy=strategy, user=user)
@@ -85,7 +78,21 @@ def refresh(request: Request) -> HTMLResponse:
     """
     # Force renewal and return blank response
     request.state.force_session_renewal = True
-    return HTMLResponse()
+    return HTMLResponse(content="")
+
+
+@router.get("/auth/widget", response_class=HTMLResponse)
+async def serve_auth_widget(
+    request: Request,
+    user: User | None = Depends(current_active_user_optional)
+) -> HTMLResponse:
+    """
+    Serve the auth widget.
+    """
+    return templates.TemplateResponse("fragments/auth/widget.html", {
+        "request": request,
+        "user": user
+    })
 
 
 @router.get("/register", tags=["Index", "Templates"], response_class=HTMLResponse)

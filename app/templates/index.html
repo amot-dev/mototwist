@@ -18,7 +18,11 @@
 
 <div class="top-right-controls">
     {% include "fragments/debug/menu_button.html" %}
-    {% include "fragments/auth/widget.html" %}
+    <div id="auth-widget" class="{% if user %}auth-dropdown{% endif %}"
+        hx-get="/auth/widget"
+        hx-trigger="load, authChange from:body"
+        hx-swap="innerHTML">
+    </div>
     <button class="button about-button" onclick="document.querySelector('#modal-about').showModal()">
         <img src="static/images/favicon.ico">
     </button>
@@ -105,8 +109,7 @@
     {% call render_modal_content("Login") %}
         <form class="modal-form" method="dialog"
             hx-post="/login"
-            hx-target="#auth-widget"
-            hx-swap="outerHTML">
+            hx-swap="none">
 
             <div class="form-group">
                 <label for="username">Email</label>
