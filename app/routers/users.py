@@ -1,8 +1,10 @@
 from fastapi import APIRouter, Depends, Form, Request
 from fastapi.responses import HTMLResponse, Response
+from fastapi_users.authentication import RedisStrategy
 from fastapi_users.exceptions import InvalidPasswordException, UserNotExists
 from sqlalchemy.ext.asyncio import AsyncSession
 from typing import Annotated
+from uuid import UUID
 
 from app.config import logger, templates
 from app.database import get_db
@@ -10,7 +12,8 @@ from app.events import EventSet
 from app.models import User
 from app.schemas.users import UserCreate, UserCreateForm, UserUpdate, UserUpdateForm
 from app.services.admin import is_last_active_admin
-from app.users import InvalidUsernameException, UserManager, current_active_user, get_user_manager
+from app.services.auth import logout_and_set_response_cookie
+from app.users import InvalidUsernameException, UserManager, current_active_user, get_redis_strategy, get_user_manager
 from app.utility import raise_http
 
 
@@ -117,6 +120,7 @@ async def delete_user(
     request: Request,
     user: User = Depends(current_active_user),
     user_manager: UserManager = Depends(get_user_manager),
+    strategy: RedisStrategy[User, UUID] = Depends(get_redis_strategy),
     session: AsyncSession = Depends(get_db)
 ) -> HTMLResponse:
     """
@@ -126,12 +130,14 @@ async def delete_user(
     if await is_last_active_admin(session, user):
         raise_http("Cannot delete the last active administrator", status_code=403)
 
-    await user_manager.delete(user, request=request)
-
     response = templates.TemplateResponse("fragments/auth/widget.html", {
         "request": request,
         "user": None
     })
+
+    await logout_and_set_response_cookie(request, response, strategy=strategy, user=user)
+    await user_manager.delete(user, request=request)
+
     response.headers["HX-Trigger-After-Swap"] = EventSet(
         EventSet.FLASH("Account deleted!"),
         EventSet.AUTH_CHANGE,
@@ -145,6 +151,7 @@ async def deactivate_user(
     request: Request,
     user: User = Depends(current_active_user),
     user_manager: UserManager = Depends(get_user_manager),
+    strategy: RedisStrategy[User, UUID] = Depends(get_redis_strategy),
     session: AsyncSession = Depends(get_db)
 ) -> HTMLResponse:
     """
@@ -154,12 +161,14 @@ async def deactivate_user(
     if await is_last_active_admin(session, user):
         raise_http("Cannot disable the last active administrator", status_code=403)
 
-    await user_manager.update(UserUpdate(is_active=False), user, request=request)
-
     response = templates.TemplateResponse("fragments/auth/widget.html", {
         "request": request,
         "user": None
     })
+
+    await logout_and_set_response_cookie(request, response, strategy=strategy, user=user)
+    await user_manager.update(UserUpdate(is_active=False), user, request=request)
+
     response.headers["HX-Trigger-After-Swap"] = EventSet(
         EventSet.FLASH("Account deactivated!"),
         EventSet.AUTH_CHANGE,

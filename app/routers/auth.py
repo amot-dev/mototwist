@@ -10,7 +10,8 @@ from app.config import templates
 from app.events import EventSet
 from app.models import User
 from app.schemas.auth import ResetPasswordForm
-from app.users import UserManager, auth_backend, current_active_user_optional, get_user_manager, get_redis_strategy
+from app.services.auth import login_and_set_response_cookie, logout_and_set_response_cookie
+from app.users import UserManager, current_active_user_optional, get_user_manager, get_redis_strategy
 from app.utility import raise_http
 
 
@@ -40,14 +41,7 @@ async def login(
         "user": user
     })
 
-    # Create the session cookie and attach it to a response
-    cookie_response = await auth_backend.login(strategy, user)
-
-    # Copy cookie into template response
-    cookie = cookie_response.headers.get("Set-Cookie")
-    if cookie:
-        response.headers["Set-Cookie"] = cookie
-        response.headers["HX-Trigger"] = EventSet(EventSet.SESSION_SET).dump()
+    await login_and_set_response_cookie(response, strategy=strategy, user=user)
 
     response.headers["HX-Trigger-After-Swap"] = EventSet(
         EventSet.FLASH(f"Welcome back, {user.name}!"),
@@ -74,19 +68,8 @@ async def logout(
     })
 
     if user:
-        # Get the session token from the request cookie
-        token = request.cookies.get("mototwist")
-        if token:
-            # Create the (empty) session cookie and attach it to a response
-            cookie_response = await auth_backend.logout(strategy, user, token)
-
-            # Copy cookie into template response
-            cookie = cookie_response.headers.get("Set-Cookie")
-            if cookie:
-                response.headers["Set-Cookie"] = cookie
-                response.headers["HX-Trigger"] = EventSet(EventSet.SESSION_CLEARED).dump()
-
-            flash_message = f"See you soon, {user.name}!"
+        await logout_and_set_response_cookie(request, response, strategy=strategy, user=user)
+        flash_message = f"See you soon, {user.name}!"
 
     response.headers["HX-Trigger-After-Swap"] = EventSet(
         EventSet.FLASH(flash_message),

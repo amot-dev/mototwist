@@ -151,7 +151,7 @@ export function registerSessionListeners() {
         const customEvent = /** @type {CustomEvent<{xhr: XMLHttpRequest}>} */ (event);
         const xhr = customEvent.detail.xhr;
 
-        // Immediately expire the session if authentication fails
+        // Immediately expire the session if authentication fails # TODO: fix this for admin endpoints
         if (xhr.status === 401 || xhr.status === 403) triggerAuthExpiry();
     });
 }

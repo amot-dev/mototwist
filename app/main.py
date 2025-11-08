@@ -19,13 +19,17 @@ from app.events import EventSet
 from app.models import User
 from app.routers import admin, auth, debug, ratings, twists, users
 from app.schemas.users import UserCreate
+from app.services.auth import login_and_set_response_cookie
 from app.settings import Settings, settings
-from app.users import UserManager, auth_backend, current_active_user_optional, get_user_db, redis_client
+from app.users import UserManager, current_active_user_optional, get_user_db, redis_client
 from app.utility import format_loc_for_user, raise_http, sort_schema_names, update_schema_name
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    """
+    On startup, check the database and create a default admin if no users currently exist.
+    """
     async for session in get_db():
         # Create initial admin user
         result = await session.execute(
@@ -73,7 +77,12 @@ app.mount("/static", StaticFiles(directory="static"), name="static")
 @app.exception_handler(RequestValidationError)
 async def validation_exception_handler(request: Request, exc: RequestValidationError) -> None:
     """
-    Catches Pydantic's validation errors and returns a neat HTTPException.
+    HTTP middleware that handles Pydantic's RequestValidationError, extracting the first validation
+    error and re-raising it as a standard HTTP 422 exception with a user-friendly message.
+
+    :param request: The incoming FastAPI request.
+    :param exc: The RequestValidationError exception instance.
+    :raises: HTTPException (422) with formatted error details.
     """
     first_error = cast(ErrorDetails, exc.errors()[0])
     raise_http(f"{first_error["msg"]} ({format_loc_for_user(first_error["loc"])})", status_code=422, exception=exc)
@@ -84,6 +93,14 @@ async def log_process_time(
     request: Request,
     call_next: Callable[[Request], Awaitable[Response]]
 ) -> Response:
+    """
+    HTTP middleware that measures the time taken to process a request and logs
+    the duration in milliseconds at the debug level.
+
+    :param request: The incoming FastAPI request.
+    :param call_next: The callable to process the next middleware or the endpoint.
+    :return: The FastAPI Response object from the endpoint chain.
+    """
     start_time = time()
     response = await call_next(request)
     process_time = (time() - start_time) * 1000
@@ -94,10 +111,21 @@ async def log_process_time(
 
 
 @app.middleware("http")
-async def dispatch(
+async def renew_session(
     request: Request,
     call_next: Callable[[Request], Awaitable[Response]]
 ) -> Response:
+    """
+    HTTP middleware implementing sliding session functionality.
+
+    If the user has an authentication cookie and its remaining time in Redis
+    is below a defined refresh threshold or warning offset, the token's TTL is
+    renewed in Redis and a fresh 'Set-Cookie' header is added to the response.
+
+    :param request: The incoming FastAPI request, potentially containing the session cookie.
+    :param call_next: The callable to process the next middleware or the endpoint.
+    :return: The FastAPI Response object, potentially with a renewed 'Set-Cookie' header.
+    """
     request.state.force_session_renewal = False
     response = await call_next(request)
 
@@ -126,11 +154,7 @@ async def dispatch(
             await redis_client.expire(redis_key, settings.AUTH_COOKIE_MAX_AGE)
 
             # Send a new Set-Cookie header to the browser
-            cookie_response = await auth_backend.transport.get_login_response(token)
-            cookie = cookie_response.headers.get("Set-Cookie")
-            if cookie:
-                response.headers["Set-Cookie"] = cookie
-                response.headers["HX-Trigger"] = EventSet(EventSet.SESSION_SET).dump()
+            await login_and_set_response_cookie(response, token=token)
 
     return response
 

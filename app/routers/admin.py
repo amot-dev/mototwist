@@ -1,5 +1,6 @@
 from fastapi import APIRouter, Depends, Form, Request
 from fastapi.responses import HTMLResponse
+from fastapi_users.authentication import RedisStrategy
 from fastapi_users.exceptions import UserNotExists
 from secrets import choice
 from sqlalchemy import select
@@ -10,13 +11,14 @@ from uuid import UUID
 
 from app.config import templates
 from app.database import get_db
-from app.events import EventSet
+from app.events import Event, EventSet
 from app.models import User
 from app.schemas.admin import UserCreateFormAdmin
 from app.schemas.users import UserCreate, UserUpdate
 from app.services.admin import is_last_active_admin
+from app.services.auth import logout_and_set_response_cookie
 from app.settings import settings
-from app.users import InvalidUsernameException, UserManager, current_admin_user, get_user_manager
+from app.users import InvalidUsernameException, UserManager, current_admin_user, get_redis_strategy, get_user_manager
 from app.utility import raise_http
 
 
@@ -82,6 +84,7 @@ async def delete_user(
     user_id: UUID,
     admin: User = Depends(current_admin_user),
     user_manager: UserManager = Depends(get_user_manager),
+    strategy: RedisStrategy[User, UUID] = Depends(get_redis_strategy),
     session: AsyncSession = Depends(get_db)
 ) -> HTMLResponse:
     """
@@ -100,13 +103,20 @@ async def delete_user(
     if await is_last_active_admin(session, user):
         raise_http("Cannot delete the last active administrator", status_code=403)
 
+    response = HTMLResponse(content="")
+    events: list[Event] = [EventSet.FLASH("User deleted!")]
+
+    if user == admin:
+        await logout_and_set_response_cookie(request, response, strategy=strategy, user=user)
+        events = [
+            EventSet.FLASH("Account deleted!"),
+            EventSet.AUTH_CHANGE,
+            EventSet.CLOSE_MODAL
+        ]
+
     await user_manager.delete(user, request=request)
 
-    response = HTMLResponse(content="")
-    response.headers["HX-Trigger-After-Swap"] = EventSet(
-        EventSet.FLASH("User deleted!"),
-        EventSet.AUTH_CHANGE
-    ).dump()
+    response.headers["HX-Trigger-After-Swap"] = EventSet(*events).dump()
     return response
 
 
@@ -116,6 +126,7 @@ async def toggle_user_active(
     user_id: UUID,
     admin: User = Depends(current_admin_user),
     user_manager: UserManager = Depends(get_user_manager),
+    strategy: RedisStrategy[User, UUID] = Depends(get_redis_strategy),
     session: AsyncSession = Depends(get_db)
 ) -> HTMLResponse:
     """
@@ -142,9 +153,15 @@ async def toggle_user_active(
         "request": request,
         "user": user
     })
-    response.headers["HX-Trigger-After-Swap"] = EventSet(
-        EventSet.AUTH_CHANGE
-    ).dump()
+
+    if user == admin:
+        await logout_and_set_response_cookie(request, response, strategy=strategy, user=user)
+        response.headers["HX-Trigger-After-Swap"] = EventSet(
+            EventSet.FLASH("Account deactivated!"),
+            EventSet.AUTH_CHANGE,
+            EventSet.CLOSE_MODAL
+        ).dump()
+
     return response
 
 
@@ -180,9 +197,14 @@ async def toggle_user_admin(
         "request": request,
         "user": user
     })
-    response.headers["HX-Trigger-After-Swap"] = EventSet(
-        EventSet.AUTH_CHANGE
-    ).dump()
+
+    if user == admin:
+        response.headers["HX-Trigger-After-Swap"] = EventSet(
+            EventSet.FLASH("Account privileges revoked!"),
+            EventSet.AUTH_CHANGE,
+            EventSet.CLOSE_MODAL
+        ).dump()
+
     return response
 
 

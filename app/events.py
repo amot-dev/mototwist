@@ -1,7 +1,6 @@
 from enum import Enum
 from json import dumps
-from typing import Any, Tuple
-
+from typing import TypeAlias
 
 class EventKey(str, Enum):
     FLASH = "flashMessage"
@@ -103,12 +102,15 @@ class EventKey(str, Enum):
     """
 
 
+Event: TypeAlias = tuple[EventKey, str]
+
+
 class EventSet:
         """
         A class designed to assemble HTMX events and serialize itself directly to
         the required JSON string when assigned to a header.
         """
-        def __init__(self, *events: Tuple[EventKey, Any]):
+        def __init__(self, *events: Event):
             self._events = events
 
         def dump(self) -> str:
@@ -116,7 +118,7 @@ class EventSet:
 
 
         @staticmethod
-        def FLASH(message: str) -> Tuple[EventKey, str]:
+        def FLASH(message: str) -> Event:
             return (EventKey.FLASH, message)
 
         AUTH_CHANGE = (EventKey.AUTH_CHANGE, "")
@@ -126,15 +128,15 @@ class EventSet:
         CLOSE_MODAL = (EventKey.CLOSE_MODAL, "")
 
         @staticmethod
-        def TWIST_ADDED(twist_id: int) -> Tuple[EventKey, str]:
+        def TWIST_ADDED(twist_id: int) -> Event:
             return (EventKey.TWIST_ADDED, str(twist_id))
 
         @staticmethod
-        def TWIST_DELETED(twist_id: int) -> Tuple[EventKey, str]:
+        def TWIST_DELETED(twist_id: int) -> Event:
             return (EventKey.TWIST_DELETED, str(twist_id))
 
         @staticmethod
-        def TWISTS_LOADED(start_page: int, num_pages: int) -> Tuple[EventKey, str]:
+        def TWISTS_LOADED(start_page: int, num_pages: int) -> Event:
             json_string = dumps({
                 "startPage": start_page,
                 "numPages": num_pages
@@ -145,7 +147,7 @@ class EventSet:
         REFRESH_TWISTS = (EventKey.REFRESH_TWISTS, "")
 
         @staticmethod
-        def REFRESH_AVERAGES(twist_id: int) -> Tuple[EventKey, str]:
+        def REFRESH_AVERAGES(twist_id: int) -> Event:
             return (EventKey.REFRESH_AVERAGES, str(twist_id))
 
         RELOAD_PROFILE = (EventKey.RELOAD_PROFILE, "")
