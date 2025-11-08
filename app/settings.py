@@ -1,5 +1,5 @@
 import logging
-from pydantic import Field, field_validator, model_validator
+from pydantic import Field, ValidationError, field_validator, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 from typing import Any, Self
 
@@ -103,13 +103,30 @@ class Settings(BaseSettings):
         return v
 
     @model_validator(mode='after')
-    def check_max_gt_default(self) -> Self:
+    def check_default_twists_loaded_against_max(self) -> Self:
         if self.DEFAULT_TWISTS_LOADED > self.MAX_TWISTS_LOADED:
             raise ValueError(
-                f"DEFAULT_TWISTS_LOADED ({self.DEFAULT_TWISTS_LOADED}) must be less than MAX_TWISTS_LOADED ({self.MAX_TWISTS_LOADED})"
+                f"DEFAULT_TWISTS_LOADED ({self.DEFAULT_TWISTS_LOADED}) must be less than or equal to MAX_TWISTS_LOADED ({self.MAX_TWISTS_LOADED})"
+            )
+        return self
+
+    @model_validator(mode='after')
+    def check_auth_expiry_warning_offset_against_max(self) -> Self:
+        auth_cookie_max_age = self.AUTH_COOKIE_MAX_AGE if self.AUTH_COOKIE_MAX_AGE else 0
+        if self.AUTH_EXPIRY_WARNING_OFFSET > auth_cookie_max_age:
+            raise ValueError(
+                f"AUTH_EXPIRY_WARNING_OFFSET ({self.AUTH_EXPIRY_WARNING_OFFSET}) must be less than or equal to AUTH_COOKIE_MAX_AGE ({auth_cookie_max_age})"
             )
         return self
 
 
-# Create a single, importable instance of the settings
-settings = Settings()
+# Create a single importable instance of settings (or error)
+try:
+    settings = Settings()
+except ValidationError as e:
+    error_message: str = f"Found {e.error_count()} .env error(s):"
+    for error in e.errors():
+        error_message += f"\n  - {error["msg"]}"
+
+    logging.getLogger("mototwist").error(error_message)
+    exit(1)

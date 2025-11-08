@@ -49,6 +49,28 @@ function triggerAuthExpiry() {
 
 
 /**
+ * Converts a total number of seconds into a human-readable "MmSs" string.
+ * e.g., 335 -> 5m35s
+ *
+ * @param {number} totalSeconds - The total number of seconds.
+ * @returns {string} - Formatted time string.
+ */
+function formatSeconds(totalSeconds) {
+    if (totalSeconds <= 0) return '0s';
+
+    const minutes = Math.floor(totalSeconds / 60);
+    const seconds = totalSeconds % 60;
+
+    let parts = [];
+    if (minutes > 0) {
+        return `${minutes}m${seconds.toString().padStart(2, '0')}s`
+    } else {
+        return `${seconds}s`;
+    }
+}
+
+
+/**
  * Starts the 1s live countdown and displays the warning flash message.
  * This is called exactly when the warning timeout hits.
  * @param {number} initialRemainingSeconds - The time left until final expiry.
@@ -60,7 +82,7 @@ function startLiveCountdown(initialRemainingSeconds) {
     let secondsLeft = initialRemainingSeconds;
 
     warningFlashRemover = flash(`
-        Session expires in <span id="session-countdown">${secondsLeft}</span> seconds!
+        Session expires in <span id="session-countdown">${formatSeconds(secondsLeft)}</span>!
         <button class="button button-link" hx-post="/refresh" hx-swap="none">
             Renew
         </button>
@@ -71,7 +93,7 @@ function startLiveCountdown(initialRemainingSeconds) {
         secondsLeft -= 1;
 
         const countdownElement = document.getElementById('session-countdown');
-        if (countdownElement) countdownElement.textContent = `${secondsLeft}`;
+        if (countdownElement) countdownElement.textContent = `${formatSeconds(secondsLeft)}`;
 
         if (secondsLeft <= 0) {
             // The final expiry timeout will trigger shortly after this
