@@ -50,13 +50,14 @@ async def create_user(
 
     # Create the user with a long, random, unusable password. The user will never need to know this password
     placeholder_password = "".join(choice(ascii_letters + digits) for _ in range(32))
+    should_start_verified = False if settings.EMAIL_ENABLED else True
     user_data = UserCreate(
         name=user_form.name,
         email=user_form.email.lower(),
         password=placeholder_password,
         is_active=True,
         is_superuser=user_form.is_superuser,
-        is_verified=True,
+        is_verified=should_start_verified,
     )
     try:
         user = await user_manager.create(user_data, request=request)
@@ -64,7 +65,12 @@ async def create_user(
         raise_http("Invalid username", status_code=422, exception=e)
 
     # Generate a password-reset token for the new user
+    user_manager.user_forgot_password = False
     await user_manager.forgot_password(user)
+
+    # Send verification email
+    if settings.EMAIL_ENABLED:
+        await user_manager.request_verify(user, request=request)
 
     response = templates.TemplateResponse("fragments/admin/settings_user.html", {
         "request": request,

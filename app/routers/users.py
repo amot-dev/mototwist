@@ -13,6 +13,7 @@ from app.models import User
 from app.schemas.users import UserCreate, UserCreateForm, UserUpdate, UserUpdateForm
 from app.services.admin import is_last_active_admin
 from app.services.auth import logout_and_set_response_cookie
+from app.settings import settings
 from app.users import InvalidUsernameException, UserManager, current_active_user, get_redis_strategy, get_user_manager
 from app.utility import raise_http
 
@@ -40,23 +41,25 @@ async def create_user(
     if user_form.password != user_form.password_confirmation:
         raise_http("Passwords do not match", status_code=422)
 
+    should_start_verified = False if settings.EMAIL_ENABLED else True
     user_data = UserCreate(
         name=user_form.name,
         email=user_form.email.lower(),
         password=user_form.password,
         is_active=True,
         is_superuser=False,
-        is_verified=False,
+        is_verified=should_start_verified,
     )
 
     try:
-        user = await user_manager.create(user_data, safe=True, request=request)
+        user = await user_manager.create(user_data, request=request)
     except InvalidUsernameException as e:
         raise_http("Invalid username", status_code=422, exception=e)
     except InvalidPasswordException as e:
         raise_http("Invalid password", status_code=422, exception=e)
 
-    await user_manager.request_verify(user, request=request)
+    if settings.EMAIL_ENABLED:
+        await user_manager.request_verify(user, request=request)
 
     request.session["flash"] = "User created!"
     return Response(headers={"HX-Redirect": "/"})
@@ -155,6 +158,11 @@ async def verify_user(
     """
     Sends a new verification email to the user.
     """
+    # TODO: limit to 1 per time period
+    # Should not happen unless an admin disables email while a user is unverified (and the original verification token is expired)
+    if not settings.EMAIL_ENABLED:
+        raise_http("Unable to send emails. Contact an administrator")
+
     try:
         await user_manager.request_verify(user, request=request)
     except UserAlreadyVerified:

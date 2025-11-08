@@ -37,7 +37,8 @@ class UserManager(UUIDIDMixin, BaseUserManager[User, UUID]):
 
     def __init__(self, *args: Any, **kwargs: Any):
         super().__init__(*args, **kwargs)
-        self.generated_token: str | None = None
+        self.generated_token: str = ""
+        self.user_forgot_password: bool = True
 
 
     async def create(self, user_create: BaseUserCreate, safe: bool = False, request: Request | None = None) -> User:
@@ -59,18 +60,52 @@ class UserManager(UUIDIDMixin, BaseUserManager[User, UUID]):
 
     async def on_after_forgot_password(self, user: User, token: str, request: Request | None = None) -> None:
         logger.debug(f"Generated forgot password token for {user.id}")
-        self.generated_token = token
+
+        # If email is not enabled, save the generated_token for the admin user create route to grab
+        if not settings.EMAIL_ENABLED:
+            self.generated_token = token
+            return
+
+        if self.user_forgot_password:
+            title = "Forgot password"
+            context = {
+                "css_block": f"<style>\n{self._css_text}\n</style>",
+                "title": title,
+                "action": "Reset Password",
+                "action_label": "Please reset your password",
+                "action_url": f"{settings.MOTOTWIST_BASE_URL}/reset-password?token={token}"
+            }
+        else:
+            title = f"Welcome to {settings.MOTOTWIST_INSTANCE_NAME}!"
+            context = {
+                "css_block": f"<style>\n{self._css_text}\n</style>",
+                "title": title,
+                "message": f"An administrator has created a new <a href=\"{settings.MOTOTWIST_BASE_URL}\"\
+                    class=\"button button-link\">{settings.MOTOTWIST_INSTANCE_NAME}</a> account for you.\
+                    After setting your password, you may sign in using this email.",
+                "action": "Set Password",
+                "action_label": "Please set your password",
+                "action_url": f"{settings.MOTOTWIST_BASE_URL}/reset-password?token={token}"
+            }
+
+        content = cast(str, templates.get_template("fragments/auth/email.html").render(context))  # pyright: ignore [reportUnknownMemberType]
+        await SMTPEmailTransport.send_mail(user.email, title, CSSInliner().inline(content))
 
 
     async def on_after_request_verify(self, user: User, token: str, request: Request | None = None) -> None:
         logger.debug(f"Generated verification token for {user.id}")
 
-        content = cast(str, templates.get_template("fragments/auth/verification_email.html").render({  # pyright: ignore [reportUnknownMemberType]
+        title = "Verify your account"
+        content = cast(str, templates.get_template("fragments/auth/email.html").render({  # pyright: ignore [reportUnknownMemberType]
             "css_block": f"<style>\n{self._css_text}\n</style>",
-            "token": token
+            "title": title,
+            "message": f"Thank you for signing up for {settings.MOTOTWIST_INSTANCE_NAME}!",
+            "action": "Verify",
+            "action_label": "Please verify your account",
+            "action_url": f"{settings.MOTOTWIST_BASE_URL}/verify?token={token}"
         }))
 
-        await SMTPEmailTransport.send_mail(user.email, "Verify your account", CSSInliner().inline(content))
+        await SMTPEmailTransport.send_mail(user.email, title, CSSInliner().inline(content))
 
 
 async def get_user_db(

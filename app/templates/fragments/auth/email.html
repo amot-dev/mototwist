@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html>
+<head>
+    {{ css_block | safe }}
+</head>
+<body>
+    <div class="centered-container">
+        <div class="modal">
+            <h1>{{ title }}</h1>
+
+            {% if message %}
+            <p>{{ message | safe }}</p>
+            <br>
+            {% endif %}
+
+            <form class="modal-form">
+                <div class="button-group">
+                    <span class="button-group-label">{{ action_label }}</span>
+                    <a href="{{ action_url }}" class="button button-block">{{ action }}</a>
+                </div>
+            </form>
+        </div>
+    </div>
+</body>
+</html>
