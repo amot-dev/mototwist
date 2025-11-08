@@ -2,14 +2,14 @@ from fastapi import APIRouter, Depends, Form, Request, Response
 from fastapi.responses import HTMLResponse, Response
 from fastapi.security import OAuth2PasswordRequestForm
 from fastapi_users.authentication import RedisStrategy
-from fastapi_users.exceptions import InvalidResetPasswordToken, UserInactive, UserNotExists
+from fastapi_users.exceptions import InvalidResetPasswordToken, InvalidVerifyToken, UserAlreadyVerified, UserInactive, UserNotExists
 from typing import Annotated
 from uuid import UUID
 
 from app.config import templates
 from app.events import EventSet
 from app.models import User
-from app.schemas.auth import ResetPasswordForm
+from app.schemas.auth import ResetPasswordForm, VerifyAccountForm
 from app.services.auth import login_and_set_response_cookie, logout_and_set_response_cookie
 from app.users import UserManager, current_active_user_optional, get_user_manager, get_redis_strategy
 from app.utility import raise_http
@@ -39,6 +39,11 @@ async def login(
     response = HTMLResponse(content="")
 
     await login_and_set_response_cookie(response, strategy=strategy, user=user)
+
+    if not user.is_verified:
+        response.headers["HX-Trigger"] = EventSet(
+            EventSet.FLASH(f"Remember to verify your account"),
+        ).dump()
 
     response.headers["HX-Trigger-After-Swap"] = EventSet(
         EventSet.FLASH(f"Welcome back, {user.name}!"),
@@ -106,6 +111,57 @@ async def render_register_page(request: Request) -> HTMLResponse:
     })
 
 
+@router.get("/verify", tags=["Index", "Templates"], response_class=HTMLResponse)
+async def render_verify_page(
+    request: Request,
+    token: str
+) -> HTMLResponse:
+    """
+    Serve the verify page.
+    """
+
+    return templates.TemplateResponse("verify.html", {
+        "request": request,
+        "token": token
+    })
+
+
+@router.post("/verify", response_class=Response)
+async def verify_account(
+    request: Request,
+    verify_form: Annotated[VerifyAccountForm, Form()],
+    user_manager: UserManager = Depends(get_user_manager),
+) -> Response:
+    """
+    Verify an account by token.
+    """
+    try:
+        await user_manager.verify(verify_form.token)
+    except InvalidVerifyToken:
+        raise_http("This link is invalid or has expired", status_code=400)
+    except UserAlreadyVerified:
+        request.session["flash"] = "Account already verified!"
+    else:
+        request.session["flash"] = "Successfully verified account!"
+
+    return Response(headers={"HX-Redirect": "/"})
+
+
+@router.get("/reset-password", tags=["Index", "Templates"], response_class=HTMLResponse)
+async def render_reset_password_page(
+    request: Request,
+    token: str
+) -> HTMLResponse:
+    """
+    Serve the password reset page.
+    """
+
+    return templates.TemplateResponse("reset_password.html", {
+        "request": request,
+        "token": token
+    })
+
+
 @router.post("/reset-password", response_class=Response)
 async def reset_password(
     request: Request,
@@ -125,18 +181,3 @@ async def reset_password(
 
     request.session["flash"] = "Password updated!"
     return Response(headers={"HX-Redirect": "/"})
-
-
-@router.get("/reset-password", tags=["Index", "Templates"], response_class=HTMLResponse)
-async def render_reset_password_page(
-    request: Request,
-    token: str
-) -> HTMLResponse:
-    """
-    Serve the password reset page.
-    """
-
-    return templates.TemplateResponse("reset_password.html", {
-        "request": request,
-        "token": token
-    })

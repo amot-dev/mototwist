@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, Form, Request
 from fastapi.responses import HTMLResponse, Response
 from fastapi_users.authentication import RedisStrategy
-from fastapi_users.exceptions import InvalidPasswordException, UserNotExists
+from fastapi_users.exceptions import InvalidPasswordException, UserAlreadyVerified, UserNotExists
 from sqlalchemy.ext.asyncio import AsyncSession
 from typing import Annotated
 from uuid import UUID
@@ -46,15 +46,17 @@ async def create_user(
         password=user_form.password,
         is_active=True,
         is_superuser=False,
-        is_verified=True,
+        is_verified=False,
     )
 
     try:
-        await user_manager.create(user_data, request=request)
+        user = await user_manager.create(user_data, safe=True, request=request)
     except InvalidUsernameException as e:
         raise_http("Invalid username", status_code=422, exception=e)
     except InvalidPasswordException as e:
         raise_http("Invalid password", status_code=422, exception=e)
+
+    await user_manager.request_verify(user, request=request)
 
     request.session["flash"] = "User created!"
     return Response(headers={"HX-Redirect": "/"})
@@ -140,6 +142,27 @@ async def delete_user(
         EventSet.FLASH("Account deleted!"),
         EventSet.AUTH_CHANGE,
         EventSet.CLOSE_MODAL
+    ).dump()
+    return response
+
+
+@router.post("/verify", response_class=Response)
+async def verify_user(
+    request: Request,
+    user: User = Depends(current_active_user),
+    user_manager: UserManager = Depends(get_user_manager),
+) -> Response:
+    """
+    Sends a new verification email to the user.
+    """
+    try:
+        await user_manager.request_verify(user, request=request)
+    except UserAlreadyVerified:
+        raise_http("Account already verified")
+
+    response = HTMLResponse(content="")
+    response.headers["HX-Trigger-After-Swap"] = EventSet(
+        EventSet.FLASH("Verification email sent")
     ).dump()
     return response
 

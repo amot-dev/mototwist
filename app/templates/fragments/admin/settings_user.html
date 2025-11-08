@@ -1,7 +1,7 @@
 <div id="user-{{ user.id }}" class="user-row scroll-shut-on-delete">
     <div class="user-info">
         <span class="user-name">{{ user.name }}</span>
-        <span class="user-email">{{ user.email }}</span>
+        <span class="user-email">{{ user.email }}{% if user.is_verified %} <i class="fa-solid fa-circle-check"></i>{% endif %}</span>
         
         {% if reset_password_link %}
         <div class="copy-link-display">

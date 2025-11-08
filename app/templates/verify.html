@@ -1,0 +1,17 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="centered-container">
+    <div class="modal">
+        <h1>Verify your account</h1>
+
+        <form id="verification-form" class="modal-form"
+            hx-post="/verify"
+            hx-trigger="submit, load"
+            hx-swap="outerHTML">
+
+            <input type="hidden" name="token" value="{{ token }}">
+        </form>
+    </div>
+</div>
+{% endblock %}

@@ -4,13 +4,15 @@ from fastapi_users.authentication import AuthenticationBackend, CookieTransport,
 from fastapi_users.db import SQLAlchemyUserDatabase
 from fastapi_users.exceptions import FastAPIUsersException
 from fastapi_users.schemas import BaseUserCreate
+from pathlib import Path
 from redis import asyncio as aioredis
 from sqlalchemy.ext.asyncio import AsyncSession
-from typing import Any, AsyncGenerator
+from typing import Any, AsyncGenerator, cast
 from uuid import UUID
 
-from app.config import logger
+from app.config import logger, templates
 from app.database import get_db
+from app.smtp import SMTPEmailTransport
 from app.models import User
 from app.schemas.users import UserCreate
 from app.settings import settings
@@ -43,11 +45,24 @@ class UserManager(UUIDIDMixin, BaseUserManager[User, UUID]):
 
         return created_user
 
-    async def on_after_forgot_password(
-        self, user: User, token: str, request: Request | None = None
-    ) -> None:
+    async def on_after_forgot_password(self, user: User, token: str, request: Request | None = None) -> None:
         logger.debug(f"Generated forgot password token for {user.id}")
         self.generated_token = token
+
+    async def on_after_request_verify(self, user: User, token: str, request: Request | None = None) -> None:
+        logger.debug(f"Generated verification token for {user.id}")
+
+        try:
+            css_text = Path("static/css/style.css").read_text()
+        except FileNotFoundError:
+            css_text = ""
+
+        content= cast(str, templates.get_template("fragments/auth/verification_email.html").render({  # pyright: ignore [reportUnknownMemberType]
+            "token": token,
+            "css_block": f"<style>\n{css_text}\n</style>"
+        }))
+
+        await SMTPEmailTransport.send_mail(user.email, "Verify your account", content)
 
 
 async def get_user_db(

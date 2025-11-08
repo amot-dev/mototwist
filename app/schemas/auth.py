@@ -5,3 +5,7 @@ class ResetPasswordForm(BaseModel):
     token: str
     password: str
     password_confirmation: str
+
+
+class VerifyAccountForm(BaseModel):
+    token: str
