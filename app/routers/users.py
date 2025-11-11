@@ -15,7 +15,7 @@ from app.schemas.users import UserCreate, UserCreateForm, UserUpdate, UserUpdate
 from app.services.admin import is_last_active_admin
 from app.services.auth import logout_and_set_response_cookie
 from app.settings import settings
-from app.users import InvalidUsernameException, UserManager, current_active_user, get_user_manager
+from app.users import InvalidUsernameException, UserManager, current_user, get_user_manager
 from app.utility import raise_http
 
 
@@ -70,7 +70,7 @@ async def create_user(
 async def update_user(
     request: Request,
     user_form: Annotated[UserUpdateForm, Form()],
-    user: User = Depends(current_active_user),
+    user: User = Depends(current_user),
     user_manager: UserManager = Depends(get_user_manager)
 ) -> HTMLResponse:
     """
@@ -125,7 +125,7 @@ async def update_user(
 @router.delete("", response_class=HTMLResponse)
 async def delete_user(
     request: Request,
-    user: User = Depends(current_active_user),
+    user: User = Depends(current_user),
     user_manager: UserManager = Depends(get_user_manager),
     strategy: RedisStrategy[User, UUID] = Depends(get_redis_strategy),
     session: AsyncSession = Depends(get_db)
@@ -153,7 +153,7 @@ async def delete_user(
 @router.post("/verify", response_class=HTMLResponse)
 async def verify_user(
     request: Request,
-    user: User = Depends(current_active_user),
+    user: User = Depends(current_user),
     user_manager: UserManager = Depends(get_user_manager),
 ) -> HTMLResponse:
     """
@@ -178,7 +178,7 @@ async def verify_user(
 @router.post("/deactivate", response_class=HTMLResponse)
 async def deactivate_user(
     request: Request,
-    user: User = Depends(current_active_user),
+    user: User = Depends(current_user),
     user_manager: UserManager = Depends(get_user_manager),
     strategy: RedisStrategy[User, UUID] = Depends(get_redis_strategy),
     session: AsyncSession = Depends(get_db)
@@ -206,7 +206,7 @@ async def deactivate_user(
 @router.get("/templates/profile-modal", tags=["Templates"], response_class=HTMLResponse)
 async def render_profile_modal(
     request: Request,
-    user: User = Depends(current_active_user)
+    user: User = Depends(current_user)
 ) -> HTMLResponse:
     """
     Serve an HTML fragment containing the current user's profile modal.

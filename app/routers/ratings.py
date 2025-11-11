@@ -13,7 +13,7 @@ from app.models import Twist, PavedRating, UnpavedRating, User
 from app.schemas.ratings import CRITERIA_NAMES_PAVED, CRITERIA_NAMES_UNPAVED, TwistRateForm
 from app.schemas.twists import TwistBasic, TwistUltraBasic
 from app.services.ratings import render_averages, render_rate_modal, render_view_modal
-from app.users import current_active_user, current_active_user_optional
+from app.users import current_user, current_user_optional, verify
 from app.utility import raise_http
 
 
@@ -28,7 +28,7 @@ async def create_rating(
     request: Request,
     twist_id: int,
     rating_form: Annotated[TwistRateForm, Form()],
-    user: User = Depends(current_active_user),
+    user: User = Depends(verify(current_user)),
     session: AsyncSession = Depends(get_db)
 ) -> HTMLResponse:
     """
@@ -77,7 +77,7 @@ async def delete_rating(
     request: Request,
     twist_id: int,
     rating_id: int,
-    user: User = Depends(current_active_user),
+    user: User = Depends(verify(current_user)),
     session: AsyncSession = Depends(get_db)
 ) -> HTMLResponse:
     """
@@ -141,7 +141,7 @@ async def serve_averages(
     request: Request,
     twist_id: int,
     ownership: Literal["all", "own"] = Query("all"),
-    user: User | None = Depends(current_active_user_optional),
+    user: User | None = Depends(current_user_optional),
     session: AsyncSession = Depends(get_db)
 ) -> HTMLResponse:
     """
@@ -187,7 +187,7 @@ async def serve_view_modal(
     request: Request,
     twist_id: int,
     offset: int = Query(0),
-    user: User | None = Depends(current_active_user_optional),
+    user: User | None = Depends(current_user_optional),
     session: AsyncSession = Depends(get_db)
 ) -> HTMLResponse:
     """

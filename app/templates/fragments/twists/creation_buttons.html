@@ -4,6 +4,7 @@
     hx-swap="outerHTML">
 
     {% if user %}
+    {% if user.is_verified %}
     <button id="start-new-twist" class="button button-block twist-creation-button">
         New Twist
     </button>
@@ -15,6 +16,9 @@
     <button id="cancel-new-twist" class="button button-block button-cancel twist-creation-button gone">
         Cancel
     </button>
+    {% else %}
+    <h4>Verify your account to create Twists!</h4>
+    {% endif %}
     {% else %}
     <h4>Register or Login to create Twists!</h4>
     {% endif %}

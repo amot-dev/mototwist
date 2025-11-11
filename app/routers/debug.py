@@ -17,7 +17,7 @@ from app.models import PavedRating, Twist, UnpavedRating, User
 from app.schemas.debug import SeedRatingsForm
 from app.schemas.types import Coordinate, Waypoint
 from app.services.debug import create_random_rating, generate_weights, reset_id_sequences_for
-from app.users import current_active_user_optional, current_admin_user
+from app.users import current_user_optional, current_admin, verify
 from app.utility import raise_http
 
 
@@ -30,7 +30,7 @@ router = APIRouter(
 @router.get("", tags=["Index", "Templates"], response_class=HTMLResponse)
 async def render_debug_page(
     request: Request,
-    admin: User = Depends(current_admin_user),
+    admin: User = Depends(verify(current_admin)),
     session: AsyncSession = Depends(get_db)
 ) -> HTMLResponse:
     """
@@ -87,7 +87,7 @@ async def render_debug_page(
 @router.post("/save", response_class=StreamingResponse)
 async def save_state(
     request: Request,
-    admin: User = Depends(current_admin_user),
+    admin: User = Depends(verify(current_admin)),
     session: AsyncSession = Depends(get_db)
 ) -> StreamingResponse:
     """
@@ -129,7 +129,7 @@ async def save_state(
 async def load_state(
     request: Request,
     json_file: UploadFile = File(...),
-    admin: User = Depends(current_admin_user),
+    admin: User = Depends(verify(current_admin)),
     session: AsyncSession = Depends(get_db)
 ) -> Response:
     """
@@ -198,7 +198,7 @@ async def load_state(
 async def seed_ratings(
     request: Request,
     seed_data: Annotated[SeedRatingsForm, Form()],
-    admin: User = Depends(current_admin_user),
+    admin: User = Depends(verify(current_admin)),
     session: AsyncSession = Depends(get_db),
 ) -> Response:
     """
@@ -305,7 +305,7 @@ async def seed_ratings(
 @router.get("/templates/menu-button", tags=["Templates"], response_class=HTMLResponse)
 async def serve_menu_button(
     request: Request,
-    user: User = Depends(current_active_user_optional),
+    user: User = Depends(current_user_optional),
 ) -> HTMLResponse:
     """
     Serve an HTML fragment containing the debug menu button.

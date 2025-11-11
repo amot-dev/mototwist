@@ -12,7 +12,7 @@ from app.models import User
 from app.redis_client import get_redis_strategy
 from app.schemas.auth import ForgotPasswordForm, ResetPasswordForm, VerifyAccountForm
 from app.services.auth import login_and_set_response_cookie, logout_and_set_response_cookie
-from app.users import UserManager, current_active_user_optional, get_user_manager
+from app.users import UserManager, current_user_optional, get_user_manager
 from app.utility import raise_http
 
 
@@ -57,7 +57,7 @@ async def login(
 @router.post("/logout", response_class=HTMLResponse)
 async def logout(
     request: Request,
-    user: User | None = Depends(current_active_user_optional),
+    user: User | None = Depends(current_user_optional),
     strategy: RedisStrategy[User, UUID] = Depends(get_redis_strategy),
 ) -> HTMLResponse:
     """
@@ -90,7 +90,7 @@ def refresh(request: Request) -> HTMLResponse:
 @router.get("/auth/widget", response_class=HTMLResponse)
 async def serve_auth_widget(
     request: Request,
-    user: User | None = Depends(current_active_user_optional)
+    user: User | None = Depends(current_user_optional)
 ) -> HTMLResponse:
     """
     Serve the auth widget.

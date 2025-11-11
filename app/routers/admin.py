@@ -19,7 +19,7 @@ from app.schemas.users import UserCreate, UserUpdate
 from app.services.admin import is_last_active_admin
 from app.services.auth import logout_and_set_response_cookie
 from app.settings import settings
-from app.users import InvalidUsernameException, UserManager, current_admin_user, get_user_manager
+from app.users import InvalidUsernameException, UserManager, current_admin, get_user_manager, verify
 from app.utility import raise_http
 
 
@@ -33,16 +33,12 @@ router = APIRouter(
 async def create_user(
     request: Request,
     user_form: Annotated[UserCreateFormAdmin, Form()],
-    admin: User = Depends(current_admin_user),
+    admin: User = Depends(verify(current_admin)),
     user_manager: UserManager = Depends(get_user_manager)
 ) -> HTMLResponse:
     """
     Create a new user.
     """
-
-    if not admin.is_superuser:
-        raise_http("Unauthorized", status_code=401)
-
     try:
         await user_manager.get_by_email(user_form.email)
         raise_http("This email address is already in use", status_code=409)
@@ -89,7 +85,7 @@ async def create_user(
 async def delete_user(
     request: Request,
     user_id: UUID,
-    admin: User = Depends(current_admin_user),
+    admin: User = Depends(verify(current_admin)),
     user_manager: UserManager = Depends(get_user_manager),
     strategy: RedisStrategy[User, UUID] = Depends(get_redis_strategy),
     session: AsyncSession = Depends(get_db)
@@ -97,10 +93,6 @@ async def delete_user(
     """
     Delete a user.
     """
-
-    if not admin.is_superuser:
-        raise_http("Unauthorized", status_code=401)
-
     try:
         user = await user_manager.get(user_id)
     except UserNotExists:
@@ -131,7 +123,7 @@ async def delete_user(
 async def toggle_user_active(
     request: Request,
     user_id: UUID,
-    admin: User = Depends(current_admin_user),
+    admin: User = Depends(verify(current_admin)),
     user_manager: UserManager = Depends(get_user_manager),
     strategy: RedisStrategy[User, UUID] = Depends(get_redis_strategy),
     session: AsyncSession = Depends(get_db)
@@ -139,10 +131,6 @@ async def toggle_user_active(
     """
     Toggle the active state for a given user.
     """
-
-    if not admin.is_superuser:
-        raise_http("Unauthorized", status_code=401)
-
     try:
         user = await user_manager.get(user_id)
     except UserNotExists:
@@ -176,17 +164,13 @@ async def toggle_user_active(
 async def toggle_user_admin(
     request: Request,
     user_id: UUID,
-    admin: User = Depends(current_admin_user),
+    admin: User = Depends(verify(current_admin)),
     user_manager: UserManager = Depends(get_user_manager),
     session: AsyncSession = Depends(get_db)
 ) -> HTMLResponse:
     """
     Toggle the superuser state for a given user.
     """
-
-    if not admin.is_superuser:
-        raise_http("Unauthorized", status_code=401)
-    
     try:
         user = await user_manager.get(user_id)
     except UserNotExists:
@@ -218,16 +202,12 @@ async def toggle_user_admin(
 @router.get("/templates/settings-modal", tags=["Templates"], response_class=HTMLResponse)
 async def render_settings_modal(
     request: Request,
-    admin: User = Depends(current_admin_user),
+    admin: User = Depends(verify(current_admin)),
     session: AsyncSession = Depends(get_db)
 ) -> HTMLResponse:
     """
     Serve an HTML fragment containing the admin settings modal.
     """
-
-    if not admin.is_superuser:
-        raise_http("Unauthorized", status_code=401)
-
     result = await session.scalars(
         select(User).order_by(User.name)
     )

@@ -1,5 +1,5 @@
 from css_inline import CSSInliner
-from fastapi import Depends, Request
+from fastapi import Depends, Request, status
 from fastapi_users import BaseUserManager, FastAPIUsers, UUIDIDMixin
 from fastapi_users.authentication import AuthenticationBackend, CookieTransport
 from fastapi_users.db import SQLAlchemyUserDatabase
@@ -17,6 +17,7 @@ from app.models import User
 from app.redis_client import CooldownReason, get_redis_strategy, redis_cooldown
 from app.schemas.users import UserCreate
 from app.settings import settings
+from app.utility import raise_http
 
 
 class InvalidUsernameException(FastAPIUsersException):
@@ -137,6 +138,25 @@ fastapi_users = FastAPIUsers[User, UUID](
 )
 
 
-current_active_user = fastapi_users.current_user(active=True)
-current_active_user_optional = fastapi_users.current_user(active=True, optional=True)
-current_admin_user = fastapi_users.current_user(active=True, superuser=True)
+current_user = fastapi_users.current_user(active=True)
+current_user_optional = fastapi_users.current_user(active=True, optional=True)
+current_admin = fastapi_users.current_user(active=True, superuser=True)
+
+
+from typing import Awaitable, Callable
+def verify(
+    user_dependency: Callable[..., Awaitable[User]]
+):
+    """
+    Return a dependency callable that checks if the authenticated user
+    from the base user_dependency is verified. Raises 403 if not.
+    """
+    async def verified_check(user: User = Depends(user_dependency)) -> User:
+        if not user:
+            # Should not call this with an optional. Force logged in user.
+            raise_http("Unauthorized", status_code=status.HTTP_401_UNAUTHORIZED)
+        if not user.is_verified:
+            raise_http("Please verify your account", status_code=status.HTTP_403_FORBIDDEN)
+        return user
+
+    return verified_check
