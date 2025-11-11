@@ -18,9 +18,9 @@
 
 <div class="top-right-controls">
     {% include "fragments/debug/menu_button.html" %}
-    <div id="auth-widget" class="{% if user %}auth-dropdown{% endif %}"
+    <div id="auth-widget"
         hx-get="/auth/widget"
-        hx-trigger="load, authChange from:body"
+        hx-trigger="load, EVENTS.AUTH_CHANGE from:body"
         hx-swap="innerHTML">
     </div>
     <button class="button about-button" onclick="document.querySelector('#modal-about').showModal()">
@@ -40,8 +40,8 @@
         hx-trigger="change,
             keyup changed delay:500ms from:#twist-search-input,
             search from:#twist-search-input,
-            {{ EVENTS.REFRESH_TWISTS }} from:body,
-            {{ EVENTS.AUTH_CHANGE }} from:body"
+            {{ EVENTS.AUTH_CHANGE }} from:body,
+            {{ EVENTS.REFRESH_TWISTS }} from:body"
         hx-indicator="#search-indicator">
 
         <div class="search-container">

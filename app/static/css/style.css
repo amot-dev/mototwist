@@ -450,9 +450,7 @@ input[type="date"] {
     .auth-button {
         vertical-align: middle;
     }
-}
 
-.auth-dropdown {
     .auth-display {
         min-width: 160px;
         max-width: 250px;
