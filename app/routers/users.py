@@ -10,11 +10,12 @@ from app.config import logger, templates
 from app.database import get_db
 from app.events import EventSet
 from app.models import User
+from app.redis_client import get_redis_strategy
 from app.schemas.users import UserCreate, UserCreateForm, UserUpdate, UserUpdateForm
 from app.services.admin import is_last_active_admin
 from app.services.auth import logout_and_set_response_cookie
 from app.settings import settings
-from app.users import InvalidUsernameException, UserManager, current_active_user, get_redis_strategy, get_user_manager
+from app.users import InvalidUsernameException, UserManager, current_active_user, get_user_manager
 from app.utility import raise_http
 
 
@@ -149,16 +150,15 @@ async def delete_user(
     return response
 
 
-@router.post("/verify", response_class=Response)
+@router.post("/verify", response_class=HTMLResponse)
 async def verify_user(
     request: Request,
     user: User = Depends(current_active_user),
     user_manager: UserManager = Depends(get_user_manager),
-) -> Response:
+) -> HTMLResponse:
     """
     Sends a new verification email to the user.
     """
-    # TODO: limit to 1 per time period
     # Should not happen unless an admin disables email while a user is unverified (and the original verification token is expired)
     if not settings.EMAIL_ENABLED:
         raise_http("Unable to send emails. Contact an administrator")

@@ -13,12 +13,13 @@ from app.config import templates
 from app.database import get_db
 from app.events import Event, EventSet
 from app.models import User
+from app.redis_client import get_redis_strategy
 from app.schemas.admin import UserCreateFormAdmin
 from app.schemas.users import UserCreate, UserUpdate
 from app.services.admin import is_last_active_admin
 from app.services.auth import logout_and_set_response_cookie
 from app.settings import settings
-from app.users import InvalidUsernameException, UserManager, current_admin_user, get_redis_strategy, get_user_manager
+from app.users import InvalidUsernameException, UserManager, current_admin_user, get_user_manager
 from app.utility import raise_http
 
 

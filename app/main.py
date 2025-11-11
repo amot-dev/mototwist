@@ -17,11 +17,12 @@ from app.config import logger, tags_metadata, templates
 from app.database import apply_migrations, create_automigration, get_db, wait_for_db
 from app.events import EventSet
 from app.models import User
+from app.redis_client import redis_client
 from app.routers import admin, auth, debug, ratings, twists, users
 from app.schemas.users import UserCreate
 from app.services.auth import login_and_set_response_cookie
 from app.settings import Settings, settings
-from app.users import UserManager, current_active_user_optional, get_user_db, redis_client
+from app.users import UserManager, current_active_user_optional, get_user_db
 from app.utility import format_loc_for_user, raise_http, sort_schema_names, update_schema_name
 
 

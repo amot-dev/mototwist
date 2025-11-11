@@ -1,11 +1,10 @@
 from css_inline import CSSInliner
 from fastapi import Depends, Request
 from fastapi_users import BaseUserManager, FastAPIUsers, UUIDIDMixin
-from fastapi_users.authentication import AuthenticationBackend, CookieTransport, RedisStrategy
+from fastapi_users.authentication import AuthenticationBackend, CookieTransport
 from fastapi_users.db import SQLAlchemyUserDatabase
 from fastapi_users.exceptions import FastAPIUsersException
 from fastapi_users.schemas import BaseUserCreate
-from redis import asyncio as aioredis
 import sass
 from sqlalchemy.ext.asyncio import AsyncSession
 from typing import Any, AsyncGenerator, cast
@@ -15,6 +14,7 @@ from app.config import logger, templates
 from app.database import get_db
 from app.smtp import SMTPEmailTransport
 from app.models import User
+from app.redis_client import CooldownReason, get_redis_strategy, redis_cooldown
 from app.schemas.users import UserCreate
 from app.settings import settings
 
@@ -66,47 +66,49 @@ class UserManager(UUIDIDMixin, BaseUserManager[User, UUID]):
             self.generated_token = token
             return
 
-        if self.user_forgot_password:
-            title = "Forgot password"
-            context = {
-                "css_block": f"<style>\n{self._css_text}\n</style>",
-                "title": title,
-                "message": "If you did not initiate this request, feel free to ignore this message.",
-                "action": "Reset Password",
-                "action_label": "Please reset your password",
-                "action_url": f"{settings.MOTOTWIST_BASE_URL}/reset-password?token={token}"
-            }
-        else:
-            title = f"Welcome to {settings.MOTOTWIST_INSTANCE_NAME}!"
-            context = {
-                "css_block": f"<style>\n{self._css_text}\n</style>",
-                "title": title,
-                "message": f"An administrator has created a new <a href=\"{settings.MOTOTWIST_BASE_URL}\"\
-                    class=\"button button-link\">{settings.MOTOTWIST_INSTANCE_NAME}</a> account for you.\
-                    After setting your password, you may sign in using this email.",
-                "action": "Set Password",
-                "action_label": "Please set your password",
-                "action_url": f"{settings.MOTOTWIST_BASE_URL}/reset-password?token={token}"
-            }
+        async with redis_cooldown(CooldownReason.FORGOT_PASSWORD, str(user.id)):
+            if self.user_forgot_password:
+                title = "Forgot password"
+                context = {
+                    "css_block": f"<style>\n{self._css_text}\n</style>",
+                    "title": title,
+                    "message": "If you did not initiate this request, feel free to ignore this message.",
+                    "action": "Reset Password",
+                    "action_label": "Please reset your password",
+                    "action_url": f"{settings.MOTOTWIST_BASE_URL}/reset-password?token={token}"
+                }
+            else:
+                title = f"Welcome to {settings.MOTOTWIST_INSTANCE_NAME}!"
+                context = {
+                    "css_block": f"<style>\n{self._css_text}\n</style>",
+                    "title": title,
+                    "message": f"An administrator has created a new <a href=\"{settings.MOTOTWIST_BASE_URL}\"\
+                        class=\"button button-link\">{settings.MOTOTWIST_INSTANCE_NAME}</a> account for you.\
+                        After setting your password, you may sign in using this email.",
+                    "action": "Set Password",
+                    "action_label": "Please set your password",
+                    "action_url": f"{settings.MOTOTWIST_BASE_URL}/reset-password?token={token}"
+                }
 
-        content = cast(str, templates.get_template("fragments/auth/email.html").render(context))  # pyright: ignore [reportUnknownMemberType]
-        await SMTPEmailTransport.send_mail(user.email, title, CSSInliner().inline(content))
+            content = cast(str, templates.get_template("fragments/auth/email.html").render(context))  # pyright: ignore [reportUnknownMemberType]
+            await SMTPEmailTransport.send_mail(user.email, title, CSSInliner().inline(content))
 
 
     async def on_after_request_verify(self, user: User, token: str, request: Request | None = None) -> None:
         logger.debug(f"Generated verification token for {user.id}")
 
-        title = "Verify your account"
-        content = cast(str, templates.get_template("fragments/auth/email.html").render({  # pyright: ignore [reportUnknownMemberType]
-            "css_block": f"<style>\n{self._css_text}\n</style>",
-            "title": title,
-            "message": f"Thank you for signing up for {settings.MOTOTWIST_INSTANCE_NAME}!",
-            "action": "Verify",
-            "action_label": "Please verify your account",
-            "action_url": f"{settings.MOTOTWIST_BASE_URL}/verify?token={token}"
-        }))
+        async with redis_cooldown(CooldownReason.VERIFY_EMAIL, str(user.id)):
+            title = "Verify your account"
+            content = cast(str, templates.get_template("fragments/auth/email.html").render({  # pyright: ignore [reportUnknownMemberType]
+                "css_block": f"<style>\n{self._css_text}\n</style>",
+                "title": title,
+                "message": f"Thank you for signing up for {settings.MOTOTWIST_INSTANCE_NAME}!",
+                "action": "Verify",
+                "action_label": "Please verify your account",
+                "action_url": f"{settings.MOTOTWIST_BASE_URL}/verify?token={token}"
+            }))
 
-        await SMTPEmailTransport.send_mail(user.email, title, CSSInliner().inline(content))
+            await SMTPEmailTransport.send_mail(user.email, title, CSSInliner().inline(content))
 
 
 async def get_user_db(
@@ -122,13 +124,6 @@ async def get_user_manager(
 
 
 cookie_transport = CookieTransport(cookie_name="mototwist", cookie_max_age=settings.AUTH_COOKIE_MAX_AGE)
-redis_client = aioredis.from_url(settings.REDIS_URL, decode_responses=True)  # pyright: ignore [reportUnknownMemberType]
-
-
-def get_redis_strategy() -> RedisStrategy[User, UUID]:
-    return RedisStrategy(redis_client, lifetime_seconds=settings.AUTH_COOKIE_MAX_AGE)
-
-
 auth_backend = AuthenticationBackend(
     name="cookie-auth",
     transport=cookie_transport,

@@ -9,9 +9,10 @@ from uuid import UUID
 from app.config import templates
 from app.events import EventSet
 from app.models import User
+from app.redis_client import get_redis_strategy
 from app.schemas.auth import ForgotPasswordForm, ResetPasswordForm, VerifyAccountForm
 from app.services.auth import login_and_set_response_cookie, logout_and_set_response_cookie
-from app.users import UserManager, current_active_user_optional, get_user_manager, get_redis_strategy
+from app.users import UserManager, current_active_user_optional, get_user_manager
 from app.utility import raise_http
 
 
