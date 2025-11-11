@@ -360,110 +360,6 @@ input[type="date"] {
     }
 }
 
-/* --- Map --- */
-
-#map {
-    position: relative;
-    flex-grow: 1;
-
-    &.creating-twist {
-        cursor: crosshair;
-    }
-
-    > #refresh-twists-button {
-        position: absolute;
-        bottom: var(--padding-lg);
-        left: 50%;
-        z-index: 1000;
-        opacity: 0;
-        box-shadow: var(--shadow-flash);
-        border-radius: var(--radius-md);
-
-        transform: translateX(-50%);
-        transition: opacity var(--transition-fade);
-
-        &.button--visible {
-            opacity: 1;
-        }
-    }
-}
-
-.leaflet-popup-content-wrapper {
-    box-shadow: var(--shadow-modal);
-    border: var(--border-default);
-    border-radius: var(--radius-md);
-    padding: 0;
-    color: var(--text-offwhite);
-    background-color: var(--panel-slate);
-
-    .leaflet-popup-content {
-        margin: 0;
-        padding: var(--padding-lg);
-    }
-
-    &:has(.create-waypoint-popup) {
-        width: auto !important; /* Override Leaflet's fixed width */
-        min-width: 280px;
-    }
-}
-
-.create-waypoint-popup {
-    display: flex;
-    align-items: center;
-    gap: var(--padding-sm);
-
-    .create-waypoint-name-input {
-        font-size: 1rem;
-
-        &:disabled {
-            opacity: 0.6;
-            border-color: var(--panel-slate);
-            background-color: var(--panel-slate);
-        }
-    }
-
-    .popup-buttons {
-        display: flex;
-        gap: var(--padding-xs);
-
-        .popup-button-edit,
-        .popup-button-delete {
-            border: none;
-            border-radius: var(--radius-sm);
-            padding: var(--padding-sm);
-            font-size: 1.1rem;
-            line-height: 1; /* Ensures icon is centered */
-            color: var(--text-muted);
-            background: transparent;
-            cursor: pointer;
-
-            transition: background-color var(--transition-fast), color var(--transition-fast);
-
-            &:hover {
-                background-color: var(--panel-slate-hover);
-                color: var(--text-offwhite);
-            }
-        }
-        .popup-button-delete:hover {
-            color: var(--accent-orange-hover-light);
-        }
-    }
-}
-
-.leaflet-popup-tip {
-    background-color: var(--panel-slate);
-}
-
-.leaflet-popup-close-button {
-    top: 8px;
-    right: 8px;
-    color: #aaa !important; /* Override Leaflet's inline styles */
-
-    &:hover {
-        color: var(--text-offwhite) !important;
-    }
-}
-
 
 /* --- Controls --- */
 
@@ -820,6 +716,111 @@ aside {
 }
 
 
+/* --- Map --- */
+
+#map {
+    position: relative;
+    flex-grow: 1;
+
+    &.creating-twist {
+        cursor: crosshair;
+    }
+
+    > #refresh-twists-button {
+        position: absolute;
+        bottom: var(--padding-lg);
+        left: 50%;
+        z-index: 1000;
+        opacity: 0;
+        box-shadow: var(--shadow-flash);
+        border-radius: var(--radius-md);
+
+        transform: translateX(-50%);
+        transition: opacity var(--transition-fade);
+
+        &.button--visible {
+            opacity: 1;
+        }
+    }
+}
+
+.leaflet-popup-content-wrapper {
+    box-shadow: var(--shadow-modal);
+    border: var(--border-default);
+    border-radius: var(--radius-md);
+    padding: 0;
+    color: var(--text-offwhite);
+    background-color: var(--panel-slate);
+
+    .leaflet-popup-content {
+        margin: 0;
+        padding: var(--padding-lg);
+    }
+
+    &:has(.create-waypoint-popup) {
+        width: auto !important; /* Override Leaflet's fixed width */
+        min-width: 280px;
+    }
+}
+
+.create-waypoint-popup {
+    display: flex;
+    align-items: center;
+    gap: var(--padding-sm);
+
+    .create-waypoint-name-input {
+        font-size: 1rem;
+
+        &:disabled {
+            opacity: 0.6;
+            border-color: var(--panel-slate);
+            background-color: var(--panel-slate);
+        }
+    }
+
+    .popup-buttons {
+        display: flex;
+        gap: var(--padding-xs);
+
+        .popup-button-edit,
+        .popup-button-delete {
+            border: none;
+            border-radius: var(--radius-sm);
+            padding: var(--padding-sm);
+            font-size: 1.1rem;
+            line-height: 1; /* Ensures icon is centered */
+            color: var(--text-muted);
+            background: transparent;
+            cursor: pointer;
+
+            transition: background-color var(--transition-fast), color var(--transition-fast);
+
+            &:hover {
+                background-color: var(--panel-slate-hover);
+                color: var(--text-offwhite);
+            }
+        }
+        .popup-button-delete:hover {
+            color: var(--accent-orange-hover-light);
+        }
+    }
+}
+
+.leaflet-popup-tip {
+    background-color: var(--panel-slate);
+}
+
+.leaflet-popup-close-button {
+    top: 8px;
+    right: 8px;
+    color: #aaa !important; /* Override Leaflet's inline styles */
+
+    &:hover {
+        color: var(--text-offwhite) !important;
+    }
+}
+
+
 /* --- Modal General --- */
 
 .modal {
@@ -1031,9 +1032,6 @@ aside {
         accent-color: var(--accent);
     }
 }
-
-
-/* --- Modal View Twist Ratings --- */
 
 #modal-view-twist-ratings #rating-list {
     overflow-y: auto;

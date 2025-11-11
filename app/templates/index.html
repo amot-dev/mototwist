@@ -2,20 +2,6 @@
 {% from "fragments/_macros.html" import render_modal_content, render_form_buttons %}
 
 {% block content %}
-<template id="create-waypoint-popup-template">
-    <div class="create-waypoint-popup">
-        <input type="text" class="create-waypoint-name-input" placeholder="Waypoint Name">
-        <div class="popup-buttons">
-            <button class="popup-button-edit" title="Edit Waypoint">
-                <i class="fa-regular fa-edit"></i>
-            </button>
-            <button class="popup-button-delete" title="Delete Waypoint">
-                <i class="fa-solid fa-trash"></i>
-            </button>
-        </div>
-    </div>
-</template>
-
 <div class="top-right-controls">
     {% include "fragments/debug/menu_button.html" %}
     {% include "fragments/auth/widget.html" %}
@@ -244,6 +230,20 @@
 <dialog id="modal-delete-twist" class="modal modal-dynamic">
     <p>Loading...</p>
 </dialog>
+
+<template id="create-waypoint-popup-template">
+    <div class="create-waypoint-popup">
+        <input type="text" class="create-waypoint-name-input" placeholder="Waypoint Name">
+        <div class="popup-buttons">
+            <button class="popup-button-edit" title="Edit Waypoint">
+                <i class="fa-regular fa-edit"></i>
+            </button>
+            <button class="popup-button-delete" title="Delete Waypoint">
+                <i class="fa-solid fa-trash"></i>
+            </button>
+        </div>
+    </div>
+</template>
 {% endblock %}
 
 {% block scripts %}
