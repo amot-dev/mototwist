@@ -4,7 +4,10 @@
     hx-swap="outerHTML">
 
     {% if user %}
-    <button class="button button-block auth-display">{{ user.name }}</button>
+    <button class="button button-block auth-display">
+        <span class="desktop-content">{{ user.name }}</span>
+        <span class="mobile-content">{{ user.name[0] }}</span>
+    </button>
     <div class="auth-dropdown-menu">
         <button class="button button-block" onclick="document.querySelector('#modal-profile').showModal()"
             hx-get="/users/templates/profile-modal"
@@ -32,7 +35,8 @@
     </div>
     {% else %}
     <button class="button button-block auth-button" onclick="document.querySelector('#modal-login').showModal()">
-        Login
+        <span class="desktop-content">Login</span>
+        <span class="mobile-content"><i class="fa-solid fa-user"></i></span>
     </button>
     {% endif %}
 </div>

@@ -478,10 +478,6 @@ input[type="date"] {
         display: inline-block;
         vertical-align: top;
         margin-left: var(--padding-sm); /* Space between items */
-
-        &:first-child {
-            margin-left: 0; /* Remove space from first item */
-        }
     }
 }
 
@@ -500,10 +496,9 @@ input[type="date"] {
         white-space: nowrap;
         cursor: default;
 
-        transition: border-radius var(--transition-fast);
+        transition: border-radius var(--transition-fast), background-color var(--transition-fast);
     }
     &:hover .auth-display {
-        background-color: var(--accent);
         border-bottom-left-radius: 0;
         border-bottom-right-radius: 0;
     }
@@ -539,6 +534,7 @@ input[type="date"] {
 }
 
 .about-button {
+    height: 46px;  /* Remove weird extra height */
     padding: 0;
     cursor: default;
     background: transparent;
@@ -1194,6 +1190,10 @@ aside {
     Sidebar converts to a bottom tab, modals are full screen
 */
 
+.mobile-content {
+    display: none;
+}
+
 @media screen and (max-width: 768px) {
     body {
         flex-direction: column;
@@ -1209,9 +1209,70 @@ aside {
         box-sizing: border-box;
     }
 
+    .desktop-content {
+       display: none;
+    }
+
+    .mobile-content {
+       display: inline-block;
+    }
+
     #map {
         order: 1;
         flex-grow: 1;
+    }
+
+    .top-right-controls {
+        display: flex;
+        flex-direction: column-reverse;
+        align-items: flex-end;
+
+        /* Make direct children sit on top of each other */
+        > * {
+            margin-top: var(--padding-sm);  /* Add vertical spacing */
+
+            &:last-child {
+                margin-top: 0;  /* Remove top space from the last item (about-button) */
+            }
+        }
+    }
+
+    #auth-widget {
+        .auth-button, .auth-display {
+            min-width: unset;
+            height: 46px;
+            width: 46px;
+            border-radius: 50%;
+            padding: 0;
+        }
+
+        .auth-dropdown-menu {
+            right: 100%;  /* Position to the left of the main button */
+            left: unset;
+            top: 0;  /* Align to the top of the circle button */
+
+            width: 160px;
+            margin: var(--padding-xs);
+
+            /* Rounded corners */
+            border-radius: var(--radius-sm);
+            box-shadow: var(--shadow-soft);
+        }
+
+        &:hover .auth-display {
+            border-bottom-left-radius: 50%;
+            border-bottom-right-radius: 50%;
+        }
+    }
+
+    a[href="/debug"] {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        height: 46px;
+        width: 46px;
+        border-radius: 50%;
+        padding: 0;
     }
 
     #twist-list {

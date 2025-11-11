@@ -1,9 +1,9 @@
 <a href="/debug"
-   class="button button-block {% if not (SETTINGS.DEBUG_MODE and user and user.is_superuser) %}gone{% endif %}"
+    class="button button-block {% if not (SETTINGS.DEBUG_MODE and user and user.is_superuser) %}gone{% endif %}"
+    hx-get="/debug/templates/menu-button"
+    hx-trigger="{{ EVENTS.AUTH_CHANGE }} from:body"
+    hx-swap="outerHTML">
 
-   hx-get="/debug/templates/menu-button"
-   hx-trigger="{{ EVENTS.AUTH_CHANGE }} from:body"
-   hx-swap="outerHTML">
-
-    Debug Menu
+    <span class="desktop-content">Debug Menu</span>
+    <span class="mobile-content"><i class="fa-solid fa-wrench"></i></span>
 </a>
