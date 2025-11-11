@@ -82,7 +82,6 @@ const forceFlashSuperiority = () => {
     const assertedFlashContainer = /** @type {HTMLElement} */ (flashContainer);
     setTimeout(() => {
         assertedFlashContainer.hidePopover();
-        console.log("hidden")
         assertedFlashContainer.showPopover();
     }, 0)
 };

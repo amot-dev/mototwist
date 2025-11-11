@@ -94,7 +94,7 @@ async function updateRoute(map) {
             return;
         } else {
             console.error("Error fetching route:", error);
-            flash("Error drawing route", { duration: 5000, type: 'error' });
+            flash("Route not found", { duration: 5000, type: 'error' });
         }
     }
 

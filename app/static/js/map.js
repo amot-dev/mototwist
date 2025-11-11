@@ -96,7 +96,8 @@ export function initMap() {
     }
 
     // Initialize the map with the determined view (either default or loaded)
-    const map = L.map(mapContainer).setView(currentView.center, currentView.zoom);
+    // worldCopyJump is not an ideal solution here but it's better than confusing the user if they pan too far
+    const map = L.map(mapContainer, {worldCopyJump: true}).setView(currentView.center, currentView.zoom);
 
     // Try to locate the user ONLY if we didn't load a saved view
     document.addEventListener('DOMContentLoaded', () => {
