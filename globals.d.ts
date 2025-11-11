@@ -30,6 +30,9 @@ declare namespace L {
     type Polyline = any;
     type TileLayer = any;
     type FeatureGroup = any;
+    declare var Control: any;
+    declare var DomEvent: any;
+    declare var DomUtil: any;
 
     // --- Classes ---
     class Icon {
@@ -44,6 +47,7 @@ declare namespace L {
     function icon(options: object): Icon;
     function tileLayer(urlTemplate: string, options?: object): TileLayer;
     function featureGroup(layers?: any[]): FeatureGroup;
+    function setOptions(Object: obj, Object: options): Object;
 }
 
 declare var GeoSearch: any;

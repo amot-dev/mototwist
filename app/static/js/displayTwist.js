@@ -137,6 +137,91 @@ async function setTwistVisibility(map, twistId, makeVisible, show = false) {
 
 
 /**
+ * Toggles the visibility icon of a Twist Item. Does NOT update the map.
+ *
+ * @param {HTMLElement} twistItem The TwistItem to toggle the visibility eye for.
+ */
+async function toggleTwistItemEye(twistItem) {
+    const visibility = twistItem.classList.contains('is-visible');
+    const icon = twistItem.querySelector('.visibility-toggle i');
+    if (!icon) throw new Error("Critical element .visibility-toggle icon is missing!");
+
+    twistItem.classList.toggle('is-visible', !visibility);
+    icon.classList.toggle('fa-eye', !visibility);
+    icon.classList.toggle('fa-eye-slash', visibility);
+}
+
+
+// Define the custom control class
+L.Control.hideAllTwists = L.Control.extend({
+    options: {
+        position: 'topleft'
+    },
+    /** @param {Object} options */
+    initialize: function (options) {
+        L.setOptions(this, options);
+        /** @type {Set<string>} */
+        this._hiddenTwistIds = new Set();
+    },
+    /** @param {L.Map} map */
+    onAdd: function (map) {
+        const container = L.DomUtil.create('div', 'leaflet-bar leaflet-control');
+
+        // Leaflet uses anchors for buttons
+        this.link = L.DomUtil.create('a', 'leaflet-control-visibility', container);
+        this.link.href = '#';
+
+        // Attach the click event handler
+        L.DomEvent.on(this.link, 'click', L.DomEvent.stop)  // Stop map events
+            .on(this.link, 'click', this.hideShowTwists, this);  // Hide/Show Twists
+
+        this._map = map;
+        return container;
+    },
+    /** @param {L.Map} map */
+    onRemove: function (map) {
+        // Clean up events
+        L.DomEvent.off(this.link, 'click', this.hideShowTwists, this);
+    },
+    hideShowTwists: function () {
+        if (this._hiddenTwistIds.size === 0) {
+            /** @type {NodeListOf<HTMLElement>} */
+            const twistItems = document.querySelectorAll('.twist-item.is-visible');
+            twistItems.forEach(item => {
+                const twistId = item.dataset.twistId;
+                if (!twistId) throw new Error("Critical element .twist-item is missing twistId data!");
+
+                // Save and hide Twists
+                this._hiddenTwistIds.add(twistId);
+                toggleTwistItemEye(item)
+                setTwistVisibility(this._map, twistId, false);
+            });
+            this.link.title = 'Restore Hidden Twists';
+            this.link.innerHTML = '<i class="far fa-eye"></i>';
+        } else {
+            // Restore the hidden Twists
+            this._hiddenTwistIds.forEach(/** @param {string} twistId */ twistId => {
+                const twistItem = document.querySelector(`.twist-item[data-twist-id="${twistId}"]`)
+                if (twistItem instanceof HTMLElement) {
+                    toggleTwistItemEye(twistItem)
+                    setTwistVisibility(this._map, twistId, true);
+                }
+            });
+
+            this.reset()
+        }
+    },
+    reset: function() {
+        // Clear state
+        this._hiddenTwistIds.clear();
+        this.link.title = 'Hide All Twists';
+        this.link.innerHTML = '<i class="far fa-eye-slash"></i>';
+    }
+});
+const hideAllTwists = new L.Control.hideAllTwists();
+
+
+/**
  * Gets the geographic coordinates (Lat/Lng) at the center of the viewport,
  * accounting for map offsets (such as the sidebar).
  *
@@ -215,6 +300,9 @@ export function registerTwistListeners(map) {
                     setTwistVisibility(map, mapTwistId, false);
                 }
             });
+
+            // Reset the hide all button
+            hideAllTwists.reset()
         } else {
             numPagesLoaded += numPages;
         }
@@ -268,12 +356,7 @@ export function registerTwistListeners(map) {
         if (event.target.closest('.visibility-toggle')) {
             // Clicked on the eye icon
             const visibility = twistItem.classList.contains('is-visible');
-            const icon = twistItem.querySelector('.visibility-toggle i');
-            if (!icon) throw new Error("Critical element .visibility-toggle icon is missing!");
-
-            twistItem.classList.toggle('is-visible', !visibility);
-            icon.classList.toggle('fa-eye', !visibility);
-            icon.classList.toggle('fa-eye-slash', visibility);
+            toggleTwistItemEye(twistItem)
             setTwistVisibility(map, twistId, !visibility);
         } else if (event.target.closest('.twist-header')) {
             twistListClickCount++;
@@ -331,6 +414,8 @@ export function registerTwistListeners(map) {
     map.on('geosearch/showlocation', () => {
         htmx.trigger(document.body, EVENTS.REFRESH_TWISTS);
     });
+
+    hideAllTwists.addTo(map);
 
     // Include additional parameters for Twist list requests
     document.body.addEventListener('htmx:configRequest', function(event) {
