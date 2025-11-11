@@ -13,7 +13,7 @@ from app.models import User
 from app.redis_client import get_redis_strategy
 from app.schemas.users import UserCreate, UserCreateForm, UserUpdate, UserUpdateForm
 from app.services.admin import is_last_active_admin
-from app.services.auth import logout_and_set_response_cookie
+from app.services.auth import login_and_set_response_cookie, logout_and_set_response_cookie
 from app.settings import settings
 from app.users import InvalidUsernameException, UserManager, current_user, get_user_manager
 from app.utility import raise_http
@@ -28,7 +28,8 @@ router = APIRouter(
 async def create_user(
     request: Request,
     user_form: Annotated[UserCreateForm, Form()],
-    user_manager: UserManager = Depends(get_user_manager)
+    user_manager: UserManager = Depends(get_user_manager),
+    strategy: RedisStrategy[User, UUID] = Depends(get_redis_strategy)
 ) -> Response:
     """
     Create a new user. Self-serve.
@@ -61,8 +62,12 @@ async def create_user(
     if settings.EMAIL_ENABLED:
         await user_manager.request_verify(user, request=request)
 
-    request.session["flash"] = "User created!"
-    return Response(headers={"HX-Redirect": "/"})
+    # Trigger login for user
+    response = Response(headers={"HX-Redirect": "/"})
+    await login_and_set_response_cookie(response, strategy=strategy, user=user)
+
+    request.session["flash"] = f"Welcome, {user.name}!"
+    return response
 
 
 @router.put("", response_class=HTMLResponse)

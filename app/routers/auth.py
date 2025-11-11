@@ -12,7 +12,6 @@ from app.models import User
 from app.redis_client import get_redis_strategy
 from app.schemas.auth import ForgotPasswordForm, ResetPasswordForm, VerifyAccountForm
 from app.services.auth import login_and_set_response_cookie, logout_and_set_response_cookie
-from app.settings import settings
 from app.users import UserManager, current_user_optional, get_user_manager
 from app.utility import raise_http
 
@@ -41,11 +40,6 @@ async def login(
     response = HTMLResponse(content="")
 
     await login_and_set_response_cookie(response, strategy=strategy, user=user)
-
-    if not user.is_verified and settings.EMAIL_ENABLED:
-        response.headers["HX-Trigger"] = EventSet(
-            EventSet.FLASH(f"Remember to verify your account"),
-        ).dump()
 
     response.headers["HX-Trigger-After-Swap"] = EventSet(
         EventSet.FLASH(f"Welcome back, {user.name}!"),
