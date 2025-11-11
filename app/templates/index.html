@@ -97,13 +97,13 @@
     </ul>
 </aside>
 
-<div id="map"></div>
+<div id="map">
+    <button id="refresh-twists-button" class="button button-block"
+        onclick="htmx.trigger(document.body, '{{ EVENTS.REFRESH_TWISTS }}');">
 
-<button id="refresh-twists-button" class="button button-block"
-    onclick="htmx.trigger(document.body, '{{ EVENTS.REFRESH_TWISTS }}');">
-
-    <i class="fa-solid fa-magnifying-glass"></i> Search this area
-</button>
+        <i class="fa-solid fa-magnifying-glass"></i> Search this area
+    </button>
+</div>
 
 <dialog id="modal-login" class="modal">
     {% call render_modal_content("Login") %}

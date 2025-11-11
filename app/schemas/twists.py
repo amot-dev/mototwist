@@ -59,9 +59,12 @@ class TwistFilterParameters(BaseModel):
         # Only run if map_center isn't already populated
         if self.map_center is None:
             if self.map_center_lat is not None and self.map_center_lng is not None:
+
+                # Normalize map longitude from potentially "unwrapped" values (ex. 388) to the required [-180, 180] range
+                normalized_lng = (self.map_center_lng + 180) % 360 - 180
                 self.map_center = Coordinate(
                     lat=self.map_center_lat,
-                    lng=self.map_center_lng
+                    lng=normalized_lng
                 )
         return self
 
