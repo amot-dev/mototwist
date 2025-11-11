@@ -1,6 +1,16 @@
 {% extends "base.html" %}
 {% from "fragments/_macros.html" import render_modal_content, render_form_buttons %}
 
+{% block stylesheets %}
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css"
+    integrity="sha512-h9FcoyWjHcOcmEVkxOfTLnmZFWIH0iZhZT1H2TbOq55xssQGEJHEaIm+PgoUaZbRvQTNTluNOEfb1ZRy6D3BOw=="
+    crossorigin="anonymous"
+    referrerpolicy="no-referrer"/>
+<link rel="stylesheet" href="https://unpkg.com/leaflet-geosearch@4.2.2/dist/geosearch.css"/>
+
+{{ super() }}
+{% endblock %}
+
 {% block content %}
 <div class="top-right-controls">
     {% include "fragments/debug/menu_button.html" %}
@@ -253,6 +263,7 @@
         crossorigin="anonymous"
         referrerpolicy="no-referrer">
     </script>
+    <script src="https://unpkg.com/leaflet-geosearch@4.2.2/dist/bundle.min.js"></script>
 
     <script type="module" src="static/js/main.js" defer></script>
 {% endblock %}

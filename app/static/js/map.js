@@ -115,5 +115,15 @@ export function initMap() {
         attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
     }).addTo(map);
 
+    // Add map search button
+    const provider = new GeoSearch.OpenStreetMapProvider();
+    const search = new GeoSearch.GeoSearchControl({
+        provider: provider,
+        style: 'button',
+        updateMap: true,
+        autoClose: true,
+    });
+    search.addTo(map);
+
     return map;
 }

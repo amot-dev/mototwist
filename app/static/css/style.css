@@ -727,7 +727,7 @@ aside {
     }
 
     > #refresh-twists-button {
-        position: absolute;
+        position: fixed;
         bottom: var(--padding-lg);
         left: 50%;
         z-index: 1000;
@@ -741,6 +741,22 @@ aside {
         &.button--visible {
             opacity: 1;
         }
+    }
+}
+
+.leaflet-control-geosearch {
+    form {
+        padding: 0;
+
+        input {
+            font-size: 1rem;
+            color: black;
+            background-color: unset;
+        }
+    }
+
+    .results.active > div {
+        color: var(--text-muted);
     }
 }
 
@@ -1218,6 +1234,10 @@ aside {
     #map {
         order: 1;
         flex-grow: 1;
+
+        > #refresh-twists-button {
+            position: absolute;
+        }
     }
 
     .top-right-controls {

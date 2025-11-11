@@ -327,6 +327,11 @@ export function registerTwistListeners(map) {
         manualUpdateButton.classList.add('button--visible');
     }, 500));
 
+    // On successful search, update Twists automatically
+    map.on('geosearch/showlocation', () => {
+        htmx.trigger(document.body, EVENTS.REFRESH_TWISTS);
+    });
+
     // Include additional parameters for Twist list requests
     document.body.addEventListener('htmx:configRequest', function(event) {
         const customEvent = /** @type {CustomEvent<{path: string, parameters: Record<string, any>, triggeringEvent: Event | null}>} */ (event);

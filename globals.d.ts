@@ -1,6 +1,3 @@
-declare var OSM_URL: string;
-declare var OSRM_URL: string;
-
 interface Waypoint {
     latlng: L.LatLng;
     name: string;
@@ -49,4 +46,5 @@ declare namespace L {
     function featureGroup(layers?: any[]): FeatureGroup;
 }
 
+declare var GeoSearch: any;
 declare var htmx: any;
