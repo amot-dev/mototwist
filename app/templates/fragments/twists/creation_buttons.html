@@ -3,7 +3,12 @@
     hx-trigger="{{ EVENTS.AUTH_CHANGE }} from:body"
     hx-swap="outerHTML">
 
-    {% if user %}
+    {% if not user %}
+    <h4>Register or Login to create Twists!</h4>
+    {% else %}
+    {% if not user.is_verified and SETTINGS.EMAIL_ENABLED %}
+    <h4>Verify your account to create Twists!</h4>
+    {% else %}
     <button id="start-new-twist" class="button button-block twist-creation-button">
         New Twist
     </button>
@@ -15,7 +20,6 @@
     <button id="cancel-new-twist" class="button button-block button-cancel twist-creation-button gone">
         Cancel
     </button>
-    {% else %}
-    <h4>Register or Login to create Twists!</h4>
+    {% endif %}
     {% endif %}
 </div>

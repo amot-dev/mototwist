@@ -17,11 +17,12 @@ from app.config import logger, tags_metadata, templates
 from app.database import apply_migrations, create_automigration, get_db, wait_for_db
 from app.events import EventSet
 from app.models import User
+from app.redis_client import redis_client
 from app.routers import admin, auth, debug, ratings, twists, users
 from app.schemas.users import UserCreate
 from app.services.auth import login_and_set_response_cookie
 from app.settings import Settings, settings
-from app.users import UserManager, current_active_user_optional, get_user_db, redis_client
+from app.users import UserManager, current_user_optional, get_user_db
 from app.utility import format_loc_for_user, raise_http, sort_schema_names, update_schema_name
 
 
@@ -42,7 +43,7 @@ async def lifespan(app: FastAPI):
                 password=settings.MOTOTWIST_ADMIN_PASSWORD,
                 is_active=True,
                 is_superuser=True,
-                is_verified=True,
+                is_verified=True,  # Force verification for initial admin to prevent oopsies
             )
             user_db = await anext(get_user_db(session))
             user_manager = UserManager(user_db)
@@ -165,7 +166,7 @@ app.add_middleware(SessionMiddleware, secret_key=settings.MOTOTWIST_SECRET_KEY)
 @app.get("/", tags=["Index", "Templates"], response_class=HTMLResponse)
 async def render_index_page(
     request: Request,
-    user: User | None = Depends(current_active_user_optional)
+    user: User | None = Depends(current_user_optional)
 ) -> HTMLResponse:
     """
     Serve the main page of MotoTwist.

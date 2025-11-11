@@ -1,9 +1,9 @@
 <div id="user-{{ user.id }}" class="user-row scroll-shut-on-delete">
     <div class="user-info">
         <span class="user-name">{{ user.name }}</span>
-        <span class="user-email">{{ user.email }}</span>
-        
-        {% if reset_password_link %}
+        <span class="user-email">{{ user.email }}{% if user.is_verified %} <i class="fa-solid fa-circle-check"></i>{% endif %}</span>
+
+        {% if reset_password_link and not SETTINGS.EMAIL_ENABLED %}
         <div class="copy-link-display">
             <input type="text"
                 class="copy-link"
@@ -19,6 +19,7 @@
             </button>
         </div>
         {% endif %}
+
     </div>
     <div class="user-controls">
         <a class="user-control-icon" title="Toggle Active Status"

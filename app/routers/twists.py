@@ -11,7 +11,7 @@ from app.models import Twist, User
 from app.schemas.twists import TwistBasic, TwistCreateForm, TwistDropdown, TwistFilterParameters, TwistGeometry
 from app.services.twists import render_creation_buttons, render_delete_modal, render_list, render_single_list_item, render_twist_dropdown, simplify_route, snap_waypoints_to_route
 from app.settings import settings
-from app.users import current_active_user, current_active_user_optional
+from app.users import current_user, current_user_optional, verify
 from app.utility import raise_http
 
 
@@ -25,7 +25,7 @@ router = APIRouter(
 async def create_twist(
     request: Request,
     twist_data: TwistCreateForm,
-    user: User = Depends(current_active_user),
+    user: User = Depends(verify(current_user)),
     session: AsyncSession = Depends(get_db)
 ) -> HTMLResponse:
     """
@@ -62,7 +62,7 @@ async def create_twist(
 async def delete_twist(
     request: Request,
     twist_id: int,
-    user: User = Depends(current_active_user),
+    user: User = Depends(verify(current_user)),
     session: AsyncSession = Depends(get_db)
 ) -> HTMLResponse:
     """
@@ -129,7 +129,7 @@ async def get_twist_geometry(
 @router.get("/templates/creation-buttons", tags=["Templates"], response_class=HTMLResponse)
 async def serve_creation_buttons(
     request: Request,
-    user: User | None = Depends(current_active_user_optional),
+    user: User | None = Depends(current_user_optional),
 ) -> HTMLResponse:
     """
     Serve an HTML fragment containing the Twist creation buttons.
@@ -141,7 +141,7 @@ async def serve_creation_buttons(
 async def serve_list(
     request: Request,
     filter: TwistFilterParameters = Depends(),
-    user: User | None = Depends(current_active_user_optional),
+    user: User | None = Depends(current_user_optional),
     session: AsyncSession = Depends(get_db)
 ) -> HTMLResponse:
     """
@@ -159,7 +159,7 @@ async def serve_list(
 async def serve_dropdown(
     request: Request,
     twist_id: int,
-    user: User | None = Depends(current_active_user_optional),
+    user: User | None = Depends(current_user_optional),
     session: AsyncSession = Depends(get_db)
 ) -> HTMLResponse:
     """

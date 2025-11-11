@@ -260,8 +260,12 @@ ul {
         display: flex;
         align-items: center;
         justify-content: flex-end;
-        margin-top: 30px;
+        margin-top: 1rem;
         gap: 10px;
+
+        .button-group-label {
+            flex-grow: 1;
+        }
 
         > button[type="submit"]:disabled {
             opacity: 0.6;
@@ -450,7 +454,7 @@ input[type="date"] {
 
 .auth-dropdown {
     .auth-display {
-        min-width: 140px;
+        min-width: 160px;
         max-width: 250px;
         overflow: hidden;
         text-overflow: ellipsis;
@@ -821,6 +825,7 @@ aside {
         background-color: var(--bg-charcoal);
 
         > h3 {
+            margin-top: 0;
             animation-name: wave-color;
             animation-duration: 3s;
             animation-timing-function: ease-in-out;
@@ -1021,10 +1026,6 @@ aside {
     justify-content: center;
     width: 100%;
     height: 100vh;
-
-    .debug-label {
-        flex-grow: 1;
-    }
 }
 
 

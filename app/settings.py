@@ -16,6 +16,7 @@ class Settings(BaseSettings):
 
 
     # Application Options
+    MOTOTWIST_INSTANCE_NAME: str = Field(default="MotoTwist", exclude=False)
     MOTOTWIST_BASE_URL: str = Field(default="http://localhost:8000", exclude=True)
     MOTOTWIST_SECRET_KEY: str = Field(default="mototwist", exclude=True)
     OSM_URL: str = Field(default="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", exclude=False)
@@ -33,6 +34,15 @@ class Settings(BaseSettings):
     AUTH_COOKIE_MAX_AGE: int | None = Field(default=3600, ge=0, exclude=False)
     AUTH_SLIDING_WINDOW_ENABLED: bool = Field(default=True, exclude=True)
     AUTH_EXPIRY_WARNING_OFFSET: int = Field(default=300, ge=0, exclude=False)
+
+    # Email Options
+    EMAIL_ENABLED: bool = Field(default=False, exclude=False)
+    SMTP_HOST: str = Field(default="", exclude=True)
+    SMTP_PORT: int = Field(default=587, exclude=True)
+    SMTP_USERNAME: str = Field(default="", exclude=True)
+    SMTP_PASSWORD: str = Field(default="", exclude=True)
+    SMTP_FROM_EMAIL: str = Field(default="", exclude=True)
+    SMTP_USE_TLS: bool = Field(default=True, exclude=True)
 
     # Database Options
     POSTGRES_HOST: str = Field(default="db", exclude=True)

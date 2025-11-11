@@ -4,3 +4,9 @@ services:
     user: "1000:1000"
     volumes:
       - ./app:/app
+
+  mailhog:
+    image: mailhog/mailhog
+    ports:
+      - "8025:8025"
+    restart: unless-stopped
