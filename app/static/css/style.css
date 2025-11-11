@@ -43,6 +43,8 @@
     --accent: var(--accent-blue);
     --accent-hover: var(--accent-blue-hover);
     --accent-hover-light: var(--accent-blue-hover-light);
+
+    interpolate-size: allow-keywords;
 }
 
 
@@ -104,6 +106,27 @@ ul {
         padding-bottom: 0;
         margin-top: 0;
         margin-bottom: 0;
+    }
+}
+/* Where supported, animate using height: auto */
+@supports (interpolate-size: allow-keywords) {
+    .scroll-shut-on-delete {
+        max-height: none;
+        height: auto;
+
+        transition:
+            height 0.5s ease-in-out,
+            padding 0.5s ease-in-out,
+            margin 0.5s ease-in-out;
+
+        &.htmx-swapping {
+            max-height: none;
+            height: 0;
+            padding-top: 0;
+            padding-bottom: 0;
+            margin-top: 0;
+            margin-bottom: 0;
+        }
     }
 }
 
@@ -594,6 +617,7 @@ aside {
 #twist-list {
     flex-grow: 1;
     overflow-y: auto;
+    overflow-anchor: none;
 }
 #twist-list::-webkit-scrollbar {
     display: none;  /* Temporary fix to get rid of Chrome's disgusting scrollbar */
@@ -663,8 +687,13 @@ aside {
 
     transition: max-height var(--transition-fast), padding var(--transition-fast);
 
+    &.htmx-swapping {
+        max-height: 0;
+        padding: 0 var(--padding-lg);
+    }
+
     &.is-open {
-        max-height: 1000px;
+        max-height: 400px;
         padding: var(--padding-md) var(--padding-lg);
     }
 
@@ -692,6 +721,20 @@ aside {
                     background-color: var(--accent);
                 }
             }
+        }
+    }
+}
+/* Where supported, animate using height: auto */
+@supports (interpolate-size: allow-keywords) {
+    .twist-dropdown {
+        max-height: none;
+        height: 0;
+
+        transition: height var(--transition-fast), padding var(--transition-fast);
+
+        &.is-open {
+            max-height: none;
+            height: auto;
         }
     }
 }
@@ -1096,6 +1139,25 @@ aside {
 
         &:hover {
             color: var(--text-offwhite);
+        }
+    }
+}
+/* Where supported, animate using height: auto */
+@supports (interpolate-size: allow-keywords) {
+    .flash-item {
+        max-height: none;
+        height: 0;
+
+        transition:
+            opacity var(--transition-fade),
+            height var(--transition-fade),
+            margin-bottom var(--transition-fade),
+            padding-top var(--transition-fade),
+            padding-bottom var(--transition-fade);
+
+        &.flash-item--visible {
+            max-height: none;
+            height: auto;
         }
     }
 }
