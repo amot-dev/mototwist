@@ -1,32 +1,38 @@
-{% if user %}
-<button class="button button-block auth-display">{{ user.name }}</button>
-<div class="auth-dropdown-menu">
-    <button class="button button-block" onclick="document.querySelector('#modal-profile').showModal()"
-        hx-get="/users/templates/profile-modal"
-        hx-target="#modal-profile"
-        hx-swap="innerHTML">
+<div id="auth-widget"
+    hx-get="/auth/widget"
+    hx-trigger="{{ EVENTS.AUTH_CHANGE }} from:body"
+    hx-swap="outerHTML">
 
-        Profile
-    </button>
+    {% if user %}
+    <button class="button button-block auth-display">{{ user.name }}</button>
+    <div class="auth-dropdown-menu">
+        <button class="button button-block" onclick="document.querySelector('#modal-profile').showModal()"
+            hx-get="/users/templates/profile-modal"
+            hx-target="#modal-profile"
+            hx-swap="innerHTML">
 
-    {% if user.is_superuser %}
-    <button class="button button-block" onclick="document.querySelector('#modal-admin-settings').showModal()"
-        hx-get="/admin/templates/settings-modal"
-        hx-target="#modal-admin-settings"
-        hx-swap="innerHTML">
+            Profile
+        </button>
 
-        Admin Settings
+        {% if user.is_superuser %}
+        <button class="button button-block" onclick="document.querySelector('#modal-admin-settings').showModal()"
+            hx-get="/admin/templates/settings-modal"
+            hx-target="#modal-admin-settings"
+            hx-swap="innerHTML">
+
+            Admin Settings
+        </button>
+        {% endif %}
+        <button class="button button-block"
+            hx-post="/logout"
+            hx-swap="none">
+
+            Logout
+        </button>
+    </div>
+    {% else %}
+    <button class="button button-block auth-button" onclick="document.querySelector('#modal-login').showModal()">
+        Login
     </button>
     {% endif %}
-    <button class="button button-block"
-        hx-post="/logout"
-        hx-swap="none">
-
-        Logout
-    </button>
 </div>
-{% else %}
-<button class="button button-block auth-button" onclick="document.querySelector('#modal-login').showModal()">
-    Login
-</button>
-{% endif %}

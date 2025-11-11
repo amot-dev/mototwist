@@ -18,11 +18,7 @@
 
 <div class="top-right-controls">
     {% include "fragments/debug/menu_button.html" %}
-    <div id="auth-widget"
-        hx-get="/auth/widget"
-        hx-trigger="load, EVENTS.AUTH_CHANGE from:body"
-        hx-swap="innerHTML">
-    </div>
+    {% include "fragments/auth/widget.html" %}
     <button class="button about-button" onclick="document.querySelector('#modal-about').showModal()">
         <img src="static/images/favicon.ico">
     </button>
