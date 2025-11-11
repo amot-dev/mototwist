@@ -43,7 +43,7 @@ async def lifespan(app: FastAPI):
                 password=settings.MOTOTWIST_ADMIN_PASSWORD,
                 is_active=True,
                 is_superuser=True,
-                is_verified=True,
+                is_verified=True,  # Force verification for initial admin to prevent oopsies
             )
             user_db = await anext(get_user_db(session))
             user_manager = UserManager(user_db)

@@ -3,8 +3,7 @@
 {% call render_modal_content(user.name ~ "'s Profile") %}
 <form class="modal-form manual-validation"
     hx-put="/users"
-    hx-target="#auth-widget"
-    hx-swap="innerHTML">
+    hx-swap="none">
 
     <div class="form-group">
         <label for="name">Name</label>
@@ -29,7 +28,7 @@
     {{ render_form_buttons(submit_text="Save") }}
 </form>
 
-{% if not user.is_verified %}
+{% if not user.is_verified and SETTINGS.EMAIL_ENABLED %}
 <form class="modal-form">
     <div class="danger-zone">
         <h3>Account Actions</h3>

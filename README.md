@@ -79,7 +79,7 @@ Below is an overview of all available environment variables for MotoTwist.
 #### Email Options
 | Variable | Description | Default |
 | - | - | - |
-| `EMAIL_ENABLED` | Set to `True` to enable all email functionality (e.g., verification, password resets). Requires setting all `SMTP_` variables. | `False` |
+| `EMAIL_ENABLED` | Set to `True` to enable all email functionality (e.g., verification, password resets). Requires setting all `SMTP_` variables. While disabled, MotoTwist treats unverified users as verified. | `False` |
 | `SMTP_HOST` | The hostname of your SMTP server. Required if `EMAIL_ENABLED` is `True`. | `"smtp.example.com"` |
 | `SMTP_PORT` | The port for your SMTP server. Typically 587 (TLS) or 465 (SSL). | `587` |
 | `SMTP_USERNAME` | The username for authenticating with your SMTP server. Required if `EMAIL_ENABLED` is `True`. | `"changethis"` |

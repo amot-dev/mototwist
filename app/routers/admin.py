@@ -47,14 +47,13 @@ async def create_user(
 
     # Create the user with a long, random, unusable password. The user will never need to know this password
     placeholder_password = "".join(choice(ascii_letters + digits) for _ in range(32))
-    should_start_verified = False if settings.EMAIL_ENABLED else True
     user_data = UserCreate(
         name=user_form.name,
         email=user_form.email.lower(),
         password=placeholder_password,
         is_active=True,
         is_superuser=user_form.is_superuser,
-        is_verified=should_start_verified,
+        is_verified=False,
     )
     try:
         user = await user_manager.create(user_data, request=request)

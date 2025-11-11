@@ -155,7 +155,7 @@ def verify(
         if not user:
             # Should not call this with an optional. Force logged in user.
             raise_http("Unauthorized", status_code=status.HTTP_401_UNAUTHORIZED)
-        if not user.is_verified:
+        if not user.is_verified and settings.EMAIL_ENABLED:
             raise_http("Please verify your account", status_code=status.HTTP_403_FORBIDDEN)
         return user
 
