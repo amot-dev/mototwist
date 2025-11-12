@@ -1,7 +1,7 @@
 from datetime import date, timedelta
 from fastapi import Request
 from fastapi.responses import HTMLResponse
-from humanize import ordinal
+from humanize import intcomma, metric, ordinal
 from sqlalchemy import false, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
@@ -83,6 +83,27 @@ async def render_averages(
         "request": request,
         "average_rating_criteria": await calculate_average_rating(session, user, twist, ownership, round_to=1),
         "criterion_max_value": Rating.CRITERION_MAX_VALUE
+    })
+
+
+async def render_view_all_button(
+    request: Request,
+    twist_id: int,
+    rating_count: int
+) -> HTMLResponse:
+    """
+    Build and return the TemplateResponse for the view all ratings button.
+    """
+    print(rating_count)
+    if rating_count > 9999:
+        rating_count_str = metric(rating_count).replace(" ", "")
+    else:
+        rating_count_str = intcomma(rating_count)
+
+    return templates.TemplateResponse("fragments/ratings/view_all.html", {
+        "request": request,
+        "twist_id": twist_id,
+        "rating_count": rating_count_str
     })
 
 

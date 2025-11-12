@@ -11,13 +11,12 @@ from sqlalchemy.sql.expression import ColumnExpressionArgument
 from typing import Any
 
 from app.config import logger, templates
-from app.models import Rating, PavedRating, Twist, UnpavedRating, User
+from app.models import PavedRating, Twist, UnpavedRating, User
 from app.schemas.twists import (
     FilterOwnership, FilterPavement, FilterRatings,
-    TwistBasic, TwistDropdown, TwistFilterParameters, TwistListItem, TwistUltraBasic
+    TwistBasic, TwistDropdown, TwistFilterParameters, TwistListItem
 )
 from app.schemas.types import Coordinate, Waypoint
-from app.services.ratings import calculate_average_rating
 from app.settings import settings
 from app.utility import raise_http
 
@@ -187,7 +186,7 @@ async def render_list(
             twist = result.one_or_none()
             if twist:
                 twist_dropdown = TwistDropdown.model_validate(twist)
-                dropdown_context = await _build_twist_dropdown_context(session, user, twist_dropdown)
+                dropdown_context = await _build_twist_dropdown_context(user, twist_dropdown)
                 open_twist_id = twist_dropdown.id
 
     # Build the base context
@@ -235,7 +234,6 @@ async def render_single_list_item(
 
 
 async def _build_twist_dropdown_context(
-    session: AsyncSession,
     user: User | None,
     twist: TwistDropdown
 ) -> dict[str, Any]:
@@ -245,15 +243,11 @@ async def _build_twist_dropdown_context(
     # Check if the user is allowed to delete the Twist
     can_delete_twist = (user.is_superuser or user.id == twist.author_id) if user else False
 
-    twist_basic = TwistUltraBasic.model_validate(twist)
-
     return {
         "user": user,
         "twist_id": twist.id,
         "twist_author_name": twist.author_name,
-        "can_delete_twist": can_delete_twist,
-        "average_rating_criteria": await calculate_average_rating(session, user, twist_basic, "all", round_to=1),
-        "criterion_max_value": Rating.CRITERION_MAX_VALUE
+        "can_delete_twist": can_delete_twist
     }
 
 
@@ -266,7 +260,7 @@ async def render_twist_dropdown(
     """
     Build and return the TemplateResponse for the Twist dropdown.
     """
-    context = await _build_twist_dropdown_context(session, user, twist)
+    context = await _build_twist_dropdown_context(user, twist)
     context["request"] = request
 
     return templates.TemplateResponse("fragments/twists/dropdown.html", context)

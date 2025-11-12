@@ -29,18 +29,19 @@
     </fieldset>
 </form>
 
-<ul class="averages-list">
-{% include "fragments/ratings/averages.html" %}
+<ul class="averages-list"
+    hx-get="/twists/{{ twist_id }}/ratings/templates/averages"
+    hx-swap="innerHTML"
+    hx-trigger="load">
 </ul>
 
-<footer>
-    <button class="button button-very-small button-link" onclick="document.querySelector('#modal-view-twist-ratings').showModal()"
-        hx-get="/twists/{{ twist_id }}/ratings/templates/view-modal"
-        hx-target="#modal-view-twist-ratings"
-        hx-swap="innerHTML">
+<footer
+    hx-get="/twists/{{ twist_id }}/ratings/templates/view_all_button"
+    hx-target="find button"
+    hx-swap="outerHTML"
+    hx-trigger="load, {{ EVENTS.REFRESH_AVERAGES }}[event.detail.value == '{{ twist_id }}'] from:body">
 
-        See all
-    </button>
+    {% include "fragments/ratings/view_all.html" %}
 
     {% if can_delete_twist %}
     <button class="button button-very-small button-link" onclick="document.querySelector('#modal-delete-twist').showModal()"

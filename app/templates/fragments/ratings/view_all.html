@@ -1,0 +1,12 @@
+<button class="button button-very-small button-link {% if not rating_count or rating_count == '0' %}invisible{% endif %}"
+    onclick="document.querySelector('#modal-view-twist-ratings').showModal()"
+    hx-get="/twists/{{ twist_id }}/ratings/templates/view-modal"
+    hx-target="#modal-view-twist-ratings"
+    hx-swap="innerHTML">
+
+    {% if rating_count == 1 %}
+    View single rating
+    {% else %}
+    View {{ rating_count }} ratings
+    {% endif %}
+</button>

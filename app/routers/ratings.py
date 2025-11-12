@@ -1,7 +1,7 @@
 from datetime import date
 from fastapi import APIRouter, Depends, Form, Query, Request
 from fastapi.responses import HTMLResponse
-from sqlalchemy import delete, func, select
+from sqlalchemy import case, delete, func, select
 from sqlalchemy.exc import MultipleResultsFound, NoResultFound
 from sqlalchemy.ext.asyncio import AsyncSession
 from typing import Annotated, Literal
@@ -12,7 +12,7 @@ from app.events import EventSet
 from app.models import Twist, PavedRating, UnpavedRating, User
 from app.schemas.ratings import CRITERIA_NAMES_PAVED, CRITERIA_NAMES_UNPAVED, TwistRateForm
 from app.schemas.twists import TwistBasic, TwistUltraBasic
-from app.services.ratings import render_averages, render_rate_modal, render_view_modal
+from app.services.ratings import render_averages, render_rate_modal, render_view_all_button, render_view_modal
 from app.users import current_user, current_user_optional, verify
 from app.utility import raise_http
 
@@ -158,6 +158,40 @@ async def serve_averages(
         raise_http(f"Multiple twists found for id '{twist_id}'", status_code=500)
 
     return await render_averages(request, session, user, twist, ownership)
+
+
+@router.get("/templates/view_all_button", tags=["Templates"], response_class=HTMLResponse)
+async def serve_view_all_button(
+    request: Request,
+    twist_id: int,
+    session: AsyncSession = Depends(get_db)
+) -> HTMLResponse:
+    """
+    Serve an HTML fragment containing the view all ratings button, including the number of ratings.
+    """
+    try:
+        result = await session.scalars(
+            select(
+                case(
+                    (Twist.is_paved == True,
+                        select(func.count(PavedRating.id))
+                        .where(PavedRating.twist_id == Twist.id)
+                        .scalar_subquery()
+                    ),
+                    else_=(
+                        select(func.count(UnpavedRating.id))
+                        .where(UnpavedRating.twist_id == Twist.id)
+                        .scalar_subquery()
+                    )
+                )
+            )
+            .where(Twist.id == twist_id)
+        )
+        rating_count = result.one()
+    except NoResultFound:
+        raise_http(f"Twist with id '{twist_id}' not found", status_code=404)
+
+    return await render_view_all_button(request, twist_id, rating_count)
 
 
 @router.get("/templates/rate-modal", tags=["Templates"], response_class=HTMLResponse)
