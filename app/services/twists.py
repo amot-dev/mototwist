@@ -12,6 +12,7 @@ from typing import Any
 
 from app.config import logger, templates
 from app.models import PavedRating, Twist, UnpavedRating, User
+from app.schemas.ratings import RATING_CRITERIA_PAVED, RATING_CRITERIA_UNPAVED
 from app.schemas.twists import (
     FilterOwnership, FilterPavement, FilterRatings,
     TwistBasic, TwistDropdown, TwistFilterParameters, TwistListItem
@@ -128,6 +129,46 @@ async def render_list(
         statement = statement.where(Twist.is_paved == True)
     elif filter.pavement == FilterPavement.UNPAVED:
         statement = statement.where(Twist.is_paved == False)
+
+    # Rating Range Filtering
+    from sqlalchemy import case, func, literal
+    if filter.rating_min > 0 or filter.rating_max < 10:
+
+        # Dynamically build the average calculation for Paved Twists
+        paved_sum = sum(
+            (
+                func.avg(getattr(PavedRating, criterion.name))
+                for criterion in RATING_CRITERIA_PAVED
+            ),
+            start=literal(0.0)
+        )
+        paved_avg = paved_sum / len(RATING_CRITERIA_PAVED)
+
+        # Dynamically build the average calculation for Unpaved Twists
+        unpaved_sum = sum(
+            (
+                func.avg(getattr(UnpavedRating, criterion.name))
+                for criterion in RATING_CRITERIA_UNPAVED
+            ),
+            start=literal(0.0)
+        )
+        unpaved_avg = unpaved_sum / len(RATING_CRITERIA_UNPAVED)
+
+        # Create the subquery
+        rating_subquery = (
+            select(Twist.id)
+            .outerjoin(PavedRating, Twist.id == PavedRating.twist_id)
+            .outerjoin(UnpavedRating, Twist.id == UnpavedRating.twist_id)
+            .group_by(Twist.id)
+            .having(
+                case(
+                    (Twist.is_paved, paved_avg.between(filter.rating_min, filter.rating_max)),
+                    else_=unpaved_avg.between(filter.rating_min, filter.rating_max)
+                )
+            )
+        )
+
+        statement = statement.where(Twist.id.in_(rating_subquery))
 
     if user and filter.ratings != FilterRatings.ALL:
         paved_rating_exists = select(PavedRating.id).where(
