@@ -1,11 +1,13 @@
 import asyncio
 from logging.config import fileConfig
 
-from sqlalchemy import pool
+from sqlalchemy import MetaData, pool
 from sqlalchemy.engine import Connection
 from sqlalchemy.ext.asyncio import async_engine_from_config
+from typing import Any, Sequence
 
 from alembic import context
+
 
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.
@@ -20,8 +22,7 @@ if config.config_file_name is not None:
 # for 'autogenerate' support
 # from myapp import mymodel
 # target_metadata = mymodel.Base.metadata
-target_metadata = config.attributes.get('target_metadata')
-
+target_metadata: MetaData | Sequence[MetaData] | None = config.attributes.get('target_metadata')
 # other values from the config, defined by the needs of env.py,
 # can be acquired:
 # my_important_option = config.get_main_option("my_important_option")
@@ -52,8 +53,32 @@ def run_migrations_offline() -> None:
         context.run_migrations()
 
 
+def include_name(
+    name: str | None,
+    type_: str,
+    parent_names: Any
+) -> bool:
+    if type_ == "table":
+        # Handle unnamed tables
+        if name is None:
+            return False
+
+        # Handle None case
+        if target_metadata is None:
+            return False
+
+        # Handle Sequence case
+        if isinstance(target_metadata, Sequence):
+            return any(name in meta.tables for meta in target_metadata)
+
+        # Handle single case
+        return name in target_metadata.tables
+
+    return True
+
+
 def do_run_migrations(connection: Connection) -> None:
-    context.configure(connection=connection, target_metadata=target_metadata)
+    context.configure(connection=connection, target_metadata=target_metadata, include_name=include_name)
 
     with context.begin_transaction():
         context.run_migrations()

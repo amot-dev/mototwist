@@ -48,10 +48,10 @@ async def create_rating(
 
     if twist_is_paved:
         Rating = PavedRating
-        rating_data = rating_form.model_dump(include=CRITERIA_NAMES_PAVED.union({"rating_date"}))
+        rating_data = rating_form.model_dump(include=CRITERIA_NAMES_PAVED.union({"ride_date"}))
     else:
         Rating = UnpavedRating
-        rating_data = rating_form.model_dump(include=CRITERIA_NAMES_UNPAVED.union({"rating_date"}))
+        rating_data = rating_form.model_dump(include=CRITERIA_NAMES_UNPAVED.union({"ride_date"}))
 
     # Create the new rating instance, linking it to the Twist
     rating_data.update({

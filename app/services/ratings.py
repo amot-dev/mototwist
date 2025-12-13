@@ -146,7 +146,7 @@ async def render_view_modal(
     result = await session.scalars(
         select(Rating)
         .where(Rating.twist_id == twist.id)
-        .order_by(Rating.rating_date.desc())
+        .order_by(Rating.ride_date.desc())
         .offset(offset)
         .limit(settings.RATINGS_FETCHED_PER_QUERY)
         .options(
@@ -159,8 +159,8 @@ async def render_view_modal(
     rating_list_items: list[RatingListItem] = []
     for rating in ratings:
         # Pre-format the date for easier display in the template
-        ordinal_day = ordinal(rating.rating_date.day)
-        formatted_date = rating.rating_date.strftime(f"%B {ordinal_day}, %Y")
+        ordinal_day = ordinal(rating.ride_date.day)
+        formatted_date = rating.ride_date.strftime(f"%B {ordinal_day}, %Y")
 
         # Set author name whether they exist or not
         author_name = rating.author.name if rating.author else settings.DELETED_USER_NAME

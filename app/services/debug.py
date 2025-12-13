@@ -38,7 +38,7 @@ async def reset_id_sequences_for(
 def create_random_rating(
     twist: Twist,
     author: User,
-    rating_date: date
+    ride_date: date
 ) -> PavedRating | UnpavedRating:
     """
     Create a rating object with randomly generated data.
@@ -48,7 +48,7 @@ def create_random_rating(
 
     :param twist: The Twist object for which to create a rating.
     :param author: The user who is the author of the rating.
-    :param rating_date: The date to assign to the rating.
+    :param ride_date: The date to assign to the rating.
     :return: A new PavedRating or UnpavedRating object with random rating values.
     """
     # Determine the correct Rating class and criteria list based on the twist's surface
@@ -64,7 +64,7 @@ def create_random_rating(
     rating_data.update({
         "author": author,
         "twist": twist,
-        "rating_date": rating_date
+        "ride_date": ride_date
     })
 
     return Rating(**rating_data)

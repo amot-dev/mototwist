@@ -265,7 +265,7 @@ async def seed_ratings(
         rating = create_random_rating(
             twist=popular_twist,
             author=choice(raters),
-            rating_date=choice(date_pool),
+            ride_date=choice(date_pool),
         )
         ratings_to_add.append(rating)
 
@@ -290,7 +290,7 @@ async def seed_ratings(
             rating = create_random_rating(
                 twist=twist,
                 author=choice(raters),
-                rating_date=choice(date_pool),
+                ride_date=choice(date_pool),
             )
             ratings_to_add.append(rating)
 

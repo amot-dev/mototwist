@@ -32,7 +32,7 @@ class RatingList(BaseModel):
 
 
 # Criteria columns
-RATING_EXCLUDED_COLUMNS = {"id", "author_id", "twist_id", "rating_date"}
+RATING_EXCLUDED_COLUMNS = {"id", "author_id", "twist_id", "ride_date"}
 RATING_CRITERIA_PAVED: list[RatingCriterion] = [
     RatingCriterion(name=col.name, desc=col.doc)
     for col in cast(Mapper[PavedRating], inspect(PavedRating)).columns
@@ -50,7 +50,7 @@ CRITERIA_NAMES_ALL = CRITERIA_NAMES_PAVED.union(CRITERIA_NAMES_UNPAVED)
 
 
 class TwistRateForm(BaseModel):
-    rating_date: date
+    ride_date: date
 
     @model_validator(mode="after")
     def validate_criteria_fields(self) -> Self:

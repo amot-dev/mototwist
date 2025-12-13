@@ -196,7 +196,7 @@ class PavedRating(SerializationMixin, Base, Rating):
     twist: Mapped[Twist] = relationship("Twist", back_populates="paved_ratings")
 
     # Metadata
-    rating_date: Mapped[date] = mapped_column(Date, default=date.today)
+    ride_date: Mapped[date] = mapped_column(Date, default=date.today)
 
     # Data
     traffic: Mapped[int] = mapped_column(SmallInteger, doc="Level of vehicle traffic on the road")
@@ -222,7 +222,7 @@ class UnpavedRating(SerializationMixin, Base, Rating):
     twist: Mapped[Twist] = relationship("Twist", back_populates="unpaved_ratings")
 
     # Metadata
-    rating_date: Mapped[date] = mapped_column(Date, default=date.today)
+    ride_date: Mapped[date] = mapped_column(Date, default=date.today)
 
     # Data
     traffic: Mapped[int] = mapped_column(SmallInteger, doc="Frequency of other vehicles or trail users")

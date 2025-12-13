@@ -24,7 +24,6 @@ def upgrade() -> None:
     op.drop_column('twists', 'route_geometry')
     op.add_column('twists', sa.Column('route_geometry', geoalchemy2.Geometry(geometry_type='LINESTRING', srid=4326), nullable=False))
     # op.create_index('idx_twists_route_geometry', 'twists', ['route_geometry'], unique=False, postgresql_using='gist')  # Geometry object automatically creates an index
-    # ### end Alembic commands ###
 
 
 def downgrade() -> None:
