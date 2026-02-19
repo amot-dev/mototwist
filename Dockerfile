@@ -1,5 +1,5 @@
 # Builder
-FROM python:3.13-slim AS builder
+FROM python:3.14-slim AS builder
 
 WORKDIR /app
 COPY ./requirements.txt .
@@ -7,7 +7,7 @@ COPY ./requirements.txt .
 RUN pip install --no-cache-dir --prefix="/install" -r requirements.txt
 
 # Final Image
-FROM python:3.13-slim
+FROM python:3.14-slim
 
 ARG MOTOTWIST_VERSION=dev
 ENV MOTOTWIST_VERSION=${MOTOTWIST_VERSION}
