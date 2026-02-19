@@ -219,7 +219,7 @@ Follow these steps to set up and run the application in development mode.
     ```bash
     # Setup
     python -m pip install requirements.in
-    pip freeze > requirements.txt
+    python -m pip freeze > requirements.txt
     ```
     Ensure the new versions are well-tested. If the Python version goes up, ensure the image is updated in the `Dockerfile` too.
 
