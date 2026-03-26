@@ -233,8 +233,9 @@ app.include_router(ratings.router)
 app.include_router(twists.router)
 app.include_router(users.router)
 
-update_schema_name(app, auth.login, "UserLoginForm")
-update_schema_name(app, debug.load_state, "StateLoadUploadFile")
+# TODO: fix update_schema_name no longer working
+# update_schema_name(app, auth.login, "UserLoginForm")
+# update_schema_name(app, debug.load_state, "StateLoadUploadFile")
 sort_schema_names(app)
 
 if __name__ == "__main__":
