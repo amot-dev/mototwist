@@ -16,8 +16,7 @@ from uuid import UUID
 
 from app.schemas.types import Coordinate, Waypoint
 
-
-class Base(MappedAsDataclass, DeclarativeBase):
+class Base(DeclarativeBase):
     pass
 
 
@@ -157,7 +156,7 @@ class User(SQLAlchemyBaseUserTableUUID, SerializationMixin, Base):
         return f"[{self.id}] {self.email}"
 
 
-class Twist(SerializationMixin, Base):
+class Twist(SerializationMixin, MappedAsDataclass, Base):
     __tablename__ = "twists"
 
     # Constraints
@@ -180,23 +179,23 @@ class Twist(SerializationMixin, Base):
     # Data
     name: Mapped[str] = mapped_column(
         String(NAME_MAX_LENGTH),
-        index=True, nullable=False, default=""
+        index=True, nullable=False, default=None
     )
     is_paved: Mapped[bool] = mapped_column(
         Boolean,
-        nullable=False, default=""
+        nullable=False, default=None
     )
     waypoints: Mapped[list[Waypoint]] = mapped_column(
         PydanticJSONB(Waypoint),
-        nullable=False, default=[]
+        nullable=False, default=None
     )
     route_geometry: Mapped[list[Coordinate]] = mapped_column(
         PostGISLine(Coordinate),
-        nullable=False, default=[]
+        nullable=False, default=None
     )  # Geometry object automatically creates an index
     simplification_tolerance_m: Mapped[int] = mapped_column(
         SmallInteger,
-        nullable=False, default=0
+        nullable=False, default=None
     )
 
     # Children
@@ -204,7 +203,7 @@ class Twist(SerializationMixin, Base):
         "Ride",
         back_populates="twist",
         cascade="all, delete-orphan",
-        default=[]
+        default=None
     )
 
 
@@ -213,7 +212,7 @@ class Twist(SerializationMixin, Base):
         return f"[{self.id}] {self.name} ({paved})"
 
 
-class Ride(SerializationMixin, Base):
+class Ride(SerializationMixin, MappedAsDataclass, Base):
     __tablename__ = "rides"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, init=False)
@@ -248,7 +247,7 @@ class Ride(SerializationMixin, Base):
     )
     ratings: Mapped[dict[str, int]] = mapped_column(
         JSONB,
-        nullable=False, default=[]
+        nullable=False, default=None
     )
 
 
@@ -256,7 +255,7 @@ class Ride(SerializationMixin, Base):
         return f"[{self.twist_id}.{self.id}]"
 
 
-class Criterion(SerializationMixin, Base):
+class Criterion(SerializationMixin, MappedAsDataclass, Base):
     __tablename__ = "criteria"
 
     MIN_VALUE = 0
