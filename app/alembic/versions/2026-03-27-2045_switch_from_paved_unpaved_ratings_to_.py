@@ -127,7 +127,7 @@ def downgrade() -> None:
         WHERE ratings->>'pavement' IS NOT NULL;
     """)
 
-    # 3. Migrate data back to unpaved_ratings (non-null check on surface_consistency to ensure these are unpaved)
+    # Migrate data back to unpaved_ratings (non-null check on surface_consistency to ensure these are unpaved)
     op.execute("""
         INSERT INTO unpaved_ratings (author_id, twist_id, ride_date, seclusion, scenery, surface_consistency, technicality, flow)
         SELECT
