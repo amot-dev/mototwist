@@ -66,7 +66,7 @@ async def delete_twist(
     session: AsyncSession = Depends(get_db)
 ) -> HTMLResponse:
     """
-    Delete a Twist and all related ratings.
+    Delete a Twist and all related rides.
     """
 
     # If not admin, check if the user authored the Twist (and can delete it)

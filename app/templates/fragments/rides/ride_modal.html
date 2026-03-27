@@ -1,8 +1,8 @@
 {% from "fragments/_macros.html" import render_modal_content, render_form_buttons %}
 
-{% call render_modal_content("Rate " ~ twist.name) %}
+{% call render_modal_content("Ride " ~ twist.name) %}
 <form class="modal-form" data-paved="{{ twist.is_paved | lower }}"
-    hx-post="/twists/{{ twist.id }}/ratings"
+    hx-post="/twists/{{ twist.id }}/rides"
     hx-swap="none">
 
     <div class="form-group">
@@ -24,6 +24,6 @@
     </div>
     {% endfor %}
 
-    {{ render_form_buttons(submit_text="Submit Rating") }}
+    {{ render_form_buttons(submit_text="Submit Ride") }}
 </form>
 {% endcall %}

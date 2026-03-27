@@ -25,15 +25,15 @@
 {% endmacro %}
 
 {# Renders a slider to be animated with only CSS #}
-{% macro render_rating(criterion_name, rating, criterion_desc, max_value) %}
+{% macro render_rating(criterion_slug, rating, criterion_description, max_value) %}
 <li class="rating-slider-container">
-    <div class="rating-slider" style="--value: {{ rating }};" title="{{ criterion_desc }}">
+    <div class="rating-slider" style="--value: {{ rating }};" title="{{ criterion_description }}">
         <div class="rating-slider-fill">
-            <span>&nbsp; {{ criterion_name.replace('_', ' ') | title }}</span>
+            <span>&nbsp; {{ criterion_slug.replace('_', ' ') | title }}</span>
             <span>{{ rating }}/{{ max_value }} &nbsp;</span>
         </div>
 
-        <span>&nbsp; {{ criterion_name.replace('_', ' ') | title }}</span>
+        <span>&nbsp; {{ criterion_slug.replace('_', ' ') | title }}</span>
         <span>{{ rating }}/{{ max_value }} &nbsp;</span>
     </div>
 </li>

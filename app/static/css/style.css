@@ -1155,7 +1155,7 @@ aside {
     }
 }
 
-#modal-rate-twist .modal-form {
+#modal-ride-twist .modal-form {
     &[data-paved="false" i] {
         --accent: var(--accent-orange);
         --accent-hover: var(--accent-orange-hover);
@@ -1166,7 +1166,7 @@ aside {
     }
 }
 
-#modal-view-twist-ratings #rating-list {
+#modal-view-twist-rides #ride-list {
     overflow-y: auto;
     max-height: 60vh;
     margin-top: var(--padding-lg);
@@ -1178,7 +1178,7 @@ aside {
     }
 }
 
-.rating-card {
+.ride-card {
     position: relative;
     margin-bottom: var(--padding-lg);
     border: var(--border-default);

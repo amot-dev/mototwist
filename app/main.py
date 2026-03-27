@@ -17,9 +17,10 @@ from app.database import apply_migrations, create_automigration, get_db, wait_fo
 from app.events import EventSet
 from app.models import User
 from app.redis_client import redis_client
-from app.routers import admin, auth, debug, ratings, twists, users
+from app.routers import admin, auth, debug, rides, twists, users
 from app.services.admin import create_first_admin
 from app.services.auth import login_and_set_response_cookie
+from app.services.rides import initialize_criteria
 from app.settings import Settings, settings
 from app.users import current_user_optional
 from app.utility import format_loc_for_user, raise_http, sort_schema_names
@@ -28,11 +29,14 @@ from app.utility import format_loc_for_user, raise_http, sort_schema_names
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """
-    On startup, check the database and create a default admin if no users currently exist.
+    TODO
     """
     async for session in get_db():
         # Create initial admin user
         await create_first_admin(session)
+
+        # Initialize criteria on first run
+        await initialize_criteria(session)
 
     yield
 
@@ -211,7 +215,7 @@ async def get_latest_version(request: Request) -> HTMLResponse:
 app.include_router(admin.router)
 app.include_router(auth.router)
 app.include_router(debug.router)
-app.include_router(ratings.router)
+app.include_router(rides.router)
 app.include_router(twists.router)
 app.include_router(users.router)
 

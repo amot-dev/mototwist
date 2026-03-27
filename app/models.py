@@ -6,10 +6,10 @@ from geoalchemy2.shape import from_shape, to_shape  # type: ignore[reportUnknown
 from pydantic import BaseModel
 from shapely.geometry import LineString
 from shapely.geometry.base import BaseGeometry
-from sqlalchemy import Boolean, Date, ForeignKey, Integer, SmallInteger, String, inspect, type_coerce
+from sqlalchemy import Boolean, Date, ForeignKey, Integer, Sequence, SmallInteger, String, inspect, select, type_coerce
+from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.dialects.postgresql import JSONB
-from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.orm import Mapped, mapped_column, relationship
+from sqlalchemy.orm import DeclarativeBase, Mapped, MappedAsDataclass, mapped_column, relationship
 from sqlalchemy.types import TypeDecorator
 from typing import Any, Type
 from uuid import UUID
@@ -17,7 +17,8 @@ from uuid import UUID
 from app.schemas.types import Coordinate, Waypoint
 
 
-Base = declarative_base()
+class Base(MappedAsDataclass, DeclarativeBase):
+    pass
 
 
 class SerializationMixin:
@@ -57,9 +58,11 @@ class PydanticJSONB(TypeDecorator[list[BaseModel]]):
     impl = JSONB
     cache_ok = True
 
+
     def __init__(self, pydantic_type: Type[BaseModel], *args: Any, **kwargs: Any):
         super().__init__(*args, **kwargs)
         self.pydantic_type = pydantic_type
+
 
     def process_bind_param(self, value: list[BaseModel] | None, dialect: Any) -> list[dict[Any, Any]] | None:
         """
@@ -69,6 +72,7 @@ class PydanticJSONB(TypeDecorator[list[BaseModel]]):
         if value is None:
             return None
         return [item.model_dump(mode='json') for item in value]
+
 
     def process_result_value(self, value: list[dict[Any, Any]] | None, dialect: Any) -> list[BaseModel] | None:
         """
@@ -90,6 +94,7 @@ class PostGISLine(TypeDecorator[list[Coordinate]]):
     impl = Geometry(geometry_type='LINESTRING', srid=Coordinate.SRID)
     cache_ok = True
 
+
     def process_bind_param(self, value: list[Coordinate] | None, dialect: Any) -> WKBElement | None:
         """
         Called when sending data TO the database.
@@ -103,6 +108,7 @@ class PostGISLine(TypeDecorator[list[Coordinate]]):
         # Shapely uses lng, lat
         line = LineString([(c.lng, c.lat) for c in value])
         return from_shape(line, srid=Coordinate.SRID)
+
 
     def process_result_value(self, value: Any | None, dialect: Any) -> list[Coordinate] | None:
         """
@@ -120,6 +126,7 @@ class PostGISLine(TypeDecorator[list[Coordinate]]):
 
         # Convert shapely's (lng, lat) tuples back to Pydantic models
         return [Coordinate(lat=lat, lng=lng) for lng, lat in shape.coords]
+
 
     def column_expression(self, column: Any) -> Any:
         """
@@ -143,8 +150,8 @@ class User(SQLAlchemyBaseUserTableUUID, SerializationMixin, Base):
 
     # Children
     twists: Mapped[list["Twist"]] = relationship("Twist", back_populates="author")
-    paved_ratings: Mapped[list["PavedRating"]] = relationship("PavedRating", back_populates="author")
-    unpaved_ratings: Mapped[list["UnpavedRating"]] = relationship("UnpavedRating", back_populates="author")
+    rides: Mapped[list["Ride"]] = relationship("Ride", back_populates="author")
+
 
     def __repr__(self):
         return f"[{self.id}] {self.email}"
@@ -156,80 +163,149 @@ class Twist(SerializationMixin, Base):
     # Constraints
     NAME_MAX_LENGTH = 255
 
-    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, init=False)
 
     # Parents
-    author_id: Mapped[UUID | None] = mapped_column(GUID, ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
-    author: Mapped[User | None] = relationship("User", back_populates="twists")
+    author_id: Mapped[UUID | None] = mapped_column(
+        GUID,
+        ForeignKey("users.id", ondelete="SET NULL"),
+        nullable=True, default=None
+    )
+    author: Mapped[User | None] = relationship(
+        "User",
+        back_populates="twists",
+        default=None
+    )
 
     # Data
-    name: Mapped[str] = mapped_column(String(NAME_MAX_LENGTH), index=True, nullable=False)
-    is_paved: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
-    waypoints: Mapped[list[Waypoint]] = mapped_column(PydanticJSONB(Waypoint), nullable=False)
-    route_geometry: Mapped[list[Coordinate]] = mapped_column(PostGISLine(Coordinate), nullable=False)  # Geometry object automatically creates an index
-    simplification_tolerance_m: Mapped[int] = mapped_column(SmallInteger)
+    name: Mapped[str] = mapped_column(
+        String(NAME_MAX_LENGTH),
+        index=True, nullable=False, default=""
+    )
+    is_paved: Mapped[bool] = mapped_column(
+        Boolean,
+        nullable=False, default=""
+    )
+    waypoints: Mapped[list[Waypoint]] = mapped_column(
+        PydanticJSONB(Waypoint),
+        nullable=False, default=[]
+    )
+    route_geometry: Mapped[list[Coordinate]] = mapped_column(
+        PostGISLine(Coordinate),
+        nullable=False, default=[]
+    )  # Geometry object automatically creates an index
+    simplification_tolerance_m: Mapped[int] = mapped_column(
+        SmallInteger,
+        nullable=False, default=0
+    )
 
     # Children
-    paved_ratings: Mapped[list["PavedRating"]] = relationship("PavedRating", back_populates="twist", cascade="all, delete-orphan")
-    unpaved_ratings: Mapped[list["UnpavedRating"]] = relationship("UnpavedRating", back_populates="twist", cascade="all, delete-orphan")
+    rides: Mapped[list["Ride"]] = relationship(
+        "Ride",
+        back_populates="twist",
+        cascade="all, delete-orphan",
+        default=[]
+    )
+
 
     def __repr__(self):
         paved = "Paved" if self.is_paved else "Unpaved"
         return f"[{self.id}] {self.name} ({paved})"
 
 
-class Rating:
-    CRITERION_MIN_VALUE = 0
-    CRITERION_MAX_VALUE = 10
+class Ride(SerializationMixin, Base):
+    __tablename__ = "rides"
 
-
-class PavedRating(SerializationMixin, Base, Rating):
-    __tablename__ = "paved_ratings"
-
-    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, init=False)
 
     # Parents
-    author_id: Mapped[UUID | None] = mapped_column(GUID, ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
-    author: Mapped[User | None] = relationship("User", back_populates="paved_ratings")
+    author_id: Mapped[UUID | None] = mapped_column(
+        GUID,
+        ForeignKey("users.id", ondelete="SET NULL"),
+        nullable=True, default=None
+    )
+    author: Mapped[User | None] = relationship(
+        "User",
+        back_populates="rides",
+        default=None
+    )
 
-    twist_id: Mapped[int] = mapped_column(Integer, ForeignKey("twists.id", ondelete="CASCADE"))
-    twist: Mapped[Twist] = relationship("Twist", back_populates="paved_ratings")
-
-    # Metadata
-    ride_date: Mapped[date] = mapped_column(Date, default=date.today)
-
-    # Data
-    seclusion: Mapped[int] = mapped_column(SmallInteger, doc="Infrequency of other vehicles on the road")
-    scenery: Mapped[int] = mapped_column(SmallInteger, doc="Visual appeal of surroundings")
-    pavement: Mapped[int] = mapped_column(SmallInteger, doc="Quality of road surface")
-    twistyness: Mapped[int] = mapped_column(SmallInteger, doc="Tightness and frequency of turns")
-    intensity: Mapped[int] = mapped_column(SmallInteger, doc="Overall riding energy the road draws out")
-
-    def __repr__(self):
-        return f"[{self.id}] (Paved)"
-
-
-class UnpavedRating(SerializationMixin, Base, Rating):
-    __tablename__ = "unpaved_ratings"
-
-    id: Mapped[int] = mapped_column(Integer, primary_key=True)
-
-    # Parents
-    author_id: Mapped[UUID | None] = mapped_column(GUID, ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
-    author: Mapped[User | None] = relationship("User", back_populates="unpaved_ratings")
-
-    twist_id: Mapped[int] = mapped_column(Integer, ForeignKey("twists.id", ondelete="CASCADE"))
-    twist: Mapped[Twist] = relationship("Twist", back_populates="unpaved_ratings")
-
-    # Metadata
-    ride_date: Mapped[date] = mapped_column(Date, default=date.today)
+    twist_id: Mapped[int] = mapped_column(
+        Integer,
+        ForeignKey("twists.id", ondelete="CASCADE"),
+        nullable=False, default=None
+    )
+    twist: Mapped[Twist] = relationship(
+        "Twist",
+        back_populates="rides",
+        default=None
+    )
 
     # Data
-    seclusion: Mapped[int] = mapped_column(SmallInteger, doc="Infrequency of other vehicles on the road")
-    scenery: Mapped[int] = mapped_column(SmallInteger, doc="Visual appeal of surroundings")
-    surface_consistency: Mapped[int] = mapped_column(SmallInteger, doc="Predictability of traction across the route")
-    technicality: Mapped[int] = mapped_column(SmallInteger, doc="Challenge level from terrain features like rocks, ruts, sand, or mud")
-    flow: Mapped[int] = mapped_column(SmallInteger, doc="Smoothness of the trail without constant disruptions or awkward sections")
+    date: Mapped[date] = mapped_column(
+        Date,
+        nullable=False, default=None
+    )
+    ratings: Mapped[dict[str, int]] = mapped_column(
+        JSONB,
+        nullable=False, default=[]
+    )
+
 
     def __repr__(self):
-        return f"[{self.id}] (Unpaved)"
+        return f"[{self.twist_id}.{self.id}]"
+
+
+class Criterion(SerializationMixin, Base):
+    __tablename__ = "criteria"
+
+    MIN_VALUE = 0
+    MAX_VALUE = 10
+
+    slug: Mapped[str] = mapped_column(String(100), primary_key=True)
+    sort_order: Mapped[int] = mapped_column(
+        Integer,
+        Sequence("criteria_sort_order_seq"),
+        init=False,
+        server_default=Sequence("criteria_sort_order_seq").next_value()
+    )
+
+    description: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    for_paved: Mapped[bool] = mapped_column(Boolean, nullable=False)
+    for_unpaved: Mapped[bool] = mapped_column(Boolean, nullable=False)
+
+
+    @classmethod
+    async def get_list(cls, session: AsyncSession, is_paved: bool | None = None) -> list[Criterion]:
+        """
+        TODO
+        """
+        if is_paved is None:
+            filter = cls.for_paved or cls.for_unpaved
+        else:
+            filter = cls.for_paved if is_paved else cls.for_unpaved
+
+        result = await session.scalars(
+            select(cls).where(filter == True).order_by(cls.sort_order)
+        )
+        return list(result.all())
+
+
+    @classmethod
+    async def get_set(cls, session: AsyncSession, is_paved: bool | None = None) -> set[str]:
+        """
+        TODO
+        """
+        if is_paved is None:
+            filter = cls.for_paved or cls.for_unpaved
+        else:
+            filter = cls.for_paved if is_paved else cls.for_unpaved
+
+        result = await session.scalars(
+            select(cls.slug).where(filter == True)
+        )
+        return set(result.all())
+
+
+    def __repr__(self):
+        return f"[{self.slug}]"

@@ -5,7 +5,7 @@ from sqlalchemy.orm.attributes import InstrumentedAttribute
 from typing import ClassVar
 from uuid import UUID
 
-from app.models import Rating, Twist, User
+from app.models import Criterion, Twist, User
 from app.schemas.types import Coordinate, Waypoint
 from app.settings import settings
 
@@ -27,10 +27,10 @@ class FilterPavement(str, Enum):
     PAVED = "paved"
     UNPAVED = "unpaved"
 
-class FilterRatings(str, Enum):
+class FilterRide(str, Enum):
     ALL = "all"
-    RATED = "rated"
-    UNRATED = "unrated"
+    SUBMITTED = "submitted"
+    UNSUBMITTED = "unsubmitted"
 
 
 class TwistFilterParameters(BaseModel):
@@ -43,9 +43,9 @@ class TwistFilterParameters(BaseModel):
     search: str | None = None
     ownership: FilterOwnership = FilterOwnership.ALL
     pavement: FilterPavement = FilterPavement.ALL
-    ratings: FilterRatings = FilterRatings.ALL
-    rating_min: float = Field(0.0, ge=Rating.CRITERION_MIN_VALUE, le=Rating.CRITERION_MAX_VALUE)
-    rating_max: float = Field(10.0, ge=Rating.CRITERION_MIN_VALUE, le=Rating.CRITERION_MAX_VALUE)
+    rides: FilterRide = FilterRide.ALL
+    min_rating: float = Field(0.0, ge=Criterion.MIN_VALUE, le=Criterion.MAX_VALUE)
+    max_rating: float = Field(10.0, ge=Criterion.MIN_VALUE, le=Criterion.MAX_VALUE)
 
     # Ordering
     map_center: Coordinate | None = None

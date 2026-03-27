@@ -1,0 +1,11 @@
+{% from "fragments/_macros.html" import render_modal_content %}
+
+{% call render_modal_content(twist.name) %}
+<div id="ride-list" data-paved="{{ twist.is_paved | lower }}">
+    {% if ride_list.items %}
+    {% include "fragments/rides/view_list.html" %}
+    {% else %}
+    <p>No rides yet</p>
+    {% endif %}
+</div>
+{% endcall %}

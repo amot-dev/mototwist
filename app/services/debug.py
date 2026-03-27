@@ -4,13 +4,12 @@ from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession
 from typing import Type
 
-from app.models import PavedRating, Rating, Twist, UnpavedRating, User
-from app.schemas.ratings import CRITERIA_NAMES_PAVED, CRITERIA_NAMES_UNPAVED
+from app.models import Criterion, Ride, Twist, User
 
 
 async def reset_id_sequences_for(
     session: AsyncSession,
-    models: list[Type[Twist | PavedRating | UnpavedRating]]
+    models: list[Type[Twist | Ride ]]
 ) -> None:
     """
     Reset the primary key ID sequences for a list of SQLAlchemy models.
@@ -58,7 +57,7 @@ def generate_weights(num_items: int, focus: float) -> list[float]:
 
 
 def generate_criteria_biases(
-    criteria_names: list[str],
+    criteria_slugs: list[str],
     target_bias: float
 ) -> dict[str, float]:
     """
@@ -70,22 +69,22 @@ def generate_criteria_biases(
     :return: A dictionary mapping each criterion name to its calculated bias float value.
     """
     # Start with a boring, flat profile
-    biases = {name: target_bias for name in criteria_names}
+    biases = {slug: target_bias for slug in criteria_slugs}
 
     # Shuffle points around a few times to create "personality"
-    num_shuffles = len(criteria_names) * 4
+    num_shuffles = len(criteria_slugs) * 4
 
     for _ in range(num_shuffles):
         # Pick two different criteria to trade points
-        c1, c2 = sample(criteria_names, 2)
+        c1, c2 = sample(criteria_slugs, 2)
 
         # Calculate maximum trade amounts without breaking the min-max boundaries
-        max_give_c1 = biases[c1] - Rating.CRITERION_MIN_VALUE
-        max_receive_c2 = Rating.CRITERION_MAX_VALUE - biases[c2]
+        max_give_c1 = biases[c1] - Criterion.MIN_VALUE
+        max_receive_c2 = Criterion.MAX_VALUE - biases[c2]
         max_transfer_1_to_2 = min(max_give_c1, max_receive_c2)
 
-        max_give_c2 = biases[c2] - Rating.CRITERION_MIN_VALUE
-        max_receive_c1 = Rating.CRITERION_MAX_VALUE - biases[c1]
+        max_give_c2 = biases[c2] - Criterion.MIN_VALUE
+        max_receive_c1 = Criterion.MAX_VALUE - biases[c1]
         max_transfer_2_to_1 = min(max_give_c2, max_receive_c1)
 
         # Pick a random transfer amount
@@ -98,86 +97,87 @@ def generate_criteria_biases(
     return biases
 
 
-def create_random_rating(
+def create_random_ride(
     twist: Twist,
     author: User,
-    ride_date: date,
+    date: date,
     criteria_biases: dict[str, float],
     is_outlier: bool = False
-) -> PavedRating | UnpavedRating:
+) -> Ride:
     """
-    Create a rating object with randomly generated data clustered around a target bias.
+    Create a ride object with randomly generated data clustered around a target bias.
 
-    The type of rating object returned (PavedRating or UnpavedRating)
-    depends on the provided Twist's `is_paved` attribute. If the rating is flagged 
-    as an outlier, the generated scores will actively oppose the target bias.
+    If the ride rating is flagged as an outlier, the generated scores will actively oppose the target bias.
 
-    :param twist: The Twist object for which to create a rating.
-    :param author: The user who is the author of the rating.
-    :param ride_date: The date to assign to the rating.
-    :param criteria_biases: A dictionary mapping rating criteria names to their target mathematical means (biases).
-    :param is_outlier: If True, forces the generated rating to the opposite end of the spectrum.
-    :return: A new PavedRating or UnpavedRating object with random rating values.
+    :param twist: The Twist object for which to create a ride.
+    :param author: The user who is the author of the ride.
+    :param ride_date: The date to assign to the ride.
+    :param criteria_biases: A dictionary mapping criteria slugs to their target mathematical means (biases).
+    :param is_outlier: If True, forces the generated ride rating to the opposite end of the spectrum.
+    :return: A new Ride object with random rating values.
     """
-    rating_data: dict[str, User | Twist | date | int] = {
-        "author": author,
-        "twist": twist,
-        "ride_date": ride_date
-    }
+    ratings: dict[str, int] = {}
 
-    for name, bias in criteria_biases.items():
+    for slug, bias in criteria_biases.items():
         # Invert bias for outliers
         if is_outlier:
-            bias = (Rating.CRITERION_MIN_VALUE + Rating.CRITERION_MAX_VALUE) - bias
+            bias = (Criterion.MIN_VALUE + Criterion.MAX_VALUE) - bias
 
         # Calculate score using bias as mean
         raw_score = gauss(mu=bias, sigma=0.8)
 
         # Clamp score
-        rating_data[name] = max(Rating.CRITERION_MIN_VALUE, min(Rating.CRITERION_MAX_VALUE, round(raw_score)))
+        ratings[slug] = max(Criterion.MIN_VALUE, min(Criterion.MAX_VALUE, round(raw_score)))
 
-    return (PavedRating if twist.is_paved else UnpavedRating)(**rating_data)
+    return Ride(
+        author=author,
+        twist=twist,
+        date=date,
+        ratings=ratings
+    )
 
 
-def seed_twist_ratings(
-    twist_rating_counts: dict[Twist, int],
-    raters: list[User],
+async def seed_twist_rides(
+    session: AsyncSession,
+    twist_ride_counts: dict[Twist, int],
+    authors: list[User],
     date_pool: list[date],
     outlier_chance: float = 0.1
-) -> list[PavedRating | UnpavedRating]:
+) -> list[Ride]:
     """
-    Take a dictionary mapping Twists to the number of ratings they need.
-    Generate ratings clustered around a specific bias for each twist.
+    Take a dictionary mapping Twists to the number of rides they need.
+    Generate rides clustered around a specific bias for each twist.
 
-    :param twist_rating_counts: A dictionary mapping Twist objects to the desired number of generated ratings.
-    :param raters: A list of User objects from which to randomly select rating authors.
-    :param date_pool: A list of date objects from which to randomly select the ride date for each rating.
-    :param outlier_chance: The probability (between 0.0 and 1.0) that a generated rating will act as an outlier. Defaults to 0.1.
-    :return: A list containing the newly generated PavedRating and UnpavedRating objects.
+    :param session: TODO
+    :param twist_ride_counts: A dictionary mapping Twist objects to the desired number of generated rides.
+    :param authors: A list of User objects from which to randomly select ride authors.
+    :param date_pool: A list of date objects from which to randomly select the date for each ride.
+    :param outlier_chance: The probability (between 0.0 and 1.0) that a generated ride will act as an outlier. Defaults to 0.1.
+    :return: A list containing the newly generated ride objects.
     """
-    ratings_to_add: list[PavedRating | UnpavedRating] = []
+    new_rides: list[Ride] = []
 
-    for twist, count in twist_rating_counts.items():
+    for twist, count in twist_ride_counts.items():
         # Determine the target average for the whole twist
-        twist_bias = uniform(Rating.CRITERION_MIN_VALUE, Rating.CRITERION_MAX_VALUE)
+        twist_bias = uniform(Criterion.MIN_VALUE, Criterion.MAX_VALUE)
 
         # Generate the specific road profile
+        criteria_slugs = await Criterion.get_set(session, twist.is_paved)
         criteria_biases = generate_criteria_biases(
-            criteria_names=list(CRITERIA_NAMES_PAVED if twist.is_paved else CRITERIA_NAMES_UNPAVED),
+            criteria_slugs=list(criteria_slugs),
             target_bias=twist_bias
         )
 
         for _ in range(count):
-            # Roll the dice to see if this rating is an outlier
+            # Roll the dice to see if this ride rating is an outlier
             is_outlier = random() < outlier_chance
 
-            rating = create_random_rating(
+            new_rides.append(create_random_ride(
                 twist=twist,
-                author=choice(raters),
-                ride_date=choice(date_pool),
+                author=choice(authors),
+                date=choice(date_pool),
                 criteria_biases=criteria_biases,
                 is_outlier=is_outlier
-            )
-            ratings_to_add.append(rating)
+            ))
 
-    return ratings_to_add
+    return new_rides

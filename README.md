@@ -58,7 +58,7 @@ Below is an overview of all available environment variables for MotoTwist.
 | `TWIST_SIMPLIFICATION_TOLERANCE_M` | Sets the simplification tolerance for new Twist routes. A higher value (e.g., `"50m"`) removes more points and reduces storage size. Set to `"0m"` to disable. | `"30m"` |
 | `DEFAULT_TWISTS_LOADED` | Sets the default number of Twists that are loaded at once. This affects both the infinitely scrolling Twist list and the map. | `20` |
 | `MAX_TWISTS_LOADED` | Sets the maximum number of Twists that can be loaded at once. Setting a high number can have performance impacts. | `100` |
-| `RATINGS_FETCHED_PER_QUERY` | Sets the number of ratings fetched per query during the infinite scroll when viewing all ratings. Setting it too low or high can have performance impacts. | `20` |
+| `RIDES_FETCHED_PER_QUERY` | Sets the number of rides fetched per query during the infinite scroll when viewing all rides. Setting it too low or high can have performance impacts. | `20` |
 
 > [!WARNING]
 > Keep in mind the [OSM Tile Policy](https://operations.osmfoundation.org/policies/tiles/) and [OSRM Usage Policy](https://map.project-osrm.org/about.html) if you do not plan on changing OSM_URL and/or OSRM_URL.
@@ -125,7 +125,7 @@ These settings are useful for local development and debugging.
         Accounts may be deactivated. Only an admin can reactivate it.
 
     c)  **Deletion:**
-        Accounts may be deleted. It will be gone forever, but Twists and ratings will remain.
+        Accounts may be deleted. It will be gone forever, but Twists and rides will remain.
 
     d)  **Promotion:**
         Only an admin can create or promote more admins. Initially, MotoTwist starts up with exactly one admin user.
@@ -154,14 +154,14 @@ These settings are useful for local development and debugging.
 > [!TIP]
 > Twists should be predominantly paved or unpaved. If they're a combination of both, select whichever was "the main attraction" of the Twist, as each type has different criteria they're rated on. If both segments are fun, consider splitting the Twist!
 
-4.  **Rating Twists:**
-    From the sidebar, you can now rate your Twist! There's a number of different criteria you can rate it on, and hovering over each will give a brief description.
+4.  **Riding Twists:**
+    From the sidebar, you can now ride your Twist! There's a number of different criteria you can rate your ride on, and hovering over each will give a brief description.
 
 > [!TIP]
 > With some, but minimal, technical knowledge, the available criteria can be changed! Eventually this may be configurable via environment variables. See [#11](https://github.com/amot-dev/mototwist/issues/11).
 
 5.  **Searching/Filtering:**
-    Twists may be searched and filtered by a few different criteria. Ratings can be filtered.
+    Twists may be searched and filtered by a few different criteria. Rides can be filtered.
 
 6.  **General Use:**
 
@@ -173,7 +173,7 @@ These settings are useful for local development and debugging.
 
     d) Twists and Waypoints on the map can be clicked to show their name.
 
-    e) Twists and ratings can be deleted (but not modified).
+    e) Twists and rides can be deleted (but not modified).
 
 
 ## Developing
@@ -196,10 +196,10 @@ Follow these steps to set up and run the application in development mode.
     Open your web browser and navigate to `http://localhost:8000`.
 
 5.  **Load mock data:**
-    With debug mode enabled, admin users will have access to the debug page, which allows saving and loading the current database state, as well as seed ratings.
+    With debug mode enabled, admin users will have access to the debug page, which allows saving and loading the current database state, as well as seeding random rides.
 
 > [!TIP]
-> Saving ratings is mostly useless unless you're using debug mode to migrate your data. Prefer saving Twists and seeding rating data after loading.
+> Saving rides is mostly useless unless you're using debug mode to migrate your data. Prefer saving Twists and seeding ride data after loading.
 
 6.  **Set up a `venv`:**
     This is recommended for static analysis.
@@ -250,4 +250,4 @@ Follow these steps to set up and run the application in development mode.
     ```
 
 > [!TIP]
-> If you want to modify criteria, make changes to `PavedRating` and/or `UnpavedRating` in `app/models.py` and run a migration.
+> If you want to modify criteria, make changes to `initialize_criteria` in `app/services/rides.py` and restart with a fresh database.

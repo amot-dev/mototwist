@@ -1,7 +1,7 @@
 from datetime import date
 from fastapi import APIRouter, Depends, Form, Query, Request
 from fastapi.responses import HTMLResponse
-from sqlalchemy import case, delete, func, select
+from sqlalchemy import delete, func, select
 from sqlalchemy.exc import MultipleResultsFound, NoResultFound
 from sqlalchemy.ext.asyncio import AsyncSession
 from typing import Annotated, Literal
@@ -9,30 +9,30 @@ from typing import Annotated, Literal
 from app.config import logger
 from app.database import get_db
 from app.events import EventSet
-from app.models import Twist, PavedRating, UnpavedRating, User
-from app.schemas.ratings import CRITERIA_NAMES_PAVED, CRITERIA_NAMES_UNPAVED, TwistRateForm
+from app.models import Criterion, Twist, Ride, User
+from app.schemas.rides import TwistRideForm
 from app.schemas.twists import TwistBasic, TwistUltraBasic
-from app.services.ratings import render_averages, render_rate_modal, render_view_all_button, render_view_modal
+from app.services.rides import render_averages, render_ride_modal, render_view_all_button, render_view_modal
 from app.users import current_user, current_user_optional, verify
 from app.utility import raise_http
 
 
 router = APIRouter(
-    prefix="/twists/{twist_id}/ratings",
-    tags=["Ratings"]
+    prefix="/twists/{twist_id}/rides",
+    tags=["Rides"]
 )
 
 
 @router.post("", response_class=HTMLResponse)
-async def create_rating(
+async def create_ride(
     request: Request,
     twist_id: int,
-    rating_form: Annotated[TwistRateForm, Form()],
+    ride_form: Annotated[TwistRideForm, Form()],
     user: User = Depends(verify(current_user)),
     session: AsyncSession = Depends(get_db)
 ) -> HTMLResponse:
     """
-    Create a new rating for the given Twist.
+    Create a new ride for the given Twist.
     """
     try:
         result = await session.scalars(
@@ -44,93 +44,90 @@ async def create_rating(
     except MultipleResultsFound:
         raise_http(f"Multiple twists found for id '{twist_id}'", status_code=500)
 
-    logger.debug(f"Attempting to rate Twist with id '{twist_id}'")
+    logger.debug(f"Attempting to submit ride Twist with id '{twist_id}'")
 
-    if twist_is_paved:
-        Rating = PavedRating
-        rating_data = rating_form.model_dump(include=CRITERIA_NAMES_PAVED.union({"ride_date"}))
-    else:
-        Rating = UnpavedRating
-        rating_data = rating_form.model_dump(include=CRITERIA_NAMES_UNPAVED.union({"ride_date"}))
+    # Ensure there are no missing or extra criteria
+    ride_criteria = {slug for slug in ride_form.ratings.keys()}
+    valid_criteria = await Criterion.get_set(session, twist_is_paved)
+    if ride_criteria != valid_criteria:
+        missing = valid_criteria - ride_criteria
+        extra = ride_criteria - valid_criteria
+
+        error_msg = "Rating criteria mismatch."
+        if missing:
+            error_msg += f" Missing: {", ".join(missing)}."
+        if extra:
+            error_msg += f" Unexpected: {", ".join(extra)}."
+
+        raise_http(error_msg.rstrip("."), status_code=500)
 
     # Create the new rating instance, linking it to the Twist
-    rating_data.update({
+    ride_data = ride_form.model_dump()
+    ride_data.update({
         "author": user,
-        "twist_id": twist_id
+        "twist_id": twist_id,
     })
-    new_rating = Rating(**rating_data)
-    session.add(new_rating)
+    new_ride = Ride(**ride_data)
+    session.add(new_ride)
     await session.commit()
-    logger.debug(f"Created rating '{new_rating}'")
+    logger.debug(f"Created ride '{new_ride}'")
 
     response = HTMLResponse(content="")
     response.headers["HX-Trigger-After-Swap"] = EventSet(
-        EventSet.FLASH("Twist rated successfully!"),
+        EventSet.FLASH("Ride submitted successfully!"),
         EventSet.CLOSE_MODAL,
         EventSet.REFRESH_AVERAGES(twist_id)
     ).dump()
     return response
 
 
-@router.delete("/{rating_id}", response_class=HTMLResponse)
-async def delete_rating(
+@router.delete("/{ride_id}", response_class=HTMLResponse)
+async def delete_ride(
     request: Request,
     twist_id: int,
-    rating_id: int,
+    ride_id: int,
     user: User = Depends(verify(current_user)),
     session: AsyncSession = Depends(get_db)
 ) -> HTMLResponse:
     """
-    Delete a rating from the given Twist.
+    Delete a ride from the given Twist.
     """
-    try:
-        result = await session.scalars(
-            select(Twist.is_paved).where(Twist.id == twist_id)
-        )
-        twist_is_paved = result.one()
-    except NoResultFound:
-        raise_http(f"Twist with id '{twist_id}' not found", status_code=404)
-    except MultipleResultsFound:
-        raise_http(f"Multiple twists found for id '{twist_id}'", status_code=500)
-
-    Rating = PavedRating if twist_is_paved else UnpavedRating
-
     if not user.is_superuser:
         try:
             result = await session.scalars(
-                select(Rating.author_id).where(Rating.id == rating_id)
+                select(Ride.author_id).where(Ride.id == ride_id)
             )
             author_id = result.one()
         except NoResultFound:
-            raise_http(f"Rating with id '{rating_id}' not found for Twist with id '{twist_id}'", status_code=404)
+            raise_http(f"Ride with id '{ride_id}' not found for Twist with id '{twist_id}'", status_code=404)
         except MultipleResultsFound:
-            raise_http(f"Multiple Ratings with id '{rating_id}' found for Twist with id '{twist_id}'", status_code=500)
+            raise_http(f"Multiple rides with id '{ride_id}' found for Twist with id '{twist_id}'", status_code=500)
 
         if user.id != author_id:
-            raise_http("You do not have permission to delete this Rating", status_code=403)
+            raise_http("You do not have permission to delete this ride", status_code=403)
 
-    # Delete the Rating
+    # Delete the Ride
     result = await session.scalar(
-        delete(Rating).where(Rating.id == rating_id, Rating.twist_id == twist_id).returning(Rating.id)
+        delete(Ride).where(Ride.id == ride_id, Ride.twist_id == twist_id).returning(Ride.id)
     )
     if result is None:
-        raise_http(f"Rating with id '{rating_id}' not found for Twist with id '{twist_id}'", status_code=404)
+        raise_http(f"Ride with id '{ride_id}' not found for Twist with id '{twist_id}'", status_code=404)
 
     await session.commit()
-    logger.debug(f"Deleted rating with id '{rating_id}' from Twist with id '{twist_id}'")
+    logger.debug(f"Deleted ride with id '{ride_id}' from Twist with id '{twist_id}'")
 
     # Empty response to "delete" the card
     result = await session.execute(
-        select(func.count()).select_from(Rating).where(Rating.twist_id == twist_id)
+        select(func.count()).select_from(Ride).where(Ride.twist_id == twist_id)
     )
-    remaining_ratings_count = result.scalar_one()
-    if remaining_ratings_count > 0:
+    remaining_rides_count = result.scalar_one()
+    if remaining_rides_count > 0:
         response = HTMLResponse(content="")
     else:
-        response = HTMLResponse(content="<p>No ratings yet</p>")
+        response = HTMLResponse(content="<p>No rides yet</p>")
 
     response.headers["HX-Trigger-After-Swap"] = EventSet(
-        EventSet.FLASH("Rating removed successfully!"),
+        EventSet.FLASH("Ride removed successfully!"),
         EventSet.REFRESH_AVERAGES(twist_id)
     ).dump()
     return response
@@ -167,41 +164,27 @@ async def serve_view_all_button(
     session: AsyncSession = Depends(get_db)
 ) -> HTMLResponse:
     """
-    Serve an HTML fragment containing the view all ratings button, including the number of ratings.
+    Serve an HTML fragment containing the view all rides button, including the number of rides.
     """
     try:
         result = await session.scalars(
-            select(
-                case(
-                    (Twist.is_paved == True,
-                        select(func.count(PavedRating.id))
-                        .where(PavedRating.twist_id == Twist.id)
-                        .scalar_subquery()
-                    ),
-                    else_=(
-                        select(func.count(UnpavedRating.id))
-                        .where(UnpavedRating.twist_id == Twist.id)
-                        .scalar_subquery()
-                    )
-                )
-            )
-            .where(Twist.id == twist_id)
+            select(func.count(Ride.id)).where(Ride.twist_id == Twist.id, Twist.id == twist_id)
         )
-        rating_count = result.one()
+        ride_count = result.one()
     except NoResultFound:
         raise_http(f"Twist with id '{twist_id}' not found", status_code=404)
 
-    return await render_view_all_button(request, twist_id, rating_count)
+    return await render_view_all_button(request, twist_id, ride_count)
 
 
-@router.get("/templates/rate-modal", tags=["Templates"], response_class=HTMLResponse)
-async def serve_rate_modal(
+@router.get("/templates/ride-modal", tags=["Templates"], response_class=HTMLResponse)
+async def serve_ride_modal(
     request: Request,
     twist_id: int,
     session: AsyncSession = Depends(get_db)
 ) -> HTMLResponse:
     """
-    Serve an HTML fragment containing a modal to rate a given Twist.
+    Serve an HTML fragment containing a modal to ride a given Twist.
     """
     try:
         result = await session.execute(
@@ -213,7 +196,8 @@ async def serve_rate_modal(
     except MultipleResultsFound:
         raise_http(f"Multiple twists found for id '{twist_id}'", status_code=500)
 
-    return await render_rate_modal(request, twist, date.today())
+    criteria = await Criterion.get_list(session, twist.is_paved)
+    return await render_ride_modal(request, twist, criteria, date.today())
 
 
 @router.get("/templates/view-modal", tags=["Templates"], response_class=HTMLResponse)
@@ -225,7 +209,7 @@ async def serve_view_modal(
     session: AsyncSession = Depends(get_db)
 ) -> HTMLResponse:
     """
-    Serve an HTML fragment containing a modal to view the ratings for a given Twist.
+    Serve an HTML fragment containing a modal to view the rides for a given Twist.
     """
     try:
         result = await session.execute(

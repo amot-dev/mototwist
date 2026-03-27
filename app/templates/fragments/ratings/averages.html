@@ -1,9 +1,0 @@
-{% from "fragments/_macros.html" import render_rating %}
-
-{% if average_rating_criteria %}
-    {% for criterion_name, criterion in average_rating_criteria.items() %}
-    {{ render_rating(criterion_name, criterion.rating, criterion.desc, criterion_max_value) }}
-    {% endfor %}
-{% else %}
-    <li class="rating-slider-container">No ratings yet</li>
-{% endif %}

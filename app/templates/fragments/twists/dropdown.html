@@ -2,18 +2,18 @@
 <header>
     <h4>Average Rating</h4>
     {% if user %}
-    <button class="button button-very-small button-block" onclick="document.querySelector('#modal-rate-twist').showModal()"
-        hx-get="/twists/{{ twist_id }}/ratings/templates/rate-modal"
-        hx-target="#modal-rate-twist"
+    <button class="button button-very-small button-block" onclick="document.querySelector('#modal-ride-twist').showModal()"
+        hx-get="/twists/{{ twist_id }}/rides/templates/ride-modal"
+        hx-target="#modal-ride-twist"
         hx-swap="innerHTML">
 
-        Rate
+        Ride
     </button>
     {% endif %}
 </header>
 
 <form class="filter-form"
-    hx-get="/twists/{{ twist_id }}/ratings/templates/averages"
+    hx-get="/twists/{{ twist_id }}/rides/templates/averages"
     hx-ext="morph"
     hx-target="next .averages-list"
     hx-swap="morph:innerHTML"
@@ -21,27 +21,27 @@
 
     <fieldset class="filter-fieldset">
         <div class="filter-group" title="Filter between all or your Twists">
-            <input type="radio" id="own_all_ratings_in_{{ twist_id }}" name="ownership" value="all" checked>
-            <label class="label-button" for="own_all_ratings_in_{{ twist_id }}">All Ratings</label>
-            <input type="radio" id="own_own_ratings_in_{{ twist_id }}" name="ownership" value="own">
-            <label class="label-button" for="own_own_ratings_in_{{ twist_id }}">My Ratings</label>
+            <input type="radio" id="own_all_rides_in_{{ twist_id }}" name="ownership" value="all" checked>
+            <label class="label-button" for="own_all_rides_in_{{ twist_id }}">All Rides</label>
+            <input type="radio" id="own_own_rides_in_{{ twist_id }}" name="ownership" value="own">
+            <label class="label-button" for="own_own_rides_in_{{ twist_id }}">My Rides</label>
         </div>
     </fieldset>
 </form>
 
 <ul class="averages-list"
-    hx-get="/twists/{{ twist_id }}/ratings/templates/averages"
+    hx-get="/twists/{{ twist_id }}/rides/templates/averages"
     hx-swap="innerHTML"
     hx-trigger="load">
 </ul>
 
 <footer
-    hx-get="/twists/{{ twist_id }}/ratings/templates/view_all_button"
+    hx-get="/twists/{{ twist_id }}/rides/templates/view_all_button"
     hx-target="find button"
     hx-swap="outerHTML"
     hx-trigger="load, {{ EVENTS.REFRESH_AVERAGES }}[event.detail.value == '{{ twist_id }}'] from:body">
 
-    {% include "fragments/ratings/view_all.html" %}
+    {% include "fragments/rides/view_all.html" %}
 
     {% if can_delete_twist %}
     <button class="button button-very-small button-link" onclick="document.querySelector('#modal-delete-twist').showModal()"
