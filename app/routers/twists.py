@@ -85,10 +85,10 @@ async def delete_twist(
             raise_http("You do not have permission to delete this Twist", status_code=403)
 
     # Delete the Twist
-    result = await session.execute(
-        delete(Twist).where(Twist.id == twist_id)
+    result = await session.scalar(
+        delete(Twist).where(Twist.id == twist_id).returning(Twist.id)
     )
-    if result.rowcount == 0:
+    if result is None:
         raise_http(f"Twist with id '{twist_id}' not found", status_code=404)
 
     await session.commit()
