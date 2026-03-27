@@ -5,6 +5,7 @@ import {
 } from './createTwist.js';
 import { registerTwistListeners } from './displayTwist.js';
 import { initMap } from './map.js';
+import { initRangeSlider } from './slider.js';
 import { getFormDataAsString } from './utils.js';
 
 
@@ -78,3 +79,5 @@ registerServerCommandListeners();
 registerTwistListeners(map);
 registerTwistCreationListeners(map);
 overrideXHR();
+
+initRangeSlider('rating');

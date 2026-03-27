@@ -110,10 +110,10 @@ async def delete_rating(
             raise_http("You do not have permission to delete this Rating", status_code=403)
 
     # Delete the Rating
-    result = await session.execute(
-        delete(Rating).where(Rating.id == rating_id, Rating.twist_id == twist_id)
+    result = await session.scalar(
+        delete(Rating).where(Rating.id == rating_id, Rating.twist_id == twist_id).returning(Rating.id)
     )
-    if result.rowcount == 0:
+    if result is None:
         raise_http(f"Rating with id '{rating_id}' not found for Twist with id '{twist_id}'", status_code=404)
 
     await session.commit()

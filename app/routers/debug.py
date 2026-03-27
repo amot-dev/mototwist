@@ -1,4 +1,5 @@
 from asyncio import gather
+from collections import Counter
 from datetime import date, timedelta
 from fastapi import APIRouter, Depends, File, Form, Request, UploadFile
 from fastapi.responses import HTMLResponse, Response, StreamingResponse
@@ -16,7 +17,7 @@ from app.database import get_db
 from app.models import PavedRating, Twist, UnpavedRating, User
 from app.schemas.debug import SeedRatingsForm
 from app.schemas.types import Coordinate, Waypoint
-from app.services.debug import create_random_rating, generate_weights, reset_id_sequences_for
+from app.services.debug import generate_weights, reset_id_sequences_for, seed_twist_ratings
 from app.users import current_user_optional, current_admin, verify
 from app.utility import raise_http
 
@@ -260,16 +261,13 @@ async def seed_ratings(
 
     ratings_to_add: list[PavedRating | UnpavedRating] = []
 
-    # Seed the "popular" twist
-    for _ in range(seed_data.popular_rating_count):
-        rating = create_random_rating(
-            twist=popular_twist,
-            author=choice(raters),
-            ride_date=choice(date_pool),
-        )
-        ratings_to_add.append(rating)
+    twist_rating_counts: Counter[Twist] = Counter()
 
-    # Distribute the general ratings using weighted random choices
+    # Set rating count for the "popular" Twist
+    if seed_data.popular_rating_count > 0:
+        twist_rating_counts[popular_twist] += seed_data.popular_rating_count
+
+    # Set rating count for remaining Twists using weighted random choices
     if seed_data.rating_count > 0 and general_twists:
         # Generate a list of weights to make twists in the center of the list more likely to be chosen
         # This is a poor man's numpy normal distribution
@@ -284,15 +282,10 @@ async def seed_ratings(
             weights=twist_weights,
             k=seed_data.rating_count
         )
+        twist_rating_counts.update(chosen_twists)
 
-        # For each Twist (Twists may appear in chosen_twists multiple times), create a rating
-        for twist in chosen_twists:
-            rating = create_random_rating(
-                twist=twist,
-                author=choice(raters),
-                ride_date=choice(date_pool),
-            )
-            ratings_to_add.append(rating)
+    # Seed ratings based off counts for each Twist
+    ratings_to_add = seed_twist_ratings(twist_rating_counts, raters, date_pool)
 
     # Add all generated ratings to the session and commit
     session.add_all(ratings_to_add)

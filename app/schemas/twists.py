@@ -5,7 +5,7 @@ from sqlalchemy.orm.attributes import InstrumentedAttribute
 from typing import ClassVar
 from uuid import UUID
 
-from app.models import Twist, User
+from app.models import Rating, Twist, User
 from app.schemas.types import Coordinate, Waypoint
 from app.settings import settings
 
@@ -44,6 +44,8 @@ class TwistFilterParameters(BaseModel):
     ownership: FilterOwnership = FilterOwnership.ALL
     pavement: FilterPavement = FilterPavement.ALL
     ratings: FilterRatings = FilterRatings.ALL
+    rating_min: float = Field(0.0, ge=Rating.CRITERION_MIN_VALUE, le=Rating.CRITERION_MAX_VALUE)
+    rating_max: float = Field(10.0, ge=Rating.CRITERION_MIN_VALUE, le=Rating.CRITERION_MAX_VALUE)
 
     # Ordering
     map_center: Coordinate | None = None

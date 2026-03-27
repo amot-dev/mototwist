@@ -44,6 +44,7 @@ RATING_CRITERIA_UNPAVED: list[RatingCriterion] = [
     if col.name not in RATING_EXCLUDED_COLUMNS
 ]
 
+# Use with care as these are sets, and thus unordered!
 CRITERIA_NAMES_PAVED = {criteria.name for criteria in RATING_CRITERIA_PAVED}
 CRITERIA_NAMES_UNPAVED = {criteria.name for criteria in RATING_CRITERIA_UNPAVED}
 CRITERIA_NAMES_ALL = CRITERIA_NAMES_PAVED.union(CRITERIA_NAMES_UNPAVED)

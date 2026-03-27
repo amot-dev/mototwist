@@ -55,29 +55,49 @@
                 <fieldset class="filter-fieldset">
                     <div class="filter-group" title="Filter Twists by ownership">
                         <input type="radio" id="own_all_twists" name="ownership" value="all" checked>
-                        <label for="own_all_twists">All</label>
+                        <label class="label-button" for="own_all_twists">All</label>
                         <input type="radio" id="own_own_twists" name="ownership" value="own">
-                        <label for="own_own_twists">Mine</label>
+                        <label class="label-button" for="own_own_twists">Mine</label>
                         <input type="radio" id="own_notown_twists" name="ownership" value="notown">
-                        <label for="own_notown_twists">Not Mine</label>
+                        <label class="label-button" for="own_notown_twists">Not Mine</label>
                     </div>
 
                     <div class="filter-group" title="Filter Twists by pavement type">
                         <input type="radio" id="pavement_all_twists" name="pavement" value="all" checked>
-                        <label for="pavement_all_twists">All</label>
+                        <label class="label-button" for="pavement_all_twists">All</label>
                         <input type="radio" id="pavement_paved_twists" name="pavement" value="paved">
-                        <label for="pavement_paved_twists">Paved</label>
+                        <label class="label-button" for="pavement_paved_twists">Paved</label>
                         <input type="radio" id="pavement_unpaved_twists" name="pavement" value="unpaved">
-                        <label for="pavement_unpaved_twists">Unpaved</label>
+                        <label class="label-button" for="pavement_unpaved_twists">Unpaved</label>
                     </div>
 
                     <div class="filter-group" title="Filter Twists by rating status">
                         <input type="radio" id="ratings_all_twists" name="ratings" value="all" checked>
-                        <label for="ratings_all_twists">All</label>
+                        <label class="label-button" for="ratings_all_twists">All</label>
                         <input type="radio" id="ratings_rated_twists" name="ratings" value="rated">
-                        <label for="ratings_rated_twists">Rated</label>
+                        <label class="label-button" for="ratings_rated_twists">Rated</label>
                         <input type="radio" id="ratings_unrated_twists" name="ratings" value="unrated">
-                        <label for="ratings_unrated_twists">Unrated</label>
+                        <label class="label-button" for="ratings_unrated_twists">Unrated</label>
+                    </div>
+
+                    <div class="filter-group range-filter-group" title="Filter by Overall Rating range">
+                        <label>Overall Rating</label>
+
+                        <div class="range-slider-container">
+                            <input type="range"
+                                name="rating_min"
+                                id="rating-slider-min"
+                                min="0" max="10" step="0.1" value="0.0">
+                            <input type="range"
+                                name="rating_max"
+                                id="rating-slider-max"
+                                min="0" max="10" step="0.1" value="10.0">
+                        </div>
+
+                        <div class="range-values-floating">
+                            <output id="rating-slider-min-out" class="range-output" style="--pos: 0;">0.0</output>
+                            <output id="rating-slider-max-out" class="range-output" style="--pos: 100;">10.0</output>
+                        </div>
                     </div>
                 </fieldset>
             </div>

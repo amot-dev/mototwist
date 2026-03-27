@@ -10,7 +10,7 @@ from typing import cast, Literal
 from app.config import templates
 from app.models import Rating, PavedRating, UnpavedRating, User
 from app.schemas.ratings import (
-    CRITERIA_NAMES_PAVED, CRITERIA_NAMES_UNPAVED, RATING_CRITERIA_PAVED, RATING_CRITERIA_UNPAVED,
+    RATING_CRITERIA_PAVED, RATING_CRITERIA_UNPAVED,
     AverageRating, RatingList, RatingListItem
 )
 from app.schemas.twists import TwistBasic, TwistUltraBasic
@@ -174,8 +174,8 @@ async def render_view_modal(
             can_delete_rating=can_delete_rating,
             formatted_date=formatted_date,
             criteria={
-                criterion_name: getattr(rating, criterion_name)
-                for criterion_name in (CRITERIA_NAMES_PAVED if twist.is_paved else CRITERIA_NAMES_UNPAVED)
+                criterion.name: getattr(rating, criterion.name)
+                for criterion in (RATING_CRITERIA_PAVED if twist.is_paved else RATING_CRITERIA_UNPAVED)
             }
         ))
 
