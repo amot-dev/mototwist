@@ -1,5 +1,6 @@
 from datetime import date
-from fastapi import Request
+from typing import Annotated
+from fastapi import Form, Request
 from pydantic import BaseModel
 
 
@@ -26,17 +27,19 @@ class TwistRideForm(BaseModel):
     date: date
     ratings: dict[str, int]
 
+    # TODO: docs annotations for criteria fields
     @classmethod
-    async def as_form(cls, request: Request) -> TwistRideForm:
+    async def as_form(
+        cls,
+        request: Request,
+        date: Annotated[date, Form()]
+    ) -> TwistRideForm:
         """
         TODO
         """
         form_data = await request.form()
 
-        # Extract the date
-        date = form_data.get("date")
-
-        # Scoop up all remaining fields into the ratings dictionary
+        # Scoop up all non-date fields into the ratings dictionary
         ratings = {
             key: value for key, value in form_data.items()
             if key != "date"

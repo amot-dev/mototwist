@@ -1,10 +1,10 @@
 from datetime import date
-from fastapi import APIRouter, Depends, Form, Query, Request
+from fastapi import APIRouter, Depends, Query, Request
 from fastapi.responses import HTMLResponse
 from sqlalchemy import delete, func, select
 from sqlalchemy.exc import MultipleResultsFound, NoResultFound
 from sqlalchemy.ext.asyncio import AsyncSession
-from typing import Annotated, Literal
+from typing import Literal
 
 from app.config import logger
 from app.database import get_db
@@ -27,7 +27,6 @@ router = APIRouter(
 async def create_ride(
     request: Request,
     twist_id: int,
-    # ride_form: Annotated[TwistRideForm, Form()],
     ride_form: TwistRideForm = Depends(TwistRideForm.as_form),
     user: User = Depends(verify(current_user)),
     session: AsyncSession = Depends(get_db)
