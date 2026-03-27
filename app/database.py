@@ -1,6 +1,9 @@
+import asyncio
+
 from alembic import command
 from alembic.config import Config
 from socket import socket
+from sqlalchemy import Connection, inspect
 from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker
 from time import sleep
 
@@ -34,17 +37,54 @@ def create_automigration(message: str):
     command.revision(alembic_cfg, message=message, autogenerate=True)
 
 
-def apply_migrations():
-    logger.info("Applying database migrations...")
-    alembic_cfg = Config("alembic.ini")
+async def is_fresh_db() -> bool:
+    """
+    TODO
+    """
+    engine = create_async_engine(settings.SQLALCHEMY_DATABASE_URL)
 
-    # Alembic needs a sync connection
+    async with engine.begin() as connection:
+        # Inspection requires a sync connection context
+        def get_tables(sync_connection: Connection) -> list[str]:
+            return inspect(sync_connection).get_table_names()
+
+        existing_tables = await connection.run_sync(get_tables)
+
+        if not existing_tables:
+            logger.info("Fresh database detected. Building schema from models...")
+            # Build the schema directly from models
+            await connection.run_sync(Base.metadata.create_all)
+            return True
+
+        return False
+
+
+def apply_migrations():
+    """
+    TODO
+    """
+    logger.info("Checking database state for migrations...")
+
+    # Configure alembic
+    alembic_cfg = Config("alembic.ini")
     alembic_cfg.set_main_option('sqlalchemy.url', settings.SQLALCHEMY_DATABASE_URL)
     alembic_cfg.attributes['target_metadata'] = Base.metadata
-    command.upgrade(alembic_cfg, "head")
+
+    # Check if the database is completely empty
+    if asyncio.run(is_fresh_db()):
+        # Tell Alembic that this database is fully up to date
+        logger.info("Stamping Alembic version to 'head'...")
+        command.stamp(alembic_cfg, "head")
+    else:
+        # Standard upgrade path for existing users
+        logger.info("Existing database detected. Running Alembic upgrades...")
+        command.upgrade(alembic_cfg, "head")
 
 
 def wait_for_db():
+    """
+    TODO
+    """
     while True:
         s = socket()
         s.settimeout(2)
