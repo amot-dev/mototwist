@@ -136,7 +136,7 @@ async def render_list(
         paved_criteria = await Criterion.get_list(session, is_paved=True)
         paved_sum = sum(
             (
-                func.avg(Ride.ratings[c.slug])
+                func.avg(Ride.ratings[c.slug].as_integer())
                 for c in paved_criteria
             ),
             start=literal(0.0)
@@ -147,7 +147,7 @@ async def render_list(
         unpaved_criteria = await Criterion.get_list(session, is_paved=False)
         unpaved_sum = sum(
             (
-                func.avg(Ride.ratings[c.slug])
+                func.avg(Ride.ratings[c.slug].as_integer())
                 for c in unpaved_criteria
             ),
             start=literal(0.0)

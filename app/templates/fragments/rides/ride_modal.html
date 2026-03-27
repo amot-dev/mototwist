@@ -7,20 +7,20 @@
 
     <div class="form-group">
         <label for="ride-date">Ride Date</label>
-        <input type="date" id="ride-date" name="ride_date" value="{{ today }}" max="{{ tomorrow }}" required>
+        <input type="date" id="ride-date" name="date" value="{{ today }}" max="{{ tomorrow }}" required>
     </div>
 
-    {% for criteria in criteria_list %}
+    {% for criterion in criteria %}
     <div class="form-group slider-group">
-        <label for="{{ criteria.name }}" title="{{ criteria.desc }}">{{ criteria.name.replace('_', ' ') | title }}</label>
+        <label for="{{ criterion.slug }}" title="{{ criterion.description }}">{{ criterion.slug.replace('_', ' ') | title }}</label>
         <input type="range"
-            id="{{ criteria.name }}"
-            name="{{ criteria.name }}"
+            id="{{ criterion.slug }}"
+            name="{{ criterion.slug }}"
             min="{{ criterion_min_value }}"
             max="{{ criterion_max_value }}"
             value="{{ criterion_initial_value }}"
             oninput="this.nextElementSibling.value = this.value">
-        <output for="{{ criteria.name }}">5</output>
+        <output for="{{ criterion.slug }}">5</output>
     </div>
     {% endfor %}
 

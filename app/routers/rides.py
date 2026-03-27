@@ -27,7 +27,8 @@ router = APIRouter(
 async def create_ride(
     request: Request,
     twist_id: int,
-    ride_form: Annotated[TwistRideForm, Form()],
+    # ride_form: Annotated[TwistRideForm, Form()],
+    ride_form: TwistRideForm = Depends(TwistRideForm.as_form),
     user: User = Depends(verify(current_user)),
     session: AsyncSession = Depends(get_db)
 ) -> HTMLResponse:
@@ -67,6 +68,7 @@ async def create_ride(
         "author": user,
         "twist_id": twist_id,
     })
+
     new_ride = Ride(**ride_data)
     session.add(new_ride)
     await session.commit()

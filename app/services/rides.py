@@ -145,7 +145,7 @@ async def render_averages(
     """
     Build and return the TemplateResponse for the ratings averages.
     """
-    return templates.TemplateResponse("fragments/ratings/averages.html", {
+    return templates.TemplateResponse("fragments/rides/averages.html", {
         "request": request,
         "average_ratings": await calculate_average_rating(session, user, twist, ownership, round_to=1),
         "criterion_max_value": Criterion.MAX_VALUE
@@ -189,7 +189,7 @@ async def render_ride_modal(
         "twist": twist,
         "today": today,
         "tomorrow": tomorrow,
-        "criteria_list": criteria,
+        "criteria": criteria,
         "criterion_min_value": Criterion.MIN_VALUE,
         "criterion_max_value": Criterion.MAX_VALUE,
         "criterion_initial_value": criterion_initial_value

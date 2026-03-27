@@ -9,7 +9,7 @@ from shapely.geometry.base import BaseGeometry
 from sqlalchemy import Boolean, Date, ForeignKey, Integer, Sequence, SmallInteger, String, inspect, select, type_coerce
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.dialects.postgresql import JSONB
-from sqlalchemy.orm import DeclarativeBase, Mapped, MappedAsDataclass, mapped_column, relationship
+from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
 from sqlalchemy.types import TypeDecorator
 from typing import Any, Type
 from uuid import UUID
@@ -156,54 +156,49 @@ class User(SQLAlchemyBaseUserTableUUID, SerializationMixin, Base):
         return f"[{self.id}] {self.email}"
 
 
-class Twist(SerializationMixin, MappedAsDataclass, Base):
+class Twist(SerializationMixin, Base):
     __tablename__ = "twists"
 
     # Constraints
     NAME_MAX_LENGTH = 255
 
-    id: Mapped[int] = mapped_column(Integer, primary_key=True, init=False)
+    id: Mapped[int] = mapped_column(
+        Integer, primary_key=True
+    )
 
     # Parents
     author_id: Mapped[UUID | None] = mapped_column(
         GUID,
         ForeignKey("users.id", ondelete="SET NULL"),
-        nullable=True, default=None
+        nullable=True
     )
     author: Mapped[User | None] = relationship(
         "User",
-        back_populates="twists",
-        default=None
+        back_populates="twists"
     )
 
     # Data
     name: Mapped[str] = mapped_column(
-        String(NAME_MAX_LENGTH),
-        index=True, nullable=False, default=None
+        String(NAME_MAX_LENGTH), index=True, nullable=False
     )
     is_paved: Mapped[bool] = mapped_column(
-        Boolean,
-        nullable=False, default=None
+        Boolean, nullable=False
     )
     waypoints: Mapped[list[Waypoint]] = mapped_column(
-        PydanticJSONB(Waypoint),
-        nullable=False, default=None
+        PydanticJSONB(Waypoint), nullable=False
     )
     route_geometry: Mapped[list[Coordinate]] = mapped_column(
-        PostGISLine(Coordinate),
-        nullable=False, default=None
+        PostGISLine(Coordinate), nullable=False
     )  # Geometry object automatically creates an index
     simplification_tolerance_m: Mapped[int] = mapped_column(
-        SmallInteger,
-        nullable=False, default=None
+        SmallInteger, nullable=False
     )
 
     # Children
     rides: Mapped[list["Ride"]] = relationship(
         "Ride",
         back_populates="twist",
-        cascade="all, delete-orphan",
-        default=None
+        cascade="all, delete-orphan"
     )
 
 
@@ -212,42 +207,40 @@ class Twist(SerializationMixin, MappedAsDataclass, Base):
         return f"[{self.id}] {self.name} ({paved})"
 
 
-class Ride(SerializationMixin, MappedAsDataclass, Base):
+class Ride(SerializationMixin, Base):
     __tablename__ = "rides"
 
-    id: Mapped[int] = mapped_column(Integer, primary_key=True, init=False)
+    id: Mapped[int] = mapped_column(
+        Integer, primary_key=True
+    )
 
     # Parents
     author_id: Mapped[UUID | None] = mapped_column(
         GUID,
         ForeignKey("users.id", ondelete="SET NULL"),
-        nullable=True, default=None
+        nullable=True
     )
     author: Mapped[User | None] = relationship(
         "User",
-        back_populates="rides",
-        default=None
+        back_populates="rides"
     )
 
     twist_id: Mapped[int] = mapped_column(
         Integer,
         ForeignKey("twists.id", ondelete="CASCADE"),
-        nullable=False, default=None
+        nullable=False
     )
     twist: Mapped[Twist] = relationship(
         "Twist",
-        back_populates="rides",
-        default=None
+        back_populates="rides"
     )
 
     # Data
     date: Mapped[date] = mapped_column(
-        Date,
-        nullable=False, default=None
+        Date, nullable=False
     )
     ratings: Mapped[dict[str, int]] = mapped_column(
-        JSONB,
-        nullable=False, default=None
+        JSONB, nullable=False
     )
 
 
@@ -255,23 +248,30 @@ class Ride(SerializationMixin, MappedAsDataclass, Base):
         return f"[{self.twist_id}.{self.id}]"
 
 
-class Criterion(SerializationMixin, MappedAsDataclass, Base):
+class Criterion(SerializationMixin, Base):
     __tablename__ = "criteria"
 
     MIN_VALUE = 0
     MAX_VALUE = 10
 
-    slug: Mapped[str] = mapped_column(String(100), primary_key=True)
+    slug: Mapped[str] = mapped_column(
+        String(100), primary_key=True
+    )
     sort_order: Mapped[int] = mapped_column(
         Integer,
         Sequence("criteria_sort_order_seq"),
-        init=False,
         server_default=Sequence("criteria_sort_order_seq").next_value()
     )
 
-    description: Mapped[str | None] = mapped_column(String(255), nullable=True)
-    for_paved: Mapped[bool] = mapped_column(Boolean, nullable=False)
-    for_unpaved: Mapped[bool] = mapped_column(Boolean, nullable=False)
+    description: Mapped[str | None] = mapped_column(
+        String(255), nullable=True
+    )
+    for_paved: Mapped[bool] = mapped_column(
+        Boolean, nullable=False
+    )
+    for_unpaved: Mapped[bool] = mapped_column(
+        Boolean, nullable=False
+    )
 
 
     @classmethod
