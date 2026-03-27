@@ -199,11 +199,11 @@ class PavedRating(SerializationMixin, Base, Rating):
     ride_date: Mapped[date] = mapped_column(Date, default=date.today)
 
     # Data
-    traffic: Mapped[int] = mapped_column(SmallInteger, doc="Level of vehicle traffic on the road")
+    seclusion: Mapped[int] = mapped_column(SmallInteger, doc="Infrequency of other vehicles on the road")
     scenery: Mapped[int] = mapped_column(SmallInteger, doc="Visual appeal of surroundings")
     pavement: Mapped[int] = mapped_column(SmallInteger, doc="Quality of road surface")
     twistyness: Mapped[int] = mapped_column(SmallInteger, doc="Tightness and frequency of turns")
-    intensity: Mapped[int] = mapped_column(SmallInteger, doc="Overall riding energy the road draws out, from mellow to adrenaline-pumping")
+    intensity: Mapped[int] = mapped_column(SmallInteger, doc="Overall riding energy the road draws out")
 
     def __repr__(self):
         return f"[{self.id}] (Paved)"
@@ -225,7 +225,7 @@ class UnpavedRating(SerializationMixin, Base, Rating):
     ride_date: Mapped[date] = mapped_column(Date, default=date.today)
 
     # Data
-    traffic: Mapped[int] = mapped_column(SmallInteger, doc="Frequency of other vehicles or trail users")
+    seclusion: Mapped[int] = mapped_column(SmallInteger, doc="Infrequency of other vehicles on the road")
     scenery: Mapped[int] = mapped_column(SmallInteger, doc="Visual appeal of surroundings")
     surface_consistency: Mapped[int] = mapped_column(SmallInteger, doc="Predictability of traction across the route")
     technicality: Mapped[int] = mapped_column(SmallInteger, doc="Challenge level from terrain features like rocks, ruts, sand, or mud")

@@ -23,7 +23,7 @@ from app.schemas.users import UserCreate
 from app.services.auth import login_and_set_response_cookie
 from app.settings import Settings, settings
 from app.users import UserManager, current_user_optional, get_user_db
-from app.utility import format_loc_for_user, raise_http, sort_schema_names, update_schema_name
+from app.utility import format_loc_for_user, raise_http, sort_schema_names
 
 
 @asynccontextmanager
