@@ -201,8 +201,27 @@ Follow these steps to set up and run the application in development mode.
 > [!TIP]
 > Saving ratings is mostly useless unless you're using debug mode to migrate your data. Prefer saving Twists and seeding rating data after loading.
 
-6.  **Start Developing:**
+6.  **Set up a `venv`:**
+    This is recommended for static analysis.
+    ```bash
+    python -m venv .venv
+    source .venv/bin/activate
+    python -m pip install pip -U # optional
+    python -m pip install requirements.txt # for exact pinned versions
+    python -m pip install requirements.in # for latest versions (untested)
+    ```
+
+8.  **Start Developing:**
     More thorough documentation for this is coming (maybe), but I'm sure you can figure it out.
+
+9.  **Updating packages:**
+    High-level dependencies are stored in `requirements.in` and versions are pinned in `requirements.txt`. Pending a more robust package management system than pip (too busy to switch over at the moment), the process is as follows:
+    ```bash
+    # Setup
+    python -m pip install requirements.in
+    python -m pip freeze > requirements.txt
+    ```
+    Ensure the new versions are well-tested. If the Python version goes up, ensure the image is updated in the `Dockerfile` too.
 
 > [!TIP]
 > You may run mototwist in an interactive terminal with:
