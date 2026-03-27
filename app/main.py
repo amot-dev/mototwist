@@ -6,7 +6,6 @@ from fastapi.staticfiles import StaticFiles
 
 from httpx import AsyncClient, HTTPStatusError
 from pydantic_core import ErrorDetails
-from sqlalchemy import func, select
 from starlette.middleware.sessions import SessionMiddleware
 import sys
 from time import time
@@ -19,10 +18,10 @@ from app.events import EventSet
 from app.models import User
 from app.redis_client import redis_client
 from app.routers import admin, auth, debug, ratings, twists, users
-from app.schemas.users import UserCreate
+from app.services.admin import create_first_admin
 from app.services.auth import login_and_set_response_cookie
 from app.settings import Settings, settings
-from app.users import UserManager, current_user_optional, get_user_db
+from app.users import current_user_optional
 from app.utility import format_loc_for_user, raise_http, sort_schema_names
 
 
@@ -33,24 +32,7 @@ async def lifespan(app: FastAPI):
     """
     async for session in get_db():
         # Create initial admin user
-        result = await session.execute(
-            select(func.count()).select_from(User)
-        )
-        user_count = result.scalar_one()
-        if user_count == 0:
-            user_data = UserCreate(
-                email=settings.MOTOTWIST_ADMIN_EMAIL,
-                password=settings.MOTOTWIST_ADMIN_PASSWORD,
-                is_active=True,
-                is_superuser=True,
-                is_verified=True,  # Force verification for initial admin to prevent oopsies
-            )
-            user_db = await anext(get_user_db(session))
-            user_manager = UserManager(user_db)
-            await user_manager.create(user_data)
-            logger.info(f"Admin user '{settings.MOTOTWIST_ADMIN_EMAIL}' created")
-        else:
-            logger.info("Admin user creation skipped")
+        await create_first_admin(session)
 
     yield
 
