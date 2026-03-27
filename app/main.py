@@ -29,7 +29,11 @@ from app.utility import format_loc_for_user, raise_http, sort_schema_names
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """
-    TODO
+    Handle application startup and shutdown lifecycle events.
+
+    Ensure the initial admin and default rating criteria are initialized on startup.
+
+    :param app: The FastAPI application instance.
     """
     async for session in get_db():
         # Create initial admin user

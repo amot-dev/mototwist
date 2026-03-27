@@ -26,7 +26,7 @@ async def get_db():
 
 def create_automigration(message: str):
     """
-    Creates a new Alembic automigration file based on model changes.
+    Create a new Alembic automigration file based on model changes.
     """
     logger.info(f"Creating automigration with message: '{message}'...")
 
@@ -39,7 +39,7 @@ def create_automigration(message: str):
 
 async def is_fresh_db() -> bool:
     """
-    TODO
+    Check if the db has any tables. If not, immediately build schema directly from models.
     """
     engine = create_async_engine(settings.SQLALCHEMY_DATABASE_URL)
 
@@ -61,7 +61,9 @@ async def is_fresh_db() -> bool:
 
 def apply_migrations():
     """
-    TODO
+    Migrate the database to the latest version.
+
+    If this is a fresh database, this is done without going through every single migration.
     """
     logger.info("Checking database state for migrations...")
 
@@ -83,7 +85,7 @@ def apply_migrations():
 
 def wait_for_db():
     """
-    TODO
+    Wait for the database to be available.
     """
     while True:
         s = socket()

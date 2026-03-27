@@ -277,7 +277,11 @@ class Criterion(SerializationMixin, Base):
     @classmethod
     async def get_list(cls, session: AsyncSession, is_paved: bool | None = None) -> list[Criterion]:
         """
-        TODO
+        Retrieve a sorted list of criteria filtered by pavement type.
+
+        :param session: The database session for the query.
+        :param is_paved: Filter for paved (True), unpaved (False), or all (None) criteria.
+        :return: A list of Criterion objects.
         """
         if is_paved is None:
             filter = cls.for_paved or cls.for_unpaved
@@ -293,7 +297,11 @@ class Criterion(SerializationMixin, Base):
     @classmethod
     async def get_set(cls, session: AsyncSession, is_paved: bool | None = None) -> set[str]:
         """
-        TODO
+        Retrieve a set of unique criteria slugs filtered by pavement type.
+
+        :param session: The database session for the query.
+        :param is_paved: Filter for paved (True), unpaved (False), or all (None) criteria.
+        :return: A set of strings containing the criteria slugs.
         """
         if is_paved is None:
             filter = cls.for_paved or cls.for_unpaved

@@ -148,7 +148,7 @@ async def seed_twist_rides(
     Take a dictionary mapping Twists to the number of rides they need.
     Generate rides clustered around a specific bias for each twist.
 
-    :param session: TODO
+    :param session: The database session for criteria retrieval.
     :param twist_ride_counts: A dictionary mapping Twist objects to the desired number of generated rides.
     :param authors: A list of User objects from which to randomly select ride authors.
     :param date_pool: A list of date objects from which to randomly select the date for each ride.

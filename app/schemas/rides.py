@@ -35,7 +35,13 @@ class TwistRideForm(BaseModel):
         date: Annotated[date, Form()]
     ) -> TwistRideForm:
         """
-        TODO
+        Parse incoming ride form data into a form model.
+
+        Group all non-date fields (criteria) into ratings.
+
+        :param request: The HTTP request containing the form body.
+        :param date: The specific date field extracted from the form.
+        :return: A complete TwistRideForm instance.
         """
         form_data = await request.form()
 

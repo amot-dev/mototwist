@@ -14,7 +14,10 @@ from app.users import UserManager, get_user_db
 
 async def create_first_admin(session: AsyncSession) -> bool:
     """
-    TODO
+    Provision an initial superuser account if no users exist in the system.
+
+    :param session: The database session for user creation.
+    :return: True if the admin was created, False if users already exist.
     """
     result = await session.execute(
         select(func.count()).select_from(User)

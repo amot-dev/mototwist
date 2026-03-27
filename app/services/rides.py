@@ -16,7 +16,10 @@ from app.settings import settings
 
 async def initialize_criteria(session: AsyncSession) -> bool:
     """
-    TODO
+    Populate the database with the default suite of rating criteria.
+
+    :param session: The database session for criteria creation.
+    :return: True if criteria were initialized, False if data already exists.
     """
     result = await session.execute(
         select(func.count()).select_from(Criterion)
