@@ -61,11 +61,12 @@ async def create_ride(
 
         raise_http(error_msg.rstrip("."), status_code=500)
 
-    # Create the new rating instance, linking it to the Twist
-    ride_data = ride_form.model_dump()
+    # Attach the actual Weather instance directly
+    ride_data = ride_form.model_dump(exclude={"weather"})
     ride_data.update({
         "author": user,
         "twist_id": twist_id,
+        "weather": ride_form.weather
     })
 
     new_ride = Ride(**ride_data)

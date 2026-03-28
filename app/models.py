@@ -244,9 +244,6 @@ class Ride(SerializationMixin, Base):
     date: Mapped[date] = mapped_column(
         Date, nullable=False
     )
-    ratings: Mapped[dict[str, int]] = mapped_column(
-        JSONB, nullable=False
-    )
     weather: Mapped[Weather] = composite(
         mapped_column("weather_temperature", WEATHER_TEMPERATURE_ENUM, nullable=False),
         mapped_column("weather_light", WEATHER_LIGHT_LEVEL_ENUM, nullable=False),
@@ -254,6 +251,9 @@ class Ride(SerializationMixin, Base):
         mapped_column("weather_precipitation", WEATHER_INTENSITY_ENUM, nullable=False),
         mapped_column("weather_wind", WEATHER_INTENSITY_ENUM, nullable=False),
         mapped_column("weather_fog", WEATHER_INTENSITY_ENUM, nullable=False)
+    )
+    ratings: Mapped[dict[str, int]] = mapped_column(
+        JSONB, nullable=False
     )
 
 

@@ -59,5 +59,11 @@ class Weather:
         HAILING = "Hailing"
 
 
+    HAS_NO_PRECIPITATION = [
+        Type.SUNNY,
+        Type.CLOUDY
+    ]
+
+
 class Waypoint(Coordinate):
     name: str

@@ -296,6 +296,62 @@ ul {
             cursor: not-allowed;
         }
     }
+
+    .two-col-grid {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: var(--padding-sm) var(--padding-md);
+    }
+
+    .two-col-grid .form-group {
+        margin-bottom: 0;
+    }
+
+    .select-wrapper {
+        position: relative;
+
+        &::after {
+            content: "▼";
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            position: absolute;
+            right: var(--padding-md);
+            top: 50%;
+            transform: translateY(-50%);
+            pointer-events: none;
+        }
+    }
+
+    input[type="range"],
+    input[type="date"] {
+        accent-color: var(--accent);
+    }
+
+    select {
+        width: 100%;
+        border: var(--border-default);
+        border-radius: var(--radius-sm);
+        box-sizing: border-box;
+        padding: var(--padding-md);
+        color: var(--text-offwhite);
+        background-color: var(--bg-charcoal);
+        cursor: pointer;
+        appearance: none;
+        -webkit-appearance: none;
+        -moz-appearance: none;
+    }
+
+    input[type="date"]:focus,
+    select:focus {
+        outline: 1px solid var(--accent);
+        border-color: var(--accent);
+    }
+
+    select:disabled {
+        opacity: 0.6;
+        background-color: var(--panel-slate);
+        cursor: not-allowed;
+    }
 }
 
 label {
@@ -1346,6 +1402,10 @@ aside {
 
     .mobile-content {
        display: inline-block;
+    }
+
+    .two-col-grid {
+        grid-template-columns: 1fr;
     }
 
     #map {

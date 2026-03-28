@@ -3,6 +3,8 @@ from typing import Annotated
 from fastapi import Form, Request
 from pydantic import BaseModel
 
+from app.schemas.types import Weather
+
 
 class AverageRating(BaseModel):
     rating: float
@@ -25,9 +27,10 @@ class RideList(BaseModel):
 
 class TwistRideForm(BaseModel):
     date: date
+    weather: Weather
     ratings: dict[str, int]
 
-    # TODO: docs annotations for criteria fields
+    # TODO: docs annotations for non-date fields
     @classmethod
     async def as_form(
         cls,
@@ -37,7 +40,8 @@ class TwistRideForm(BaseModel):
         """
         Parse incoming ride form data into a form model.
 
-        Group all non-date fields (criteria) into ratings.
+        Group all "criterion_" fields into ratings.
+        Group all "weather_" fields into weather.
 
         :param request: The HTTP request containing the form body.
         :param date: The specific date field extracted from the form.
@@ -45,14 +49,26 @@ class TwistRideForm(BaseModel):
         """
         form_data = await request.form()
 
-        # Scoop up all non-date fields into the ratings dictionary
-        ratings = {
-            key: value for key, value in form_data.items()
-            if key != "date"
+        weather: dict[str, str] = {
+            "precipitation": Weather.Intensity.NONE
         }
+        ratings: dict[str, int] = {}
 
-        # Instantiate and return the model
+        for key, value in form_data.items():
+            # Guarantee to the type checker that values are strings
+            if not isinstance(value, str):
+                continue
+
+            if key.startswith("criterion_"):
+                slug = key.replace("criterion_", "", 1)
+                ratings[slug] = int(value)
+
+            elif key.startswith("weather_"):
+                prop = key.replace("weather_", "", 1)
+                weather[prop] = value
+
         return cls.model_validate({
             "date": date,
+            "weather": weather,
             "ratings": ratings
         })

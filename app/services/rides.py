@@ -11,6 +11,7 @@ from app.config import logger, templates
 from app.models import Criterion, Ride, User
 from app.schemas.rides import AverageRating, RideList, RideListItem
 from app.schemas.twists import TwistBasic, TwistUltraBasic
+from app.schemas.types import Weather
 from app.settings import settings
 
 
@@ -192,6 +193,7 @@ async def render_ride_modal(
         "twist": twist,
         "today": today,
         "tomorrow": tomorrow,
+        "Weather": Weather,
         "criteria": criteria,
         "criterion_min_value": Criterion.MIN_VALUE,
         "criterion_max_value": Criterion.MAX_VALUE,

@@ -120,6 +120,57 @@ export function registerCopyButtonListener() {
 
 
 /**
+ * Sets up a global HTMX load listener to handle dynamic weather
+ * form logic, specifically disabling precipitation for certain weather types.
+ *
+ * The weather type input is expected to have a `data-noPrecipitation` attribute
+ * detailing incompatible types, and the precipitation input should have a
+ * `data-none-value` attribute specifying the correct fallback state.
+ *
+ * This should be called once on application startup.
+ *
+ * @returns {void}
+ */
+export function registerRideFormWeatherTypeListener() {
+    document.body.addEventListener('htmx:load', function() {
+        /** @type {HTMLElement | null} */
+        const typeSelect = document.getElementById('weather-type');
+        /** @type {HTMLElement | null} */
+        const precipitationSelect = document.getElementById('weather-precipitation');
+
+        // Silently exit if the modal isn't currently in the DOM
+        if (!(typeSelect instanceof HTMLSelectElement) || !(precipitationSelect instanceof HTMLSelectElement)) {
+            return;
+        }
+
+        const noPrecipitationTypes = (typeSelect.dataset.noPrecipitation || '').split(',');
+        const noneValue = precipitationSelect.dataset.noneValue || 'None';
+
+        function handlePrecipitationState() {
+            if (!(typeSelect instanceof HTMLSelectElement) || !(precipitationSelect instanceof HTMLSelectElement)) {
+                return;
+            }
+
+            // Disable precipitation selection if the weather type does not have precipitation
+            if (noPrecipitationTypes.includes(typeSelect.value)) {
+                precipitationSelect.value = noneValue;
+                precipitationSelect.disabled = true;
+            } else {
+                precipitationSelect.disabled = false;
+            }
+        }
+
+        // Set the initial state
+        handlePrecipitationState();
+
+        // Prevent duplicate listeners on subsequent HTMX loads
+        typeSelect.removeEventListener('change', handlePrecipitationState);
+        typeSelect.addEventListener('change', handlePrecipitationState);
+    });
+}
+
+
+/**
  * Serializes all of a form's data into a URL-encoded string.
  * This creates a lightweight "snapshot" of the form's current state,
  * ideal for comparing against an original state to detect changes.
