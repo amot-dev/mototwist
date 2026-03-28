@@ -15,8 +15,9 @@ class RideListItem(BaseModel):
     id: int
     author_name: str
     can_delete: bool
-    formatted_date: str
 
+    formatted_date: str
+    weather: Weather
     ratings: dict[str, int]
 
 

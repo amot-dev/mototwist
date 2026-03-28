@@ -244,6 +244,7 @@ async def render_view_modal(
             author_name=author_name,
             can_delete=can_delete,
             formatted_date=formatted_date,
+            weather=ride.weather,
             ratings={
                 c.slug: ride.ratings[c.slug]
                 for c in criteria

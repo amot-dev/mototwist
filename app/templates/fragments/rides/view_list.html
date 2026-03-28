@@ -20,6 +20,7 @@
         </button>
         {% endif %}
     </header>
+    <div class="ride-weather" title="{{ ride.weather }}">{{ ride.weather.emoji | replace(' ', '&nbsp;') | safe }}</div>
     <ul>
         {% for slug, rating in ride.ratings.items() %}
         {{ render_rating(

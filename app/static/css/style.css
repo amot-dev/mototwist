@@ -1243,9 +1243,7 @@ aside {
     background-color: var(--bg-charcoal);
 
     > header {
-        margin-bottom: var(--padding-md);
-        border-bottom: var(--border-default);
-        padding-bottom: var(--padding-md);
+        padding-bottom: var(--padding-sm);
 
         h3 {
             margin: 0;
@@ -1256,6 +1254,12 @@ aside {
                 color: var(--text-muted)
             }
         }
+    }
+
+    > .ride-weather {
+        margin-bottom: var(--padding-sm);
+        border-bottom: var(--border-default);
+        padding-bottom: var(--padding-sm);
     }
 }
 
