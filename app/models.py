@@ -6,15 +6,15 @@ from geoalchemy2.shape import from_shape, to_shape  # type: ignore[reportUnknown
 from pydantic import BaseModel
 from shapely.geometry import LineString
 from shapely.geometry.base import BaseGeometry
-from sqlalchemy import Boolean, Date, ForeignKey, Integer, Sequence, SmallInteger, String, inspect, select, type_coerce
+from sqlalchemy import Boolean, Date, Enum, ForeignKey, Integer, Sequence, SmallInteger, String, inspect, select, type_coerce
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.dialects.postgresql import JSONB
-from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
+from sqlalchemy.orm import DeclarativeBase, Mapped, composite, mapped_column, relationship
 from sqlalchemy.types import TypeDecorator
 from typing import Any, Type
 from uuid import UUID
 
-from app.schemas.types import Coordinate, Waypoint
+from app.schemas.types import Coordinate, Waypoint, Weather
 
 class Base(DeclarativeBase):
     pass
@@ -210,6 +210,11 @@ class Twist(SerializationMixin, Base):
 class Ride(SerializationMixin, Base):
     __tablename__ = "rides"
 
+    WEATHER_TEMPERATURE_ENUM = Enum(Weather.Temperature, name="weather_temperature")
+    WEATHER_LIGHT_LEVEL_ENUM = Enum(Weather.LightLevel, name="weather_light_level")
+    WEATHER_TYPE_ENUM = Enum(Weather.Type, name="weather_type")
+    WEATHER_INTENSITY_ENUM = Enum(Weather.Intensity, name="weather_intensity")
+
     id: Mapped[int] = mapped_column(
         Integer, primary_key=True
     )
@@ -241,6 +246,14 @@ class Ride(SerializationMixin, Base):
     )
     ratings: Mapped[dict[str, int]] = mapped_column(
         JSONB, nullable=False
+    )
+    weather: Mapped[Weather] = composite(
+        mapped_column("weather_temperature", WEATHER_TEMPERATURE_ENUM, nullable=False),
+        mapped_column("weather_light", WEATHER_LIGHT_LEVEL_ENUM, nullable=False),
+        mapped_column("weather_type", WEATHER_TYPE_ENUM, nullable=False),
+        mapped_column("weather_precipitation", WEATHER_INTENSITY_ENUM, nullable=False),
+        mapped_column("weather_wind", WEATHER_INTENSITY_ENUM, nullable=False),
+        mapped_column("weather_fog", WEATHER_INTENSITY_ENUM, nullable=False)
     )
 
 
