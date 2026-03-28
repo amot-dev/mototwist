@@ -1,10 +1,11 @@
 from datetime import date
-from random import choice, gauss, random, sample, uniform
+from random import choice, choices, gauss, random, sample, uniform
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession
 from typing import Type
 
 from app.models import Criterion, Ride, Twist, User
+from app.schemas.types import Weather
 
 
 async def reset_id_sequences_for(
@@ -97,6 +98,64 @@ def generate_criteria_biases(
     return biases
 
 
+def create_random_weather() -> Weather:
+    """
+    Generate a randomized Weather object with logically consistent attributes.
+
+    Enforces logical weather patterns (e.g., no precipitation when sunny,
+    no hot snowstorms) while providing a varied spread of data for testing.
+    Fog is weighted to be less frequent to mimic real-world distribution.
+
+    :return: A logically consistent, randomized Weather instance.
+    """
+    # Choose a base weather type
+    weather_type = choice(list(Weather.Type))
+
+    # Determine precipitation based on type
+    if weather_type in Weather.HAS_NO_PRECIPITATION:
+        precipitation = Weather.Intensity.NONE
+    else:
+        # If it's rainy, snowy, or hailing, it must have some intensity > NONE
+        precipitation = choice([
+            Weather.Intensity.LIGHT,
+            Weather.Intensity.MEDIUM,
+            Weather.Intensity.HEAVY
+        ])
+
+    # Determine temperature based on precipitation type to prevent logical contradictions
+    if weather_type == Weather.Type.SNOWY or weather_type == Weather.Type.HAILING:
+        temperature = choice([Weather.Temperature.FREEZING, Weather.Temperature.COLD])
+    elif weather_type == Weather.Type.RAINY:
+        temperature = choice([
+            Weather.Temperature.COLD,
+            Weather.Temperature.NEUTRAL,
+            Weather.Temperature.WARM,
+            Weather.Temperature.HOT
+        ])
+    else:
+        temperature = choice(list(Weather.Temperature))
+
+    # Light and Wind can be evenly distributed
+    light = choice(list(Weather.LightLevel))
+    wind = choice(list(Weather.Intensity))
+
+    # Fog is heavily weighted toward NONE or LIGHT for realistic distribution
+    fog = choices(
+        population=list(Weather.Intensity),
+        weights=[60, 25, 10, 5], # 60% chance of None, 5% chance of Heavy
+        k=1
+    )[0]
+
+    return Weather(
+        temperature=temperature,
+        light=light,
+        type=weather_type,
+        precipitation=precipitation,
+        wind=wind,
+        fog=fog
+    )
+
+
 def create_random_ride(
     twist: Twist,
     author: User,
@@ -133,6 +192,7 @@ def create_random_ride(
         author=author,
         twist=twist,
         date=date,
+        weather=create_random_weather(),
         ratings=ratings
     )
 
