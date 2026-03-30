@@ -145,7 +145,7 @@ current_admin = fastapi_users.current_user(active=True, superuser=True)
 
 from typing import Awaitable, Callable
 def verify(
-    user_dependency: Callable[..., Awaitable[User]]
+    user_dependency: Callable[..., Awaitable[User | None]]
 ):
     """
     Return a dependency callable that checks if the authenticated user

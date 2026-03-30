@@ -218,6 +218,10 @@ ul {
         border: none;
         padding: 0;
 
+        legend {
+            padding-bottom: var(--padding-sm);
+        }
+
         .filter-group {
             display: flex;
 
@@ -247,7 +251,8 @@ ul {
                 }
             }
 
-            > input[type="radio"] {
+            > input[type="radio"],
+            > input[type="checkbox"] {
                 position: fixed;
                 opacity: 0;
                 width: 0;
@@ -265,18 +270,12 @@ ul {
 .modal-form {
     .form-group {
         margin-bottom: var(--padding-lg);
+    }
 
-        .form-fieldset {
-            border: var(--border-default);
-            border-radius: var(--radius-sm);
-            padding: var(--padding-md);
-
-            legend {
-                padding: 0 var(--padding-sm);
-                font-weight: bold;
-                color: #ccc;
-            }
-        }
+    .form-fieldset {
+        border: var(--border-default);
+        border-radius: var(--radius-sm);
+        padding: var(--padding-md);
     }
 
     .button-group {
@@ -295,6 +294,62 @@ ul {
             background-color: var(--accent-blue);
             cursor: not-allowed;
         }
+    }
+
+    .two-col-grid {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: var(--padding-sm) var(--padding-md);
+    }
+
+    .two-col-grid .form-group {
+        margin-bottom: 0;
+    }
+
+    .select-wrapper {
+        position: relative;
+
+        &::after {
+            content: "▼";
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            position: absolute;
+            right: var(--padding-md);
+            top: 50%;
+            transform: translateY(-50%);
+            pointer-events: none;
+        }
+    }
+
+    input[type="range"],
+    input[type="date"] {
+        accent-color: var(--accent);
+    }
+
+    select {
+        width: 100%;
+        border: var(--border-default);
+        border-radius: var(--radius-sm);
+        box-sizing: border-box;
+        padding: var(--padding-md);
+        color: var(--text-offwhite);
+        background-color: var(--bg-charcoal);
+        cursor: pointer;
+        appearance: none;
+        -webkit-appearance: none;
+        -moz-appearance: none;
+    }
+
+    input[type="date"]:focus,
+    select:focus {
+        outline: 1px solid var(--accent);
+        border-color: var(--accent);
+    }
+
+    select:disabled {
+        opacity: 0.6;
+        background-color: var(--panel-slate);
+        cursor: not-allowed;
     }
 }
 
@@ -358,6 +413,12 @@ input[type="date"] {
             cursor: default;
         }
     }
+}
+
+legend {
+    padding: 0 var(--padding-sm);
+    font-weight: bold;
+    color: #ccc;
 }
 
 
@@ -1155,7 +1216,7 @@ aside {
     }
 }
 
-#modal-rate-twist .modal-form {
+#modal-ride-twist .modal-form {
     &[data-paved="false" i] {
         --accent: var(--accent-orange);
         --accent-hover: var(--accent-orange-hover);
@@ -1166,7 +1227,7 @@ aside {
     }
 }
 
-#modal-view-twist-ratings #rating-list {
+#modal-view-twist-rides #ride-list {
     overflow-y: auto;
     max-height: 60vh;
     margin-top: var(--padding-lg);
@@ -1178,7 +1239,7 @@ aside {
     }
 }
 
-.rating-card {
+.ride-card {
     position: relative;
     margin-bottom: var(--padding-lg);
     border: var(--border-default);
@@ -1187,9 +1248,7 @@ aside {
     background-color: var(--bg-charcoal);
 
     > header {
-        margin-bottom: var(--padding-md);
-        border-bottom: var(--border-default);
-        padding-bottom: var(--padding-md);
+        padding-bottom: var(--padding-sm);
 
         h3 {
             margin: 0;
@@ -1200,6 +1259,12 @@ aside {
                 color: var(--text-muted)
             }
         }
+    }
+
+    > .ride-weather {
+        margin-bottom: var(--padding-sm);
+        border-bottom: var(--border-default);
+        padding-bottom: var(--padding-sm);
     }
 }
 
@@ -1346,6 +1411,10 @@ aside {
 
     .mobile-content {
        display: inline-block;
+    }
+
+    .two-col-grid {
+        grid-template-columns: 1fr;
     }
 
     #map {

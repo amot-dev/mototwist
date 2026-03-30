@@ -24,7 +24,7 @@ class Settings(BaseSettings):
     TWIST_SIMPLIFICATION_TOLERANCE_M: int = Field(default=0, exclude=True)
     DEFAULT_TWISTS_LOADED: int = Field(default=20, gt=1, exclude=True)
     MAX_TWISTS_LOADED: int = Field(default=100, gt=1, exclude=True)
-    RATINGS_FETCHED_PER_QUERY: int = Field(default=20, gt=1, exclude=True)
+    RIDES_FETCHED_PER_QUERY: int = Field(default=20, gt=1, exclude=True)
 
     # User Options
     MOTOTWIST_ADMIN_EMAIL: str = Field(default="admin@admin.com", exclude=True)

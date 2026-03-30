@@ -22,9 +22,9 @@
             {% if twist_count == 1 %} is 1 Twist
             {% else %} are {{ twist_count }} Twists
             {% endif %}
-             and a total of {{ rating_count }}
-            {% if rating_count == 1 %} rating.
-            {% else %} ratings.
+             and a total of {{ ride_count }}
+            {% if ride_count == 1 %} ride.
+            {% else %} rides.
             {% endif %}
              Loading a new state will destroy the existing state.
         </p>
@@ -49,29 +49,29 @@
                 <button type="submit" class="button button-block">Save State</button>
             </div>
         </form>
-        <h2>Rating Data</h2>
+        <h2>Ride Data</h2>
         <form class="modal-form"
-            hx-post="/debug/seed-ratings"
+            hx-post="/debug/seed-rides"
             hx-swap="none">
 
             <div class="form-group">
-                <label for="rating_count">General Rating Count</label>
-                <input type="number" id="rating_count" name="rating_count" value="100" required>
+                <label for="ride_count">General Ride Count</label>
+                <input type="number" id="ride_count" name="ride_count" value="100" required>
             </div>
             <div class="form-group">
                 <label for="popular_twist_name">Popular Twist Name</label>
                 <input type="text" id="popular_twist_name" name="popular_twist_name" required>
             </div>
             <div class="form-group">
-                <label for="popular_rating_count">Popular Twist Rating Count</label>
-                <input type="number" id="popular_rating_count" name="popular_rating_count" value="100" required>
+                <label for="popular_twist_ride_count">Popular Twist Ride Count</label>
+                <input type="number" id="popular_twist_ride_count" name="popular_twist_ride_count" value="100" required>
             </div>
             <div class="form-group">
                 <label for="distribution_focus">Distribution Focus (Higher = more concentrated)</label>
                 <input type="number" step="0.1" id="distribution_focus" name="distribution_focus" value="2.5" required>
             </div>
             <div class="button-group">
-                <span class="button-group-label">Create ratings based on the above parameters</span>
+                <span class="button-group-label">Create rides based on the above parameters</span>
                 <button type="submit" class="button button-block">Seed Data</button>
             </div>
         </form>

@@ -71,13 +71,13 @@
                         <label class="label-button" for="pavement_unpaved_twists">Unpaved</label>
                     </div>
 
-                    <div class="filter-group" title="Filter Twists by rating status">
-                        <input type="radio" id="ratings_all_twists" name="ratings" value="all" checked>
-                        <label class="label-button" for="ratings_all_twists">All</label>
-                        <input type="radio" id="ratings_rated_twists" name="ratings" value="rated">
-                        <label class="label-button" for="ratings_rated_twists">Rated</label>
-                        <input type="radio" id="ratings_unrated_twists" name="ratings" value="unrated">
-                        <label class="label-button" for="ratings_unrated_twists">Unrated</label>
+                    <div class="filter-group" title="Filter Twists by ride submission">
+                        <input type="radio" id="rides_all_twists" name="rides" value="all" checked>
+                        <label class="label-button" for="rides_all_twists">All</label>
+                        <input type="radio" id="rides_submitted_twists" name="rides" value="submitted">
+                        <label class="label-button" for="rides_submitted_twists">Submitted</label>
+                        <input type="radio" id="rides_unsubmitted_twists" name="rides" value="unsubmitted">
+                        <label class="label-button" for="rides_unsubmitted_twists">Unsubmitted</label>
                     </div>
 
                     <div class="filter-group range-filter-group" title="Filter by Overall Rating range">
@@ -85,11 +85,11 @@
 
                         <div class="range-slider-container">
                             <input type="range"
-                                name="rating_min"
+                                name="min_rating"
                                 id="rating-slider-min"
                                 min="0" max="10" step="0.1" value="0.0">
                             <input type="range"
-                                name="rating_max"
+                                name="max_rating"
                                 id="rating-slider-max"
                                 min="0" max="10" step="0.1" value="10.0">
                         </div>
@@ -99,6 +99,12 @@
                             <output id="rating-slider-max-out" class="range-output" style="--pos: 100;">10.0</output>
                         </div>
                     </div>
+
+                    <button type="button" class="button button-block button-small"
+                        onclick="document.querySelector('#modal-advanced-filter').showModal()">
+
+                        <i class="fa-solid fa-sliders"></i> Advanced Filters
+                    </button>
                 </fieldset>
             </div>
         </details>
@@ -249,11 +255,19 @@
     {% endcall %}
 </dialog>
 
-<dialog id="modal-rate-twist" class="modal modal-dynamic">
+<dialog id="modal-advanced-filter" class="modal modal-dynamic"
+    hx-get="/twists/templates/advanced-filter-modal"
+    hx-trigger="load"
+    hx-swap="innerHTML">
+
     <p>Loading...</p>
 </dialog>
 
-<dialog id="modal-view-twist-ratings" class="modal modal-dynamic">
+<dialog id="modal-ride-twist" class="modal modal-dynamic">
+    <p>Loading...</p>
+</dialog>
+
+<dialog id="modal-view-twist-rides" class="modal modal-dynamic">
     <p>Loading...</p>
 </dialog>
 

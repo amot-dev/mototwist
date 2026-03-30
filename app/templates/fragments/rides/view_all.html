@@ -1,0 +1,8 @@
+<button class="button button-very-small button-link {% if not ride_count or ride_count == '0' %}invisible{% endif %}"
+    onclick="document.querySelector('#modal-view-twist-rides').showModal()"
+    hx-get="/twists/{{ twist_id }}/rides/templates/view-modal"
+    hx-target="#modal-view-twist-rides"
+    hx-swap="innerHTML">
+
+    {{ ride_count_str }}
+</button>

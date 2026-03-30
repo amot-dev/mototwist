@@ -67,8 +67,8 @@ tags_metadata = [
         "description": "Endpoints for debug utilities.",
     },
     {
-        "name": "Ratings",
-        "description": "Endpoints for Twist rating management.",
+        "name": "Rides",
+        "description": "Endpoints for Twist ride management.",
     },
     {
         "name": "Twists",

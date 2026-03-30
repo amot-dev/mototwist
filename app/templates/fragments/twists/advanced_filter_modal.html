@@ -1,0 +1,85 @@
+{% from "fragments/_macros.html" import render_modal_content, render_form_buttons %}
+
+{% call render_modal_content("Advanced Filters") %}
+<div class="modal-form filter-form">
+    <fieldset class="form-fieldset">
+        <legend>Weather</legend>
+        <div class="form-group">
+            <fieldset class="filter-fieldset">
+                <legend>Temperature</legend>
+                <div class="filter-group" title="Filter by temperature">
+                    {% for item in Weather.Temperature %}
+                        <input type="checkbox" id="filter_temp_{{ item.name }}" name="weather_temperature" value="{{ item.value }}" form="twist-filter-form">
+                        <label class="label-button" for="filter_temp_{{ item.name }}">{{ item.value }}</label>
+                    {% endfor %}
+                </div>
+            </fieldset>
+        </div>
+
+        <div class="form-group">
+            <fieldset class="filter-fieldset">
+                <legend>Light Level</legend>
+                <div class="filter-group" title="Filter by light level">
+                    {% for item in Weather.LightLevel %}
+                        <input type="checkbox" id="filter_light_{{ item.name }}" name="weather_light" value="{{ item.value }}" form="twist-filter-form">
+                        <label class="label-button" for="filter_light_{{ item.name }}">{{ item.value }}</label>
+                    {% endfor %}
+                </div>
+            </fieldset>
+        </div>
+
+        <div class="form-group">
+            <fieldset class="filter-fieldset">
+                <legend>Weather Type</legend>
+                <div class="filter-group" title="Filter by weather type">
+                    {% for item in Weather.Type %}
+                        <input type="checkbox" id="filter_type_{{ item.name }}" name="weather_type" value="{{ item.value }}" form="twist-filter-form">
+                        <label class="label-button" for="filter_type_{{ item.name }}">{{ item.value }}</label>
+                    {% endfor %}
+                </div>
+            </fieldset>
+        </div>
+
+        <div class="form-group">
+            <fieldset class="filter-fieldset">
+                <legend>Precipitation</legend>
+                <div class="filter-group" title="Filter by precipitation intensity">
+                    {% for item in Weather.Intensity %}
+                        <input type="checkbox" id="filter_precip_{{ item.name }}" name="weather_precipitation" value="{{ item.value }}" form="twist-filter-form">
+                        <label class="label-button" for="filter_precip_{{ item.name }}">{{ item.value }}</label>
+                    {% endfor %}
+                </div>
+            </fieldset>
+        </div>
+
+        <div class="form-group">
+            <fieldset class="filter-fieldset">
+                <legend>Wind</legend>
+                <div class="filter-group" title="Filter by wind intensity">
+                    {% for item in Weather.Intensity %}
+                        <input type="checkbox" id="filter_wind_{{ item.name }}" name="weather_wind" value="{{ item.value }}" form="twist-filter-form">
+                        <label class="label-button" for="filter_wind_{{ item.name }}">{{ item.value }}</label>
+                    {% endfor %}
+                </div>
+            </fieldset>
+        </div>
+
+        <div class="form-group">
+            <fieldset class="filter-fieldset">
+                <legend>Fog</legend>
+                <div class="filter-group" title="Filter by fog intensity">
+                    {% for item in Weather.Intensity %}
+                        <input type="checkbox" id="filter_fog_{{ item.name }}" name="weather_fog" value="{{ item.value }}" form="twist-filter-form">
+                        <label class="label-button" for="filter_fog_{{ item.name }}">{{ item.value }}</label>
+                    {% endfor %}
+                </div>
+            </fieldset>
+        </div>
+    </fieldset>
+    {{ render_form_buttons(
+        submit_text="Apply",
+        submit_type="button",
+        submit_onclick="htmx.trigger(document.body, '" ~ EVENTS.REFRESH_TWISTS ~ "'); this.closest('dialog').close();"
+    ) }}
+</div>
+{% endcall %}

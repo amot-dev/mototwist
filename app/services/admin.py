@@ -5,7 +5,40 @@ from sqlalchemy.orm import Mapped
 from typing import cast
 from uuid import UUID
 
+from app.settings import settings
+from app.config import logger
 from app.models import User
+from app.schemas.users import UserCreate
+from app.users import UserManager, get_user_db
+
+
+async def create_first_admin(session: AsyncSession) -> bool:
+    """
+    Provision an initial superuser account if no users exist in the system.
+
+    :param session: The database session for user creation.
+    :return: True if the admin was created, False if users already exist.
+    """
+    result = await session.execute(
+        select(func.count()).select_from(User)
+    )
+    user_count = result.scalar_one()
+    if user_count == 0:
+        user_data = UserCreate(
+            email=settings.MOTOTWIST_ADMIN_EMAIL,
+            password=settings.MOTOTWIST_ADMIN_PASSWORD,
+            is_active=True,
+            is_superuser=True,
+            is_verified=True,  # Force verification for initial admin to prevent oopsies
+        )
+        user_db = await anext(get_user_db(session))
+        user_manager = UserManager(user_db)
+        await user_manager.create(user_data)
+        logger.info(f"Admin user '{settings.MOTOTWIST_ADMIN_EMAIL}' created")
+        return True
+    else:
+        logger.info("Admin user creation skipped")
+        return False
 
 
 async def is_last_active_admin(session: AsyncSession, user: User) -> bool:

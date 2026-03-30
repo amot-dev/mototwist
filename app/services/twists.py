@@ -4,20 +4,20 @@ from fastapi.responses import HTMLResponse
 from geoalchemy2 import Geometry
 from shapely.geometry import LineString, Point
 from shapely.ops import nearest_points
-from sqlalchemy import and_, false, or_, select, type_coerce
+from sqlalchemy import case, false, func, literal, select, type_coerce
 from sqlalchemy.exc import MultipleResultsFound, NoResultFound
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.sql.expression import ColumnExpressionArgument
 from typing import Any
 
 from app.config import logger, templates
-from app.models import PavedRating, Twist, UnpavedRating, User
-from app.schemas.ratings import RATING_CRITERIA_PAVED, RATING_CRITERIA_UNPAVED
+from app.models import Criterion, Ride, Twist, User
 from app.schemas.twists import (
-    FilterOwnership, FilterPavement, FilterRatings,
+    FilterOwnership, FilterPavement, FilterRide,
     TwistBasic, TwistDropdown, TwistFilterParameters, TwistListItem
 )
-from app.schemas.types import Coordinate, Waypoint
+from app.schemas.types import Coordinate, Waypoint, Weather
+from app.services.rides import weather_conditions_from
 from app.settings import settings
 from app.utility import raise_http
 
@@ -105,6 +105,18 @@ async def render_creation_buttons(
     })
 
 
+async def render_advanced_filter_modal(
+    request: Request
+) -> HTMLResponse:
+    """
+    Build and return the TemplateResponse for the advanced filter modal.
+    """
+    return templates.TemplateResponse("fragments/twists/advanced_filter_modal.html", {
+        "request": request,
+        "Weather": Weather
+    })
+
+
 async def render_list(
     request: Request,
     session: AsyncSession,
@@ -130,67 +142,72 @@ async def render_list(
     elif filter.pavement == FilterPavement.UNPAVED:
         statement = statement.where(Twist.is_paved == False)
 
-    # Rating Range Filtering
-    from sqlalchemy import case, func, literal
-    if filter.rating_min > 0 or filter.rating_max < 10:
+    # User-submitted Ride Filtering
+    if user and filter.rides != FilterRide.ALL:
+        ride_exists = select(Ride.id).where(
+            Ride.twist_id == Twist.id,
+            Ride.author_id == user.id
+        ).exists()
 
-        # Dynamically build the average calculation for Paved Twists
+        if filter.rides == FilterRide.SUBMITTED:
+            statement = statement.where(ride_exists)
+
+        elif filter.rides == FilterRide.UNSUBMITTED:
+            statement = statement.where(~ride_exists)
+
+    elif not user and filter.rides == FilterRide.SUBMITTED:
+        # If user is not logged in, they can't have Twists with submitted rides
+        statement = statement.where(false())
+
+    # Ride Rating Range Filtering
+    if filter.min_rating > 0 or filter.max_rating < 10:
+        # Dynamically build the average calculation for paved Twists
+        paved_criteria = await Criterion.get_list(session, is_paved=True)
         paved_sum = sum(
             (
-                func.avg(getattr(PavedRating, criterion.name))
-                for criterion in RATING_CRITERIA_PAVED
+                func.avg(Ride.ratings[c.slug].as_integer())
+                for c in paved_criteria
             ),
             start=literal(0.0)
         )
-        paved_avg = paved_sum / len(RATING_CRITERIA_PAVED)
+        paved_avg = paved_sum / len(paved_criteria)
 
-        # Dynamically build the average calculation for Unpaved Twists
+        # Dynamically build the average calculation for unpaved Twists
+        unpaved_criteria = await Criterion.get_list(session, is_paved=False)
         unpaved_sum = sum(
             (
-                func.avg(getattr(UnpavedRating, criterion.name))
-                for criterion in RATING_CRITERIA_UNPAVED
+                func.avg(Ride.ratings[c.slug].as_integer())
+                for c in unpaved_criteria
             ),
             start=literal(0.0)
         )
-        unpaved_avg = unpaved_sum / len(RATING_CRITERIA_UNPAVED)
+        unpaved_avg = unpaved_sum / len(unpaved_criteria)
 
         # Create the subquery
         rating_subquery = (
             select(Twist.id)
-            .outerjoin(PavedRating, Twist.id == PavedRating.twist_id)
-            .outerjoin(UnpavedRating, Twist.id == UnpavedRating.twist_id)
+            .outerjoin(Ride, Twist.id == Ride.twist_id)
             .group_by(Twist.id)
             .having(
                 case(
-                    (Twist.is_paved, paved_avg.between(filter.rating_min, filter.rating_max)),
-                    else_=unpaved_avg.between(filter.rating_min, filter.rating_max)
+                    (Twist.is_paved, paved_avg.between(filter.min_rating, filter.max_rating)),
+                    else_=unpaved_avg.between(filter.min_rating, filter.max_rating)
                 )
             )
         )
 
         statement = statement.where(Twist.id.in_(rating_subquery))
 
-    if user and filter.ratings != FilterRatings.ALL:
-        paved_rating_exists = select(PavedRating.id).where(
-            PavedRating.twist_id == Twist.id,
-            PavedRating.author_id == user.id
+    # Weather Filtering
+    weather_conditions = weather_conditions_from(filter)
+    weather_subquery = (
+        select(Ride.id)
+        .where(
+            Ride.twist_id == Twist.id,
+            *weather_conditions
         ).exists()
-        unpaved_rating_exists = select(UnpavedRating.id).where(
-            UnpavedRating.twist_id == Twist.id,
-            UnpavedRating.author_id == user.id
-        ).exists()
-
-        if filter.ratings == FilterRatings.RATED:
-            # Either exists
-            statement = statement.where(or_(paved_rating_exists, unpaved_rating_exists))
-
-        elif filter.ratings == FilterRatings.UNRATED:
-            # Neither exists
-            statement = statement.where(and_(~paved_rating_exists, ~unpaved_rating_exists))
-
-    elif not user and filter.ratings == FilterRatings.RATED:
-        # If user is not logged in, they can't have rated Twists
-        statement = statement.where(false())
+    )
+    statement = statement.where(weather_subquery)
 
     # Pagination
     page = filter.page

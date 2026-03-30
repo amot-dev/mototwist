@@ -1,0 +1,115 @@
+{% from "fragments/_macros.html" import render_modal_content, render_form_buttons %}
+
+{% call render_modal_content(twist.name) %}
+<form class="modal-form" data-paved="{{ twist.is_paved | lower }}"
+      hx-post="/twists/{{ twist.id }}/rides"
+      hx-swap="none">
+
+    <div class="form-group">
+        <label for="ride-date">Ride Date</label>
+        <input type="date" id="ride-date" name="date" value="{{ today }}" max="{{ tomorrow }}" required>
+    </div>
+
+    <div class="form-group">
+        <fieldset class="form-fieldset">
+            <legend>Weather</legend>
+            <div class="two-col-grid">
+
+                <div class="form-group">
+                    <label for="weather-temperature">Temperature</label>
+                    <div class="select-wrapper">
+                        <select id="weather-temperature" name="weather_temperature" required>
+                            {% for item in Weather.Temperature %}
+                                <option value="{{ item.value }}" {% if item.value == Weather.Temperature.NEUTRAL %}selected{% endif %}>
+                                    {{ item.value }}
+                                </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="weather-light">Light</label>
+                    <div class="select-wrapper">
+                        <select id="weather-light" name="weather_light" required>
+                            {% for item in Weather.LightLevel %}
+                                <option value="{{ item.value }}">{{ item.value }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="weather-type">Type</label>
+                    <div class="select-wrapper">
+                        <select id="weather-type" name="weather_type"
+                              data-no-precipitation="{{ ','.join(Weather.HAS_NO_PRECIPITATION) }}" required>
+                            {% for item in Weather.Type %}
+                                <option value="{{ item.value }}">{{ item.value }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="weather-precipitation">Precipitation</label>
+                    <div class="select-wrapper">
+                        <select id="weather-precipitation" name="weather_precipitation"
+                              data-none-value="{{ Weather.Intensity.NONE.value }}" required>
+                            {% for item in Weather.Intensity %}
+                                <option value="{{ item.value }}">{{ item.value }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="weather-wind">Wind</label>
+                    <div class="select-wrapper">
+                        <select id="weather-wind" name="weather_wind" required>
+                            {% for item in Weather.Intensity %}
+                                <option value="{{ item.value }}">{{ item.value }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="weather-fog">Fog</label>
+                    <div class="select-wrapper">
+                        <select id="weather-fog" name="weather_fog" required>
+                            {% for item in Weather.Intensity %}
+                                <option value="{{ item.value }}">{{ item.value }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                </div>
+
+            </div>
+        </fieldset>
+    </div>
+
+    <div class="form-group">
+        <fieldset class="form-fieldset">
+            <legend>Rating</legend>
+            <div class="two-col-grid">
+                {% for criterion in criteria %}
+                <div class="form-group slider-group">
+                    <label for="{{ criterion.slug }}" title="{{ criterion.description }}">{{ criterion.slug.replace('_', ' ') | title }}</label>
+                    <input type="range"
+                        id="{{ criterion.slug }}"
+                        name="criterion_{{ criterion.slug }}"
+                        min="{{ criterion_min_value }}"
+                        max="{{ criterion_max_value }}"
+                        value="{{ criterion_initial_value }}"
+                        oninput="this.nextElementSibling.value = this.value">
+                    <output for="{{ criterion.slug }}">5</output>
+                </div>
+                {% endfor %}
+            </div>
+        </fieldset>
+    </div>
+
+    {{ render_form_buttons(submit_text="Submit Ride") }}
+</form>
+{% endcall %}

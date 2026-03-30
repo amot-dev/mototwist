@@ -14,10 +14,10 @@ from uuid import UUID
 
 from app.config import templates
 from app.database import get_db
-from app.models import PavedRating, Twist, UnpavedRating, User
-from app.schemas.debug import SeedRatingsForm
+from app.models import Ride, Twist, User
+from app.schemas.debug import SeedRidesForm
 from app.schemas.types import Coordinate, Waypoint
-from app.services.debug import generate_weights, reset_id_sequences_for, seed_twist_ratings
+from app.services.debug import generate_weights, reset_id_sequences_for, seed_twist_rides
 from app.users import current_user_optional, current_admin, verify
 from app.utility import raise_http
 
@@ -55,8 +55,7 @@ async def render_debug_page(
     )
 
     twist_count_query = select(func.count(Twist.id))
-    paved_rating_count_query = select(func.count(PavedRating.id))
-    unpaved_rating_count_query = select(func.count(UnpavedRating.id))
+    ride_count_query = select(func.count(Ride.id))
 
     # Execute all queries concurrently for better performance
     results = await gather(
@@ -64,8 +63,7 @@ async def render_debug_page(
         session.execute(admin_count_query),
         session.execute(inactive_count_query),
         session.execute(twist_count_query),
-        session.execute(paved_rating_count_query),
-        session.execute(unpaved_rating_count_query)
+        session.execute(ride_count_query),
     )
 
     # Extract the scalar value from each result
@@ -73,7 +71,7 @@ async def render_debug_page(
     admin_count = results[1].scalar_one()
     inactive_count = results[2].scalar_one()
     twist_count = results[3].scalar_one()
-    rating_count = results[4].scalar_one()
+    ride_count = results[4].scalar_one()
 
     return templates.TemplateResponse("debug.html", {
         "request": request,
@@ -81,7 +79,7 @@ async def render_debug_page(
         "admin_count": admin_count,
         "inactive_count": inactive_count,
         "twist_count": twist_count,
-        "rating_count": rating_count
+        "ride_count": ride_count
     })
 
 
@@ -99,16 +97,14 @@ async def save_state(
     results = await gather(
         session.execute(select(User)),
         session.execute(select(Twist)),
-        session.execute(select(PavedRating)),
-        session.execute(select(UnpavedRating))
+        session.execute(select(Ride))
     )
 
     # Serialize the data using SerializationMixin methods
     db_state = {
         "users": [user.to_dict() for user in results[0].scalars().all()],
         "twists": [twist.to_dict() for twist in results[1].scalars().all()],
-        "paved_ratings": [paved_rating.to_dict() for paved_rating in results[2].scalars().all()],
-        "unpaved_ratings": [unpaved_rating.to_dict() for unpaved_rating in results[3].scalars().all()],
+        "rides": [ride.to_dict() for ride in results[2].scalars().all()]
     }
 
     # Convert the Python dictionary to a JSON string
@@ -145,10 +141,9 @@ async def load_state(
     # Read data
     users_data = data.get("users", [])
     twists_data = data.get("twists", [])
-    paved_ratings_data = data.get("paved_ratings", [])
-    unpaved_ratings_data = data.get("unpaved_ratings", [])
+    rides_data = data.get("rides", [])
 
-    if not (users_data or twists_data or paved_ratings_data or unpaved_ratings_data):
+    if not (users_data or twists_data or rides_data):
         raise_http("No data to load", status_code=422)
 
     # Create model instances
@@ -157,68 +152,67 @@ async def load_state(
     except Exception as e:
         raise_http("Failed to parse users from JSON", status_code=422, exception=e)
     try:
+        print(twists_data[0])
         twists_to_create = [
-            Twist(**{
-                **twist,
-                "waypoints": [Waypoint.model_validate(wp) for wp in twist.get("waypoints", [])],
-                "route_geometry": [Coordinate.model_validate(coord) for coord in twist.get("route_geometry", [])]
-            }) for twist in twists_data
+            Twist(
+                name=t.get("name"),
+                author_id=t.get("author_id"),
+                is_paved=t.get("is_paved"),
+                waypoints=[Waypoint.model_validate(wp) for wp in t.get("waypoints", [])],
+                route_geometry=[Coordinate.model_validate(c) for c in t.get("route_geometry", [])],
+                simplification_tolerance_m=t.get("simplification_tolerance_m"),
+                rides=t.get("rides", [])
+            ) for t in twists_data
         ]
     except Exception as e:
         raise_http("Failed to parse Twists from JSON", status_code=422, exception=e)
     try:
-        paved_ratings_to_create = [PavedRating(**rating) for rating in paved_ratings_data]
+        rides_to_create = [Ride(**ride) for ride in rides_data]
     except Exception as e:
-        raise_http("Failed to parse users from JSON", status_code=422, exception=e)
-    try:
-        unpaved_ratings_to_create = [UnpavedRating(**rating) for rating in unpaved_ratings_data]
-    except Exception as e:
-        raise_http("Failed to parse users from JSON", status_code=422, exception=e)
+        raise_http("Failed to parse rides from JSON", status_code=422, exception=e)
 
-    # Removing Twists cascade deletes all ratings
+    # Removing Twists cascade deletes all rides
     await session.execute(delete(Twist))
     await session.execute(delete(User))
 
     # Add all new objects to the session for insertion
     session.add_all(users_to_create)
     session.add_all(twists_to_create)
-    session.add_all(paved_ratings_to_create)
-    session.add_all(unpaved_ratings_to_create)
+    session.add_all(rides_to_create)
 
     # Commit so the database has the new updated data
     await session.commit()
 
     # Reset id sequences
-    await reset_id_sequences_for(session, [Twist, PavedRating, UnpavedRating])
+    await reset_id_sequences_for(session, [Twist, Ride])
 
     request.session["flash"] = "Data loaded!"
     return Response(headers={"HX-Redirect": "/"})
 
 
-@router.post("/seed-ratings", response_class=Response)
-async def seed_ratings(
+@router.post("/seed-rides", response_class=Response)
+async def seed_rides(
     request: Request,
-    seed_data: Annotated[SeedRatingsForm, Form()],
+    seed_data: Annotated[SeedRidesForm, Form()],
     admin: User = Depends(verify(current_admin)),
     session: AsyncSession = Depends(get_db),
 ) -> Response:
     """
-    Seed the database with procedurally generated rating data for debugging.
+    Seed the database with procedurally generated ride data for debugging.
 
     This endpoint will:
-    1. Delete all existing PavedRating and UnpavedRating records.
-    2. Fetch all twists and users.
-    3. Exclude one random active, non-superuser from being a rater.
-    4. Designate one twist as "popular" and seed it with a specific number of ratings.
-    5. Distribute the remaining ratings across other twists using a normal
-       distribution to ensure some twists remain unrated.
-    6. Randomize rating dates to create realistic data patterns.
+    1. Delete all existing Ride objects.
+    2. Fetch all Twists and users.
+    3. Exclude one random active, non-superuser from being an author.
+    4. Designate one Twist as "popular" and seed it with a specific number of rides.
+    5. Distribute the remaining rides across other Twists using a normal
+       distribution to ensure some Twists remain unrated.
+    6. Randomize ride dates to create realistic data patterns.
     """
-    # Clear all existing ratings for a clean slate
-    await session.execute(delete(PavedRating))
-    await session.execute(delete(UnpavedRating))
+    # Clear all existing rides for a clean slate
+    await session.execute(delete(Ride))
     await session.commit()
-    await reset_id_sequences_for(session, [PavedRating, UnpavedRating])
+    await reset_id_sequences_for(session, [Ride])
 
     # Fetch Twists and users from the database
     twists_result = await session.scalars(select(Twist))
@@ -233,7 +227,7 @@ async def seed_ratings(
     if len(all_users) < 4:
         raise_http("At least 4 total users are required", 422)
 
-    # Identify a pool of "regular" users (active, non-superuser) from which to select one to exclude from rating
+    # Identify a pool of "regular" users (active, non-superuser) from which to select one to exclude from submitting rides
     regular_users_to_exclude_from = [
         user for user in all_users if user.is_active and not user.is_superuser
     ]
@@ -242,7 +236,7 @@ async def seed_ratings(
 
     # Exclude a user
     user_to_exclude = choice(regular_users_to_exclude_from)
-    raters = [user for user in all_users if user.id != user_to_exclude.id]
+    authors = [user for user in all_users if user.id != user_to_exclude.id]
 
     # Isolate the popular twist from the general pool
     popular_twist = next((twist for twist in all_twists if twist.name == seed_data.popular_twist_name), None)
@@ -252,23 +246,21 @@ async def seed_ratings(
 
     # Generate a smaller pool of random dates to encourage date collisions
     start_date = date.today() - timedelta(days=730)  # ~2 years ago
-    total_ratings = seed_data.rating_count + seed_data.popular_rating_count
+    total_rides = seed_data.ride_count + seed_data.popular_twist_ride_count
     date_pool = [
         start_date + timedelta(days=randint(0, 730))
-        for _ in range(total_ratings // 2)  # Create a pool half the size of ratings
+        for _ in range(total_rides // 2)  # Create a pool half the size of rides
     ]
     if not date_pool: date_pool.append(date.today())  # Ensure pool is not empty
 
-    ratings_to_add: list[PavedRating | UnpavedRating] = []
+    twist_ride_counts: Counter[Twist] = Counter()
 
-    twist_rating_counts: Counter[Twist] = Counter()
+    # Set ride count for the "popular" Twist
+    if seed_data.popular_twist_ride_count > 0:
+        twist_ride_counts[popular_twist] += seed_data.popular_twist_ride_count
 
-    # Set rating count for the "popular" Twist
-    if seed_data.popular_rating_count > 0:
-        twist_rating_counts[popular_twist] += seed_data.popular_rating_count
-
-    # Set rating count for remaining Twists using weighted random choices
-    if seed_data.rating_count > 0 and general_twists:
+    # Set ride count for remaining Twists using weighted random choices
+    if seed_data.ride_count > 0 and general_twists:
         # Generate a list of weights to make twists in the center of the list more likely to be chosen
         # This is a poor man's numpy normal distribution
         twist_weights = generate_weights(
@@ -280,18 +272,18 @@ async def seed_ratings(
         chosen_twists = choices(
             population=general_twists,
             weights=twist_weights,
-            k=seed_data.rating_count
+            k=seed_data.ride_count
         )
-        twist_rating_counts.update(chosen_twists)
+        twist_ride_counts.update(chosen_twists)
 
-    # Seed ratings based off counts for each Twist
-    ratings_to_add = seed_twist_ratings(twist_rating_counts, raters, date_pool)
+    # Seed rides based off counts for each Twist
+    new_rides = await seed_twist_rides(session, twist_ride_counts, authors, date_pool)
 
-    # Add all generated ratings to the session and commit
-    session.add_all(ratings_to_add)
+    # Add all generated rides to the session and commit
+    session.add_all(new_rides)
     await session.commit()
 
-    request.session["flash"] = f"Database seeded with {len(ratings_to_add)} new ratings!"
+    request.session["flash"] = f"Database seeded with {len(new_rides)} new rides!"
     return Response(headers={"HX-Redirect": "/"})
 
 

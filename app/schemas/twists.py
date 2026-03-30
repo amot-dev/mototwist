@@ -1,12 +1,13 @@
 from enum import Enum
+from fastapi import Query
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 from sqlalchemy import Label, literal
 from sqlalchemy.orm.attributes import InstrumentedAttribute
 from typing import ClassVar
 from uuid import UUID
 
-from app.models import Rating, Twist, User
-from app.schemas.types import Coordinate, Waypoint
+from app.models import Criterion, Twist, User
+from app.schemas.types import Coordinate, Waypoint, Weather
 from app.settings import settings
 
 
@@ -27,10 +28,10 @@ class FilterPavement(str, Enum):
     PAVED = "paved"
     UNPAVED = "unpaved"
 
-class FilterRatings(str, Enum):
+class FilterRide(str, Enum):
     ALL = "all"
-    RATED = "rated"
-    UNRATED = "unrated"
+    SUBMITTED = "submitted"
+    UNSUBMITTED = "unsubmitted"
 
 
 class TwistFilterParameters(BaseModel):
@@ -39,13 +40,21 @@ class TwistFilterParameters(BaseModel):
     pages: int = Field(1, gt=0)
     open_id: int | None = None
 
-    # Filtering
+    # Basic Filtering
     search: str | None = None
     ownership: FilterOwnership = FilterOwnership.ALL
     pavement: FilterPavement = FilterPavement.ALL
-    ratings: FilterRatings = FilterRatings.ALL
-    rating_min: float = Field(0.0, ge=Rating.CRITERION_MIN_VALUE, le=Rating.CRITERION_MAX_VALUE)
-    rating_max: float = Field(10.0, ge=Rating.CRITERION_MIN_VALUE, le=Rating.CRITERION_MAX_VALUE)
+    rides: FilterRide = FilterRide.ALL
+    min_rating: float = Field(0.0, ge=Criterion.MIN_VALUE, le=Criterion.MAX_VALUE)
+    max_rating: float = Field(10.0, ge=Criterion.MIN_VALUE, le=Criterion.MAX_VALUE)
+
+    # Weather Filtering
+    weather_temperature: list[Weather.Temperature] = Field(Query([]))
+    weather_light: list[Weather.LightLevel] = Field(Query([]))
+    weather_type: list[Weather.Type] = Field(Query([]))
+    weather_precipitation: list[Weather.Intensity] = Field(Query([]))
+    weather_wind: list[Weather.Intensity] = Field(Query([]))
+    weather_fog: list[Weather.Intensity] = Field(Query([]))
 
     # Ordering
     map_center: Coordinate | None = None

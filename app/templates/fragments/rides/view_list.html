@@ -1,0 +1,36 @@
+{% from "fragments/_macros.html" import render_rating %}
+
+{% for ride in ride_list.items %}
+<div class="ride-card scroll-shut-on-delete"
+{% if loop.last %}
+    hx-get="/twists/{{ twist.id }}/rides/templates/view-modal?offset={{ next_offset }}"
+    hx-include="#twist-filter-form"
+    hx-swap="afterend"
+    hx-trigger="intersect once"
+{% endif %}
+>
+    <header>
+        <h3>{{ ride.formatted_date }}<span class="author"> by {{ ride.author_name }}</span></h3>
+        {% if ride.can_delete %}
+        <button class="button button-link"
+            hx-delete="/twists/{{ twist.id }}/rides/{{ ride.id }}"
+            hx-target="closest .ride-card"
+            hx-swap="outerHTML swap:500ms">
+
+            <i class="fa-solid fa-trash"></i>
+        </button>
+        {% endif %}
+    </header>
+    <div class="ride-weather" title="{{ ride.weather }}">{{ ride.weather.emoji | replace(' ', '&nbsp;') | safe }}</div>
+    <ul>
+        {% for slug, rating in ride.ratings.items() %}
+        {{ render_rating(
+            slug,
+            rating,
+            ride_list.criteria_descriptions[slug],
+            criterion_max_value
+        ) }}
+        {% endfor %}
+    </ul>
+</div>
+{% endfor %}
