@@ -140,7 +140,7 @@ async def serve_averages(
     request: Request,
     twist_id: int,
     filter: TwistFilterParameters = Depends(),
-    ownership: Literal["all", "own"] = Query("all"),
+    ride_ownership: Literal["all", "own"] = Query("all"),
     user: User | None = Depends(current_user_optional),
     session: AsyncSession = Depends(get_db)
 ) -> HTMLResponse:
@@ -157,7 +157,7 @@ async def serve_averages(
     except MultipleResultsFound:
         raise_http(f"Multiple twists found for id '{twist_id}'", status_code=500)
 
-    return await render_averages(request, session, user, twist, filter, ownership)
+    return await render_averages(request, session, user, twist, filter, ride_ownership)
 
 
 @router.get("/templates/view_all_button", tags=["Templates"], response_class=HTMLResponse)
