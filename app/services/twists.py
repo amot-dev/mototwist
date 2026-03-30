@@ -16,7 +16,7 @@ from app.schemas.twists import (
     FilterOwnership, FilterPavement, FilterRide,
     TwistBasic, TwistDropdown, TwistFilterParameters, TwistListItem
 )
-from app.schemas.types import Coordinate, Waypoint
+from app.schemas.types import Coordinate, Waypoint, Weather
 from app.settings import settings
 from app.utility import raise_http
 
@@ -101,6 +101,18 @@ async def render_creation_buttons(
     return templates.TemplateResponse("fragments/twists/creation_buttons.html", {
         "request": request,
         "user": user
+    })
+
+
+async def render_advanced_filter_modal(
+    request: Request
+) -> HTMLResponse:
+    """
+    Build and return the TemplateResponse for the advanced filter modal.
+    """
+    return templates.TemplateResponse("fragments/twists/advanced_filter_modal.html", {
+        "request": request,
+        "Weather": Weather
     })
 
 

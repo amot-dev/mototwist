@@ -99,6 +99,15 @@
                             <output id="rating-slider-max-out" class="range-output" style="--pos: 100;">10.0</output>
                         </div>
                     </div>
+
+                    <button type="button" class="button button-block button-small"
+                        onclick="document.querySelector('#modal-advanced-filter').showModal()"
+                        hx-get="/twists/templates/advanced-filter-modal"
+                        hx-target="#modal-advanced-filter"
+                        hx-swap="innerHTML">
+
+                        <i class="fa-solid fa-sliders"></i> Advanced Filters
+                    </button>
                 </fieldset>
             </div>
         </details>
@@ -247,6 +256,10 @@
         {{ render_form_buttons(submit_text="Create Twist") }}
     </form>
     {% endcall %}
+</dialog>
+
+<dialog id="modal-advanced-filter" class="modal modal-dynamic">
+    <p>Loading...</p>
 </dialog>
 
 <dialog id="modal-ride-twist" class="modal modal-dynamic">

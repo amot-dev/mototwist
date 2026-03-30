@@ -9,7 +9,7 @@ from app.database import get_db
 from app.events import EventSet
 from app.models import Twist, User
 from app.schemas.twists import TwistBasic, TwistCreateForm, TwistDropdown, TwistFilterParameters, TwistGeometry
-from app.services.twists import render_creation_buttons, render_delete_modal, render_list, render_single_list_item, render_twist_dropdown, simplify_route, snap_waypoints_to_route
+from app.services.twists import render_advanced_filter_modal, render_creation_buttons, render_delete_modal, render_list, render_single_list_item, render_twist_dropdown, simplify_route, snap_waypoints_to_route
 from app.settings import settings
 from app.users import current_user, current_user_optional, verify
 from app.utility import raise_http
@@ -137,6 +137,16 @@ async def serve_creation_buttons(
     return await render_creation_buttons(request, user)
 
 
+@router.get("/templates/advanced-filter-modal", tags=["Templates"], response_class=HTMLResponse)
+async def serve_advanced_filter_modal(
+    request: Request
+) -> HTMLResponse:
+    """
+    Serve an HTML fragment containing the advanced filter modal.
+    """
+    return await render_advanced_filter_modal(request)
+
+
 @router.get("/templates/list", tags=["Templates"], response_class=HTMLResponse)
 async def serve_list(
     request: Request,
@@ -147,7 +157,6 @@ async def serve_list(
     """
     Serve an HTML fragment containing the sorted list of Twists.
     """
-
     response = response = await render_list(request, session, user, filter)
     response.headers["HX-Trigger-After-Settle"] = EventSet(
         EventSet.TWISTS_LOADED(filter.page, filter.pages)
