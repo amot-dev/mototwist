@@ -4,6 +4,7 @@
 <div class="ride-card scroll-shut-on-delete"
 {% if loop.last %}
     hx-get="/twists/{{ twist.id }}/rides/templates/view-modal?offset={{ next_offset }}"
+    hx-include="#twist-filter-form"
     hx-swap="afterend"
     hx-trigger="intersect once"
 {% endif %}

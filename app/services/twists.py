@@ -4,7 +4,7 @@ from fastapi.responses import HTMLResponse
 from geoalchemy2 import Geometry
 from shapely.geometry import LineString, Point
 from shapely.ops import nearest_points
-from sqlalchemy import false, select, type_coerce
+from sqlalchemy import case, false, func, literal, select, type_coerce
 from sqlalchemy.exc import MultipleResultsFound, NoResultFound
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.sql.expression import ColumnExpressionArgument
@@ -17,6 +17,7 @@ from app.schemas.twists import (
     TwistBasic, TwistDropdown, TwistFilterParameters, TwistListItem
 )
 from app.schemas.types import Coordinate, Waypoint, Weather
+from app.services.rides import weather_conditions_from
 from app.settings import settings
 from app.utility import raise_http
 
@@ -141,8 +142,24 @@ async def render_list(
     elif filter.pavement == FilterPavement.UNPAVED:
         statement = statement.where(Twist.is_paved == False)
 
+    # User-submitted Ride Filtering
+    if user and filter.rides != FilterRide.ALL:
+        ride_exists = select(Ride.id).where(
+            Ride.twist_id == Twist.id,
+            Ride.author_id == user.id
+        ).exists()
+
+        if filter.rides == FilterRide.SUBMITTED:
+            statement = statement.where(ride_exists)
+
+        elif filter.rides == FilterRide.UNSUBMITTED:
+            statement = statement.where(~ride_exists)
+
+    elif not user and filter.rides == FilterRide.SUBMITTED:
+        # If user is not logged in, they can't have Twists with submitted rides
+        statement = statement.where(false())
+
     # Ride Rating Range Filtering
-    from sqlalchemy import case, func, literal
     if filter.min_rating > 0 or filter.max_rating < 10:
         # Dynamically build the average calculation for paved Twists
         paved_criteria = await Criterion.get_list(session, is_paved=True)
@@ -181,22 +198,16 @@ async def render_list(
 
         statement = statement.where(Twist.id.in_(rating_subquery))
 
-    # User-submitted Ride Filtering
-    if user and filter.rides != FilterRide.ALL:
-        ride_exists = select(Ride.id).where(
+    # Weather Filtering
+    weather_conditions = weather_conditions_from(filter)
+    weather_subquery = (
+        select(Ride.id)
+        .where(
             Ride.twist_id == Twist.id,
-            Ride.author_id == user.id
+            *weather_conditions
         ).exists()
-
-        if filter.rides == FilterRide.SUBMITTED:
-            statement = statement.where(ride_exists)
-
-        elif filter.rides == FilterRide.UNSUBMITTED:
-            statement = statement.where(~ride_exists)
-
-    elif not user and filter.rides == FilterRide.SUBMITTED:
-        # If user is not logged in, they can't have Twists with submitted rides
-        statement = statement.where(false())
+    )
+    statement = statement.where(weather_subquery)
 
     # Pagination
     page = filter.page

@@ -4,9 +4,5 @@
     hx-target="#modal-view-twist-rides"
     hx-swap="innerHTML">
 
-    {% if ride_count == 1 %}
-    View single side
-    {% else %}
-    View {{ ride_count }} rides
-    {% endif %}
+    {{ ride_count_str }}
 </button>

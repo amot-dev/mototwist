@@ -11,8 +11,8 @@ from app.database import get_db
 from app.events import EventSet
 from app.models import Criterion, Twist, Ride, User
 from app.schemas.rides import TwistRideForm
-from app.schemas.twists import TwistBasic, TwistUltraBasic
-from app.services.rides import render_averages, render_ride_modal, render_view_all_button, render_view_modal
+from app.schemas.twists import TwistBasic, TwistFilterParameters, TwistUltraBasic
+from app.services.rides import render_averages, render_ride_modal, render_view_all_button, render_view_modal, weather_conditions_from
 from app.users import current_user, current_user_optional, verify
 from app.utility import raise_http
 
@@ -139,6 +139,7 @@ async def delete_ride(
 async def serve_averages(
     request: Request,
     twist_id: int,
+    filter: TwistFilterParameters = Depends(),
     ownership: Literal["all", "own"] = Query("all"),
     user: User | None = Depends(current_user_optional),
     session: AsyncSession = Depends(get_db)
@@ -156,27 +157,36 @@ async def serve_averages(
     except MultipleResultsFound:
         raise_http(f"Multiple twists found for id '{twist_id}'", status_code=500)
 
-    return await render_averages(request, session, user, twist, ownership)
+    return await render_averages(request, session, user, twist, filter, ownership)
 
 
 @router.get("/templates/view_all_button", tags=["Templates"], response_class=HTMLResponse)
 async def serve_view_all_button(
     request: Request,
     twist_id: int,
+    filter: TwistFilterParameters = Depends(),
     session: AsyncSession = Depends(get_db)
 ) -> HTMLResponse:
     """
     Serve an HTML fragment containing the view all rides button, including the number of rides.
     """
+    # Calculate filters
+    weather_conditions = weather_conditions_from(filter)
+    filtered = True if len(weather_conditions) else False
+
     try:
         result = await session.scalars(
-            select(func.count(Ride.id)).where(Ride.twist_id == Twist.id, Twist.id == twist_id)
+            select(func.count(Ride.id)).where(
+                Ride.twist_id == Twist.id,
+                Twist.id == twist_id,
+                *weather_conditions
+            )
         )
         ride_count = result.one()
     except NoResultFound:
         raise_http(f"Twist with id '{twist_id}' not found", status_code=404)
 
-    return await render_view_all_button(request, twist_id, ride_count)
+    return await render_view_all_button(request, twist_id, ride_count, filtered)
 
 
 @router.get("/templates/ride-modal", tags=["Templates"], response_class=HTMLResponse)
@@ -206,6 +216,7 @@ async def serve_ride_modal(
 async def serve_view_modal(
     request: Request,
     twist_id: int,
+    filter: TwistFilterParameters = Depends(),
     offset: int = Query(0),
     user: User | None = Depends(current_user_optional),
     session: AsyncSession = Depends(get_db)
@@ -223,4 +234,4 @@ async def serve_view_modal(
     except MultipleResultsFound:
         raise_http(f"Multiple twists found for id '{twist_id}'", status_code=500)
 
-    return await render_view_modal(request, session, user, twist, offset)
+    return await render_view_modal(request, session, user, twist, filter, offset)

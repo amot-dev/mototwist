@@ -101,10 +101,7 @@
                     </div>
 
                     <button type="button" class="button button-block button-small"
-                        onclick="document.querySelector('#modal-advanced-filter').showModal()"
-                        hx-get="/twists/templates/advanced-filter-modal"
-                        hx-target="#modal-advanced-filter"
-                        hx-swap="innerHTML">
+                        onclick="document.querySelector('#modal-advanced-filter').showModal()">
 
                         <i class="fa-solid fa-sliders"></i> Advanced Filters
                     </button>
@@ -258,7 +255,11 @@
     {% endcall %}
 </dialog>
 
-<dialog id="modal-advanced-filter" class="modal modal-dynamic">
+<dialog id="modal-advanced-filter" class="modal modal-dynamic"
+    hx-get="/twists/templates/advanced-filter-modal"
+    hx-trigger="load"
+    hx-swap="innerHTML">
+
     <p>Loading...</p>
 </dialog>
 

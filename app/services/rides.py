@@ -2,7 +2,7 @@ from datetime import date, timedelta
 from fastapi import Request
 from fastapi.responses import HTMLResponse
 from humanize import intcomma, metric, ordinal
-from sqlalchemy import false, func, select
+from sqlalchemy import ColumnExpressionArgument, false, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 from typing import cast, Literal
@@ -10,7 +10,7 @@ from typing import cast, Literal
 from app.config import logger, templates
 from app.models import Criterion, Ride, User
 from app.schemas.rides import AverageRating, RideList, RideListItem
-from app.schemas.twists import TwistBasic, TwistUltraBasic
+from app.schemas.twists import TwistBasic, TwistFilterParameters, TwistUltraBasic
 from app.schemas.types import Weather
 from app.settings import settings
 
@@ -92,11 +92,35 @@ async def initialize_criteria(session: AsyncSession) -> bool:
         return False
 
 
+def weather_conditions_from(filter: TwistFilterParameters) -> list[ColumnExpressionArgument[bool]]:
+    """
+    Generate a list of SQLAlchemy AND clauses based on active weather filters.
+    """
+    conditions: list[ColumnExpressionArgument[bool]] = []
+
+    # Map filter fields to db fields and dynamically build the conditions
+    weather_mappings = {
+        "weather_temperature": Ride.__table__.c.weather_temperature,
+        "weather_light": Ride.__table__.c.weather_light,
+        "weather_type": Ride.__table__.c.weather_type,
+        "weather_precipitation": Ride.__table__.c.weather_precipitation,
+        "weather_wind": Ride.__table__.c.weather_wind,
+        "weather_fog": Ride.__table__.c.weather_fog,
+    }
+    for filter_field, db_column in weather_mappings.items():
+        selected_conditions = getattr(filter, filter_field)
+        if selected_conditions:
+            conditions.append(db_column.in_(selected_conditions))
+
+    return conditions
+
+
 async def calculate_average_rating(
     session: AsyncSession,
     user: User | None,
     twist: TwistUltraBasic,
-    filter: Literal["all", "own"],
+    filter: TwistFilterParameters,
+    ownership: Literal["all", "own"],
     round_to: int
 ) -> dict[str, AverageRating]:
     """
@@ -114,10 +138,13 @@ async def calculate_average_rating(
     statement = select(*[
         func.avg(Ride.ratings[c.slug].as_integer()).label(c.slug)
         for c in criteria
-    ]).where(Ride.twist_id == twist.id)
+    ]).where(
+        Ride.twist_id == twist.id,
+        *weather_conditions_from(filter)
+    )
 
     # Filtering
-    if filter == "own":
+    if ownership == "own":
         statement = statement.where(Ride.author_id == user.id) if user else statement.where(false())
 
     result = await session.execute(statement)
@@ -144,6 +171,7 @@ async def render_averages(
     session: AsyncSession,
     user: User | None,
     twist: TwistUltraBasic,
+    filter: TwistFilterParameters,
     ownership: Literal["all", "own"] = "all",
 ) -> HTMLResponse:
     """
@@ -151,7 +179,7 @@ async def render_averages(
     """
     return templates.TemplateResponse("fragments/rides/averages.html", {
         "request": request,
-        "average_ratings": await calculate_average_rating(session, user, twist, ownership, round_to=1),
+        "average_ratings": await calculate_average_rating(session, user, twist, filter, ownership, round_to=1),
         "criterion_max_value": Criterion.MAX_VALUE
     })
 
@@ -159,20 +187,28 @@ async def render_averages(
 async def render_view_all_button(
     request: Request,
     twist_id: int,
-    ride_count: int
+    ride_count: int,
+    filtered: bool
 ) -> HTMLResponse:
     """
     Build and return the TemplateResponse for the view all rides button.
     """
-    if ride_count > 9999:
-        ride_count_str = metric(ride_count).replace(" ", "")
+    if ride_count == 1:
+        ride_count_str = "View single ride"
+    elif ride_count > 9999:
+        ride_count_str = "View " + metric(ride_count).replace(" ", "") + " rides"
     else:
-        ride_count_str = intcomma(ride_count)
+        ride_count_str = "View " + intcomma(ride_count) + " rides"
+
+    if filtered:
+        ride_count_str += " (filtered)"
+    print(ride_count_str)
 
     return templates.TemplateResponse("fragments/rides/view_all.html", {
         "request": request,
         "twist_id": twist_id,
-        "ride_count": ride_count_str
+        "ride_count": ride_count,
+        "ride_count_str": ride_count_str
     })
 
 
@@ -206,17 +242,19 @@ async def render_view_modal(
     session: AsyncSession,
     user: User | None,
     twist: TwistBasic,
+    filter: TwistFilterParameters,
     offset: int
 ) -> HTMLResponse:
     """
     Build and return the TemplateResponse for the ride view modal.
     """
-    criteria = await Criterion.get_list(session, is_paved=twist.is_paved)
-
     # Collect rides in order, offset and limited by settings
     result = await session.scalars(
         select(Ride)
-        .where(Ride.twist_id == twist.id)
+        .where(
+            Ride.twist_id == twist.id,
+            *weather_conditions_from(filter)
+        )
         .order_by(Ride.date.desc())
         .offset(offset)
         .limit(settings.RIDES_FETCHED_PER_QUERY)
@@ -227,6 +265,7 @@ async def render_view_modal(
     rides = result.all()
 
     # Build list items
+    criteria = await Criterion.get_list(session, is_paved=twist.is_paved)
     ride_list_items: list[RideListItem] = []
     for ride in rides:
         # Pre-format the date for easier display in the template

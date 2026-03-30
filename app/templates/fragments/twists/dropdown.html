@@ -16,6 +16,7 @@
     hx-get="/twists/{{ twist_id }}/rides/templates/averages"
     hx-ext="morph"
     hx-target="next .averages-list"
+    hx-include="#twist-filter-form"
     hx-swap="morph:innerHTML"
     hx-trigger="change, {{ EVENTS.REFRESH_AVERAGES }}[event.detail.value == '{{ twist_id }}'] from:body">
 
@@ -31,6 +32,7 @@
 
 <ul class="averages-list"
     hx-get="/twists/{{ twist_id }}/rides/templates/averages"
+    hx-include="#twist-filter-form"
     hx-swap="innerHTML"
     hx-trigger="load">
 </ul>
@@ -38,6 +40,7 @@
 <footer
     hx-get="/twists/{{ twist_id }}/rides/templates/view_all_button"
     hx-target="find button"
+    hx-include="#twist-filter-form"
     hx-swap="outerHTML"
     hx-trigger="load, {{ EVENTS.REFRESH_AVERAGES }}[event.detail.value == '{{ twist_id }}'] from:body">
 
