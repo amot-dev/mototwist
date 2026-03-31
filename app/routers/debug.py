@@ -152,7 +152,6 @@ async def load_state(
     except Exception as e:
         raise_http("Failed to parse users from JSON", status_code=422, exception=e)
     try:
-        print(twists_data[0])
         twists_to_create = [
             Twist(
                 name=t.get("name"),

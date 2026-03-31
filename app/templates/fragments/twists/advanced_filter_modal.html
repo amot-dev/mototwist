@@ -3,6 +3,23 @@
 {% call render_modal_content("Advanced Filters") %}
 <div class="modal-form filter-form">
     <fieldset class="form-fieldset">
+        <legend>Criteria</legend>
+        <div class="form-group">
+            <fieldset class="filter-fieldset">
+                <legend>Exclude from Average</legend>
+                {% for row in criteria|batch(3) %}
+                <div class="filter-group" title="Exclude from Averahe">
+                    {% for criterion in row %}
+                        <input type="checkbox" id="exclude_criterion_{{ criterion.slug }}" name="excluded_criteria_slugs" value="{{ criterion.slug }}" form="twist-filter-form">
+                        <label class="label-button" for="exclude_criterion_{{ criterion.slug }}">{{ criterion.slug.replace('_', ' ') | title }}</label>
+                    {% endfor %}
+                </div>
+                {% endfor %}
+            </fieldset>
+        </div>
+    </fieldset>
+    <br>
+    <fieldset class="form-fieldset">
         <legend>Weather</legend>
         <div class="form-group">
             <fieldset class="filter-fieldset">

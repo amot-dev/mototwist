@@ -22,9 +22,10 @@ class Settings(BaseSettings):
     OSM_URL: str = Field(default="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", exclude=False)
     OSRM_URL: str = Field(default="https://router.project-osrm.org", exclude=False)
     TWIST_SIMPLIFICATION_TOLERANCE_M: int = Field(default=0, exclude=True)
-    DEFAULT_TWISTS_LOADED: int = Field(default=20, gt=1, exclude=True)
-    MAX_TWISTS_LOADED: int = Field(default=100, gt=1, exclude=True)
-    RIDES_FETCHED_PER_QUERY: int = Field(default=20, gt=1, exclude=True)
+    AVERAGE_ROUNDING_DIGITS: int = Field(default=1, ge=0, exclude=True)
+    DEFAULT_TWISTS_LOADED: int = Field(default=20, ge=1, exclude=True)
+    MAX_TWISTS_LOADED: int = Field(default=100, ge=1, exclude=True)
+    RIDES_FETCHED_PER_QUERY: int = Field(default=20, ge=1, exclude=True)
 
     # User Options
     MOTOTWIST_ADMIN_EMAIL: str = Field(default="admin@admin.com", exclude=True)

@@ -4,7 +4,7 @@ from fastapi.responses import HTMLResponse
 from geoalchemy2 import Geometry
 from shapely.geometry import LineString, Point
 from shapely.ops import nearest_points
-from sqlalchemy import case, false, func, literal, select, type_coerce
+from sqlalchemy import Numeric, case, cast, false, func, literal, select, type_coerce
 from sqlalchemy.exc import MultipleResultsFound, NoResultFound
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.sql.expression import ColumnExpressionArgument
@@ -106,13 +106,15 @@ async def render_creation_buttons(
 
 
 async def render_advanced_filter_modal(
-    request: Request
+    request: Request,
+    criteria: list[Criterion]
 ) -> HTMLResponse:
     """
     Build and return the TemplateResponse for the advanced filter modal.
     """
     return templates.TemplateResponse("fragments/twists/advanced_filter_modal.html", {
         "request": request,
+        "criteria": criteria,
         "Weather": Weather
     })
 
@@ -163,27 +165,45 @@ async def render_list(
     if filter.overall_rating_range.min > Criterion.MIN_VALUE \
         or filter.overall_rating_range.max < Criterion.MAX_VALUE:
 
+        # List is important here to maintain ordering
+        paved_criteria_slugs = [
+            c.slug for c in await Criterion.get_list(session, is_paved=True)
+            if c.slug not in filter.excluded_criteria_slugs
+        ]
+        unpaved_criteria_slugs = [
+            c.slug for c in await Criterion.get_list(session, is_paved=False)
+            if c.slug not in filter.excluded_criteria_slugs
+        ]
+
         # Dynamically build the average calculation for paved Twists
-        paved_criteria = await Criterion.get_list(session, is_paved=True)
-        paved_sum = sum(
-            (
-                func.avg(Ride.ratings[c.slug].as_integer())
-                for c in paved_criteria
-            ),
-            start=literal(0.0)
-        )
-        paved_avg = paved_sum / len(paved_criteria)
+        if len(paved_criteria_slugs):
+            paved_sum = sum(
+                (
+                    func.avg(Ride.ratings[slug].as_integer())
+                    for slug in paved_criteria_slugs
+                ),
+                start=literal(0.0)
+            )
+            paved_avg = paved_sum / len(paved_criteria_slugs)
+        else:
+            paved_avg = literal(0.0)
 
         # Dynamically build the average calculation for unpaved Twists
-        unpaved_criteria = await Criterion.get_list(session, is_paved=False)
-        unpaved_sum = sum(
-            (
-                func.avg(Ride.ratings[c.slug].as_integer())
-                for c in unpaved_criteria
-            ),
-            start=literal(0.0)
-        )
-        unpaved_avg = unpaved_sum / len(unpaved_criteria)
+        if len(unpaved_criteria_slugs):
+            unpaved_sum = sum(
+                (
+                    func.avg(Ride.ratings[slug].as_integer())
+                    for slug in unpaved_criteria_slugs
+                ),
+                start=literal(0.0)
+            )
+            unpaved_avg = unpaved_sum / len(unpaved_criteria_slugs)
+        else:
+            unpaved_avg = literal(0.0)
+
+        # Round averages same as UI before comparing to avoid user confusion
+        paved_avg_rounded = func.round(cast(paved_avg, Numeric), settings.AVERAGE_ROUNDING_DIGITS)
+        unpaved_avg_rounded = func.round(cast(unpaved_avg, Numeric), settings.AVERAGE_ROUNDING_DIGITS)
 
         # Create the subquery
         rating_subquery = (
@@ -192,8 +212,14 @@ async def render_list(
             .group_by(Twist.id)
             .having(
                 case(
-                    (Twist.is_paved, paved_avg.between(filter.overall_rating_range.min, filter.overall_rating_range.max)),
-                    else_=unpaved_avg.between(filter.overall_rating_range.min, filter.overall_rating_range.max)
+                    (Twist.is_paved, paved_avg_rounded.between(
+                        filter.overall_rating_range.min,
+                        filter.overall_rating_range.max
+                    )),
+                    else_=unpaved_avg_rounded.between(
+                        filter.overall_rating_range.min,
+                        filter.overall_rating_range.max
+                    )
                 )
             )
         )

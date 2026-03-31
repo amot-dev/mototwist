@@ -48,6 +48,7 @@ class FilterWeather(BaseModel):
     wind: Annotated[list[Weather.Intensity], Field()] = []
     fog: Annotated[list[Weather.Intensity], Field()] = []
 
+
     @model_validator(mode="before")
     @classmethod
     def ensure_lists(cls, data: dict[str, object]) -> dict[str, object]:
@@ -75,13 +76,23 @@ class TwistFilter(BaseModel):
     overall_rating_range: Annotated[FilterRatingRange, Field()] = FilterRatingRange()
 
     # Criteria Filtering
-    excluded_criteria_slugs: Annotated[list[str], Field()] = []
+    excluded_criteria_slugs: Annotated[set[str], Field()] = set()
 
     # Weather Filtering
     weather: Annotated[FilterWeather, Field()] = FilterWeather()
 
     # Ordering
     map_center: Annotated[Coordinate | None, Field()] = None
+
+
+    # Ensure excluded criteria slugs is a set
+    @field_validator("excluded_criteria_slugs", mode="before")
+    @classmethod
+    def excluded_criteria_slugs_to_set(cls, value: str | list[str]) -> set[str]:
+        if not isinstance(value, list):
+            return {value}
+        else:
+            return set(value)
 
 
     @model_validator(mode="after")

@@ -120,8 +120,7 @@ async def calculate_average_rating(
     user: User | None,
     twist: TwistUltraBasic,
     filter: TwistFilter,
-    ownership: Literal["all", "own"],
-    round_to: int
+    ownership: Literal["all", "own"]
 ) -> dict[str, AverageRating]:
     """
     Calculate the average ratings for a Twist.
@@ -158,7 +157,7 @@ async def calculate_average_rating(
 
     return {
         slug: cast(AverageRating, {
-            "rating": round(criterion, round_to),
+            "rating": round(criterion, settings.AVERAGE_ROUNDING_DIGITS),
             "description": descriptions.get(slug, "")
         })
         for slug, criterion in averages._asdict().items()  # pyright: ignore [reportPrivateUsage]
@@ -179,7 +178,7 @@ async def render_averages(
     """
     return templates.TemplateResponse("fragments/rides/averages.html", {
         "request": request,
-        "average_ratings": await calculate_average_rating(session, user, twist, filter, ownership, round_to=1),
+        "average_ratings": await calculate_average_rating(session, user, twist, filter, ownership),
         "criterion_max_value": Criterion.MAX_VALUE
     })
 
@@ -202,7 +201,6 @@ async def render_view_all_button(
 
     if filtered:
         ride_count_str += " (filtered)"
-    print(ride_count_str)
 
     return templates.TemplateResponse("fragments/rides/view_all.html", {
         "request": request,

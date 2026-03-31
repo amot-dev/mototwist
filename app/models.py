@@ -6,7 +6,7 @@ from geoalchemy2.shape import from_shape, to_shape  # type: ignore[reportUnknown
 from pydantic import BaseModel
 from shapely.geometry import LineString
 from shapely.geometry.base import BaseGeometry
-from sqlalchemy import Boolean, Date, Enum, ForeignKey, Integer, Sequence, SmallInteger, String, inspect, select, type_coerce
+from sqlalchemy import Boolean, Date, Enum, ForeignKey, Integer, Sequence, SmallInteger, String, inspect, select, true, type_coerce
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import DeclarativeBase, Mapped, composite, mapped_column, relationship
@@ -297,7 +297,7 @@ class Criterion(SerializationMixin, Base):
         :return: A list of Criterion objects.
         """
         if is_paved is None:
-            filter = cls.for_paved or cls.for_unpaved
+            filter = true()
         else:
             filter = cls.for_paved if is_paved else cls.for_unpaved
 
@@ -310,14 +310,14 @@ class Criterion(SerializationMixin, Base):
     @classmethod
     async def get_set(cls, session: AsyncSession, is_paved: bool | None = None) -> set[str]:
         """
-        Retrieve a set of unique criteria slugs filtered by pavement type.
+        Retrieve a set of unique criteria slugs filtered by pavement type. NOT ordered.
 
         :param session: The database session for the query.
         :param is_paved: Filter for paved (True), unpaved (False), or all (None) criteria.
         :return: A set of strings containing the criteria slugs.
         """
         if is_paved is None:
-            filter = cls.for_paved or cls.for_unpaved
+            filter = true()
         else:
             filter = cls.for_paved if is_paved else cls.for_unpaved
 

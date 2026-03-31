@@ -56,6 +56,7 @@ Below is an overview of all available environment variables for MotoTwist.
 | `OSM_URL` | The URL template for the OpenStreetMap tile server, which provides the visual base map. | `"https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"` |
 | `OSRM_URL` | The base URL for the OSRM routing engine, used for calculating routes for new Twists. | `"https://router.project-osrm.org"` |
 | `TWIST_SIMPLIFICATION_TOLERANCE_M` | Sets the simplification tolerance for new Twist routes. A higher value (e.g., `"50m"`) removes more points and reduces storage size. Set to `"0m"` to disable. | `"30m"` |
+| `AVERAGE_ROUNDING_DIGITS` | Sets number of digits after the decimal to round to when calculating and displaying rating averages. | `1` |
 | `DEFAULT_TWISTS_LOADED` | Sets the default number of Twists that are loaded at once. This affects both the infinitely scrolling Twist list and the map. | `20` |
 | `MAX_TWISTS_LOADED` | Sets the maximum number of Twists that can be loaded at once. Setting a high number can have performance impacts. | `100` |
 | `RIDES_FETCHED_PER_QUERY` | Sets the number of rides fetched per query during the infinite scroll when viewing all rides. Setting it too low or high can have performance impacts. | `20` |

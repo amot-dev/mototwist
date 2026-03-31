@@ -7,7 +7,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.config import logger
 from app.database import get_db
 from app.events import EventSet
-from app.models import Twist, User
+from app.models import Criterion, Twist, User
 from app.schemas.twists import TwistBasic, TwistCreateForm, TwistDropdown, TwistFilter, TwistGeometry
 from app.services.twists import render_advanced_filter_modal, render_creation_buttons, render_delete_modal, render_list, render_single_list_item, render_twist_dropdown, simplify_route, snap_waypoints_to_route
 from app.settings import settings
@@ -139,12 +139,13 @@ async def serve_creation_buttons(
 
 @router.get("/templates/advanced-filter-modal", tags=["Templates"], response_class=HTMLResponse)
 async def serve_advanced_filter_modal(
-    request: Request
+    request: Request,
+    session: AsyncSession = Depends(get_db)
 ) -> HTMLResponse:
     """
     Serve an HTML fragment containing the advanced filter modal.
     """
-    return await render_advanced_filter_modal(request)
+    return await render_advanced_filter_modal(request, await Criterion.get_list(session))
 
 
 @router.post("/templates/list", tags=["Templates"], response_class=HTMLResponse)
