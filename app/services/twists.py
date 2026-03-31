@@ -14,7 +14,7 @@ from app.config import logger, templates
 from app.models import Criterion, Ride, Twist, User
 from app.schemas.twists import (
     FilterOwnership, FilterPavement, FilterRide,
-    TwistBasic, TwistDropdown, TwistFilterParameters, TwistListItem
+    TwistBasic, TwistDropdown, TwistFilter, TwistListItem
 )
 from app.schemas.types import Coordinate, Waypoint, Weather
 from app.services.rides import weather_conditions_from
@@ -121,7 +121,7 @@ async def render_list(
     request: Request,
     session: AsyncSession,
     user: User | None,
-    filter: TwistFilterParameters
+    filter: TwistFilter
 ) -> HTMLResponse:
     """
      Build and return the TemplateResponse for the Twist list.
@@ -160,8 +160,9 @@ async def render_list(
         statement = statement.where(false())
 
     # Ride Rating Range Filtering
-    if filter.min_rating > Criterion.MIN_VALUE or filter.max_rating < Criterion.MAX_VALUE:
-        print("!!!rating filter!!!")
+    if filter.overall_rating_range.min > Criterion.MIN_VALUE \
+        or filter.overall_rating_range.max < Criterion.MAX_VALUE:
+
         # Dynamically build the average calculation for paved Twists
         paved_criteria = await Criterion.get_list(session, is_paved=True)
         paved_sum = sum(
@@ -191,8 +192,8 @@ async def render_list(
             .group_by(Twist.id)
             .having(
                 case(
-                    (Twist.is_paved, paved_avg.between(filter.min_rating, filter.max_rating)),
-                    else_=unpaved_avg.between(filter.min_rating, filter.max_rating)
+                    (Twist.is_paved, paved_avg.between(filter.overall_rating_range.min, filter.overall_rating_range.max)),
+                    else_=unpaved_avg.between(filter.overall_rating_range.min, filter.overall_rating_range.max)
                 )
             )
         )
@@ -200,7 +201,7 @@ async def render_list(
         statement = statement.where(Twist.id.in_(rating_subquery))
 
     # Weather Filtering
-    weather_conditions = weather_conditions_from(filter)
+    weather_conditions = weather_conditions_from(filter.weather)
     if weather_conditions:
         weather_subquery = (
             select(Ride.id)

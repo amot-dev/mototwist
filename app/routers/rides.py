@@ -11,7 +11,7 @@ from app.database import get_db
 from app.events import EventSet
 from app.models import Criterion, Twist, Ride, User
 from app.schemas.rides import TwistRideData
-from app.schemas.twists import TwistBasic, TwistFilterParameters, TwistUltraBasic
+from app.schemas.twists import TwistBasic, TwistFilter, TwistUltraBasic
 from app.services.rides import render_averages, render_ride_modal, render_view_all_button, render_view_modal, weather_conditions_from
 from app.users import current_user, current_user_optional, verify
 from app.utility import raise_http
@@ -133,11 +133,11 @@ async def delete_ride(
     return response
 
 
-@router.get("/templates/averages", tags=["Templates"], response_class=HTMLResponse)
+@router.post("/templates/averages", tags=["Templates"], response_class=HTMLResponse)
 async def serve_averages(
     request: Request,
     twist_id: int,
-    filter: TwistFilterParameters = Depends(),
+    filter: TwistFilter,
     ride_ownership: Literal["all", "own"] = Query("all"),
     user: User | None = Depends(current_user_optional),
     session: AsyncSession = Depends(get_db)
@@ -158,18 +158,18 @@ async def serve_averages(
     return await render_averages(request, session, user, twist, filter, ride_ownership)
 
 
-@router.get("/templates/view_all_button", tags=["Templates"], response_class=HTMLResponse)
+@router.post("/templates/view_all_button", tags=["Templates"], response_class=HTMLResponse)
 async def serve_view_all_button(
     request: Request,
     twist_id: int,
-    filter: TwistFilterParameters = Depends(),
+    filter: TwistFilter,
     session: AsyncSession = Depends(get_db)
 ) -> HTMLResponse:
     """
     Serve an HTML fragment containing the view all rides button, including the number of rides.
     """
     # Calculate filters
-    weather_conditions = weather_conditions_from(filter)
+    weather_conditions = weather_conditions_from(filter.weather)
     filtered = True if len(weather_conditions) else False
 
     try:
@@ -210,11 +210,11 @@ async def serve_ride_modal(
     return await render_ride_modal(request, twist, criteria, date.today())
 
 
-@router.get("/templates/view-modal", tags=["Templates"], response_class=HTMLResponse)
+@router.post("/templates/view-modal", tags=["Templates"], response_class=HTMLResponse)
 async def serve_view_modal(
     request: Request,
     twist_id: int,
-    filter: TwistFilterParameters = Depends(),
+    filter: TwistFilter,
     offset: int = Query(0),
     user: User | None = Depends(current_user_optional),
     session: AsyncSession = Depends(get_db)

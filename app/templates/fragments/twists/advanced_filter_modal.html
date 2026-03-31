@@ -9,7 +9,7 @@
                 <legend>Temperature</legend>
                 <div class="filter-group" title="Filter by temperature">
                     {% for item in Weather.Temperature %}
-                        <input type="checkbox" id="filter_temp_{{ item.name }}" name="weather_temperature" value="{{ item.value }}" form="twist-filter-form">
+                        <input type="checkbox" id="filter_temp_{{ item.name }}" name="weather.temperature" value="{{ item.value }}" form="twist-filter-form">
                         <label class="label-button" for="filter_temp_{{ item.name }}">{{ item.value }}</label>
                     {% endfor %}
                 </div>
@@ -21,7 +21,7 @@
                 <legend>Light Level</legend>
                 <div class="filter-group" title="Filter by light level">
                     {% for item in Weather.LightLevel %}
-                        <input type="checkbox" id="filter_light_{{ item.name }}" name="weather_light" value="{{ item.value }}" form="twist-filter-form">
+                        <input type="checkbox" id="filter_light_{{ item.name }}" name="weather.light" value="{{ item.value }}" form="twist-filter-form">
                         <label class="label-button" for="filter_light_{{ item.name }}">{{ item.value }}</label>
                     {% endfor %}
                 </div>
@@ -33,7 +33,7 @@
                 <legend>Weather Type</legend>
                 <div class="filter-group" title="Filter by weather type">
                     {% for item in Weather.Type %}
-                        <input type="checkbox" id="filter_type_{{ item.name }}" name="weather_type" value="{{ item.value }}" form="twist-filter-form">
+                        <input type="checkbox" id="filter_type_{{ item.name }}" name="weather.type" value="{{ item.value }}" form="twist-filter-form">
                         <label class="label-button" for="filter_type_{{ item.name }}">{{ item.value }}</label>
                     {% endfor %}
                 </div>
@@ -45,7 +45,7 @@
                 <legend>Precipitation</legend>
                 <div class="filter-group" title="Filter by precipitation intensity">
                     {% for item in Weather.Intensity %}
-                        <input type="checkbox" id="filter_precip_{{ item.name }}" name="weather_precipitation" value="{{ item.value }}" form="twist-filter-form">
+                        <input type="checkbox" id="filter_precip_{{ item.name }}" name="weather.precipitation" value="{{ item.value }}" form="twist-filter-form">
                         <label class="label-button" for="filter_precip_{{ item.name }}">{{ item.value }}</label>
                     {% endfor %}
                 </div>
@@ -57,7 +57,7 @@
                 <legend>Wind</legend>
                 <div class="filter-group" title="Filter by wind intensity">
                     {% for item in Weather.Intensity %}
-                        <input type="checkbox" id="filter_wind_{{ item.name }}" name="weather_wind" value="{{ item.value }}" form="twist-filter-form">
+                        <input type="checkbox" id="filter_wind_{{ item.name }}" name="weather.wind" value="{{ item.value }}" form="twist-filter-form">
                         <label class="label-button" for="filter_wind_{{ item.name }}">{{ item.value }}</label>
                     {% endfor %}
                 </div>
@@ -69,7 +69,7 @@
                 <legend>Fog</legend>
                 <div class="filter-group" title="Filter by fog intensity">
                     {% for item in Weather.Intensity %}
-                        <input type="checkbox" id="filter_fog_{{ item.name }}" name="weather_fog" value="{{ item.value }}" form="twist-filter-form">
+                        <input type="checkbox" id="filter_fog_{{ item.name }}" name="weather.fog" value="{{ item.value }}" form="twist-filter-form">
                         <label class="label-button" for="filter_fog_{{ item.name }}">{{ item.value }}</label>
                     {% endfor %}
                 </div>

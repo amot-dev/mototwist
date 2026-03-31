@@ -2,9 +2,9 @@
 
 {% call render_modal_content(twist.name) %}
 <form class="modal-form" data-paved="{{ twist.is_paved | lower }}"
+    hx-ext="form-json"
     hx-post="/twists/{{ twist.id }}/rides"
-    hx-swap="none"
-    hx-ext="form-json">
+    hx-swap="none">
 
     <div class="form-group">
         <label for="ride-date">Ride Date</label>

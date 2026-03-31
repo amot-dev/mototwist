@@ -1,9 +1,8 @@
 from enum import Enum
-from fastapi import Query
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 from sqlalchemy import Label, literal
 from sqlalchemy.orm.attributes import InstrumentedAttribute
-from typing import ClassVar
+from typing import Annotated, ClassVar
 from uuid import UUID
 
 from app.models import Criterion, Twist, User
@@ -36,57 +35,62 @@ class FilterRide(str, Enum):
     UNSUBMITTED = "unsubmitted"
 
 
-class RatingRange(BaseModel):
-    min: float = Field(0.0, ge=Criterion.MIN_VALUE, le=Criterion.MAX_VALUE)
-    max: float = Field(10.0, ge=Criterion.MIN_VALUE, le=Criterion.MAX_VALUE)
+class FilterRatingRange(BaseModel):
+    min: Annotated[float, Field(ge=Criterion.MIN_VALUE, le=Criterion.MAX_VALUE)] = Criterion.MIN_VALUE
+    max: Annotated[float, Field(ge=Criterion.MIN_VALUE, le=Criterion.MAX_VALUE)] = Criterion.MAX_VALUE
 
 
-class TwistFilterParameters(BaseModel):
+class FilterWeather(BaseModel):
+    temperature: Annotated[list[Weather.Temperature], Field()] = []
+    light: Annotated[list[Weather.LightLevel], Field()] = []
+    type: Annotated[list[Weather.Type], Field()] = []
+    precipitation: Annotated[list[Weather.Intensity], Field()] = []
+    wind: Annotated[list[Weather.Intensity], Field()] = []
+    fog: Annotated[list[Weather.Intensity], Field()] = []
+
+    @model_validator(mode="before")
+    @classmethod
+    def ensure_lists(cls, data: dict[str, object]) -> dict[str, object]:
+        """
+        Ensure that all input values are lists (even if just one item).
+        """
+        for key, value in data.items():
+            if key in cls.model_fields and not isinstance(value, list):
+                # Coerce single values into a list
+                data[key] = [value]
+        return data
+
+
+class TwistFilter(BaseModel):
     # Display
-    page: int = Field(1, gt=0)
-    pages: int = Field(1, gt=0)
-    open_id: int | None = None
+    page: Annotated[int, Field(gt=0)] = 1
+    pages: Annotated[int, Field(gt=0)] = 1
+    open_id: Annotated[int | None, Field()] = None
 
     # Basic Filtering
-    search: str | None = None
-    ownership: FilterOwnership = FilterOwnership.ALL
-    pavement: FilterPavement = FilterPavement.ALL
-    rides: FilterRide = FilterRide.ALL
-    min_rating: float = Field(0.0, ge=Criterion.MIN_VALUE, le=Criterion.MAX_VALUE)
-    max_rating: float = Field(10.0, ge=Criterion.MIN_VALUE, le=Criterion.MAX_VALUE)
+    search: Annotated[str | None, Field()] = None
+    ownership: Annotated[FilterOwnership, Field()] = FilterOwnership.ALL
+    pavement: Annotated[FilterPavement, Field()] = FilterPavement.ALL
+    rides: Annotated[FilterRide, Field()] = FilterRide.ALL
+    overall_rating_range: Annotated[FilterRatingRange, Field()] = FilterRatingRange()
 
     # Criteria Filtering
-    excluded_criteria_slugs: list[str] = Field(Query([]))
+    excluded_criteria_slugs: Annotated[list[str], Field()] = []
 
     # Weather Filtering
-    weather_temperature: list[Weather.Temperature] = Field(Query([]))
-    weather_light: list[Weather.LightLevel] = Field(Query([]))
-    weather_type: list[Weather.Type] = Field(Query([]))
-    weather_precipitation: list[Weather.Intensity] = Field(Query([]))
-    weather_wind: list[Weather.Intensity] = Field(Query([]))
-    weather_fog: list[Weather.Intensity] = Field(Query([]))
+    weather: Annotated[FilterWeather, Field()] = FilterWeather()
 
     # Ordering
-    map_center: Coordinate | None = None
-    map_center_lat: float | None = Field(None, exclude=True)  # For query only
-    map_center_lng: float | None = Field(None, exclude=True)  # For query only
+    map_center: Annotated[Coordinate | None, Field()] = None
 
 
     @model_validator(mode="after")
-    def assemble_map_center(self) -> "TwistFilterParameters":
+    def normalize_map_center(self) -> TwistFilter:
         """
-        If map_center isn't set, but lat/lng are, create it.
+        Normalize map longitude from potentially "unwrapped" values (ex. 388) to the required [-180, 180] range.
         """
-        # Only run if map_center isn't already populated
-        if self.map_center is None:
-            if self.map_center_lat is not None and self.map_center_lng is not None:
-
-                # Normalize map longitude from potentially "unwrapped" values (ex. 388) to the required [-180, 180] range
-                normalized_lng = (self.map_center_lng + 180) % 360 - 180
-                self.map_center = Coordinate(
-                    lat=self.map_center_lat,
-                    lng=normalized_lng
-                )
+        if self.map_center is not None:
+            self.map_center.lng = (self.map_center.lng + 180) % 360 - 180
         return self
 
 

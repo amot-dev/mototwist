@@ -10,7 +10,7 @@ from typing import cast, Literal
 from app.config import logger, templates
 from app.models import Criterion, Ride, User
 from app.schemas.rides import AverageRating, RideList, RideListItem
-from app.schemas.twists import TwistBasic, TwistFilterParameters, TwistUltraBasic
+from app.schemas.twists import FilterWeather, TwistBasic, TwistFilter, TwistUltraBasic
 from app.schemas.types import Weather
 from app.settings import settings
 
@@ -92,7 +92,7 @@ async def initialize_criteria(session: AsyncSession) -> bool:
         return False
 
 
-def weather_conditions_from(filter: TwistFilterParameters) -> list[ColumnExpressionArgument[bool]]:
+def weather_conditions_from(weather_filter: FilterWeather) -> list[ColumnExpressionArgument[bool]]:
     """
     Generate a list of SQLAlchemy AND clauses based on active weather filters.
     """
@@ -100,15 +100,15 @@ def weather_conditions_from(filter: TwistFilterParameters) -> list[ColumnExpress
 
     # Map filter fields to db fields and dynamically build the conditions
     weather_mappings = {
-        "weather_temperature": Ride.__table__.c.weather_temperature,
-        "weather_light": Ride.__table__.c.weather_light,
-        "weather_type": Ride.__table__.c.weather_type,
-        "weather_precipitation": Ride.__table__.c.weather_precipitation,
-        "weather_wind": Ride.__table__.c.weather_wind,
-        "weather_fog": Ride.__table__.c.weather_fog,
+        "temperature": Ride.__table__.c.weather_temperature,
+        "light": Ride.__table__.c.weather_light,
+        "type": Ride.__table__.c.weather_type,
+        "precipitation": Ride.__table__.c.weather_precipitation,
+        "wind": Ride.__table__.c.weather_wind,
+        "fog": Ride.__table__.c.weather_fog,
     }
     for filter_field, db_column in weather_mappings.items():
-        selected_conditions = getattr(filter, filter_field)
+        selected_conditions = getattr(weather_filter, filter_field)
         if selected_conditions:
             conditions.append(db_column.in_(selected_conditions))
 
@@ -119,7 +119,7 @@ async def calculate_average_rating(
     session: AsyncSession,
     user: User | None,
     twist: TwistUltraBasic,
-    filter: TwistFilterParameters,
+    filter: TwistFilter,
     ownership: Literal["all", "own"],
     round_to: int
 ) -> dict[str, AverageRating]:
@@ -140,7 +140,7 @@ async def calculate_average_rating(
         for c in criteria
     ]).where(
         Ride.twist_id == twist.id,
-        *weather_conditions_from(filter)
+        *weather_conditions_from(filter.weather)
     )
 
     # Filtering
@@ -171,7 +171,7 @@ async def render_averages(
     session: AsyncSession,
     user: User | None,
     twist: TwistUltraBasic,
-    filter: TwistFilterParameters,
+    filter: TwistFilter,
     ownership: Literal["all", "own"] = "all",
 ) -> HTMLResponse:
     """
@@ -242,7 +242,7 @@ async def render_view_modal(
     session: AsyncSession,
     user: User | None,
     twist: TwistBasic,
-    filter: TwistFilterParameters,
+    filter: TwistFilter,
     offset: int
 ) -> HTMLResponse:
     """
@@ -253,7 +253,7 @@ async def render_view_modal(
         select(Ride)
         .where(
             Ride.twist_id == twist.id,
-            *weather_conditions_from(filter)
+            *weather_conditions_from(filter.weather)
         )
         .order_by(Ride.date.desc())
         .offset(offset)

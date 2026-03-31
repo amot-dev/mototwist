@@ -423,20 +423,20 @@ export function registerTwistListeners(map) {
 
         // Check if this is a request to the Twist list endpoint
         if (customEvent.detail.path === '/twists/templates/list') {
-            // Maintain current list on authChange
+            const p = customEvent.detail.parameters;
             const trigger = customEvent.detail.triggeringEvent;
-            if (trigger) {
-                if (trigger.type === EVENTS.AUTH_CHANGE) {
-                    customEvent.detail.parameters['pages'] = numPagesLoaded;
-                }
+
+            if (trigger && trigger.type === EVENTS.AUTH_CHANGE) {
+                p['pages'] = numPagesLoaded;
             }
 
-            if (activeTwistId) customEvent.detail.parameters['open_id'] = activeTwistId;
+            if (activeTwistId) {
+                p['open_id'] = activeTwistId;
+            }
 
-            /** @type {L.LatLng} */
             const mapCenter = getVisualMapCenter(map);
-            customEvent.detail.parameters['map_center_lat'] = mapCenter.lat;
-            customEvent.detail.parameters['map_center_lng'] = mapCenter.lng;
+            p['map_center.lat'] = mapCenter.lat;
+            p['map_center.lng'] = mapCenter.lng;
         }
     });
 }

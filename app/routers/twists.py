@@ -8,7 +8,7 @@ from app.config import logger
 from app.database import get_db
 from app.events import EventSet
 from app.models import Twist, User
-from app.schemas.twists import TwistBasic, TwistCreateForm, TwistDropdown, TwistFilterParameters, TwistGeometry
+from app.schemas.twists import TwistBasic, TwistCreateForm, TwistDropdown, TwistFilter, TwistGeometry
 from app.services.twists import render_advanced_filter_modal, render_creation_buttons, render_delete_modal, render_list, render_single_list_item, render_twist_dropdown, simplify_route, snap_waypoints_to_route
 from app.settings import settings
 from app.users import current_user, current_user_optional, verify
@@ -147,10 +147,10 @@ async def serve_advanced_filter_modal(
     return await render_advanced_filter_modal(request)
 
 
-@router.get("/templates/list", tags=["Templates"], response_class=HTMLResponse)
+@router.post("/templates/list", tags=["Templates"], response_class=HTMLResponse)
 async def serve_list(
     request: Request,
-    filter: TwistFilterParameters = Depends(),
+    filter: TwistFilter,
     user: User | None = Depends(current_user_optional),
     session: AsyncSession = Depends(get_db)
 ) -> HTMLResponse:
