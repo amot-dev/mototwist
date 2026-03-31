@@ -10,7 +10,7 @@ from app.config import logger
 from app.database import get_db
 from app.events import EventSet
 from app.models import Criterion, Twist, Ride, User
-from app.schemas.rides import TwistRideForm
+from app.schemas.rides import TwistRideData
 from app.schemas.twists import TwistBasic, TwistFilterParameters, TwistUltraBasic
 from app.services.rides import render_averages, render_ride_modal, render_view_all_button, render_view_modal, weather_conditions_from
 from app.users import current_user, current_user_optional, verify
@@ -27,7 +27,7 @@ router = APIRouter(
 async def create_ride(
     request: Request,
     twist_id: int,
-    ride_form: TwistRideForm = Depends(TwistRideForm.as_form),
+    ride_data: TwistRideData,
     user: User = Depends(verify(current_user)),
     session: AsyncSession = Depends(get_db)
 ) -> HTMLResponse:
@@ -47,7 +47,7 @@ async def create_ride(
     logger.debug(f"Attempting to submit ride Twist with id '{twist_id}'")
 
     # Ensure there are no missing or extra criteria
-    ride_criteria = {slug for slug in ride_form.ratings.keys()}
+    ride_criteria = {slug for slug in ride_data.ratings.keys()}
     valid_criteria = await Criterion.get_set(session, twist_is_paved)
     if ride_criteria != valid_criteria:
         missing = valid_criteria - ride_criteria
@@ -61,15 +61,13 @@ async def create_ride(
 
         raise_http(error_msg.rstrip("."), status_code=500)
 
-    # Attach the actual Weather instance directly
-    ride_data = ride_form.model_dump(exclude={"weather"})
-    ride_data.update({
-        "author": user,
-        "twist_id": twist_id,
-        "weather": ride_form.weather
-    })
-
-    new_ride = Ride(**ride_data)
+    new_ride = Ride(
+        author=user,
+        twist_id=twist_id,
+        date=ride_data.date,
+        weather=ride_data.weather,
+        ratings=ride_data.ratings
+    )
     session.add(new_ride)
     await session.commit()
     logger.debug(f"Created ride '{new_ride}'")

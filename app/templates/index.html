@@ -228,7 +228,7 @@
 <dialog id="modal-create-twist" class="modal">
     {% call render_modal_content("New Twist") %}
     <form class="modal-form manual-validation"
-        hx-ext="json-enc"
+        hx-ext="form-json"
         hx-post="/twists"
         hx-target="#twist-list"
         hx-swap="afterbegin">

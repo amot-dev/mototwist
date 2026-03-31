@@ -24,14 +24,6 @@ class Coordinate(BaseModel):
 
 @dataclass
 class Weather:
-    temperature: Temperature
-    light: LightLevel
-    type: Type
-    precipitation: Intensity
-    wind: Intensity
-    fog: Intensity
-
-
     class Intensity(str, Enum):
         NONE = "None"
         LIGHT = "Light"
@@ -69,6 +61,14 @@ class Weather:
         Type.SUNNY,
         Type.CLOUDY
     ]
+
+
+    temperature: Temperature
+    light: LightLevel
+    type: Type
+    precipitation: Intensity = Intensity.NONE
+    wind: Intensity = Intensity.NONE
+    fog: Intensity = Intensity.NONE
 
 
     @property

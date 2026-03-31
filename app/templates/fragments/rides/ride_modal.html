@@ -2,8 +2,9 @@
 
 {% call render_modal_content(twist.name) %}
 <form class="modal-form" data-paved="{{ twist.is_paved | lower }}"
-      hx-post="/twists/{{ twist.id }}/rides"
-      hx-swap="none">
+    hx-post="/twists/{{ twist.id }}/rides"
+    hx-swap="none"
+    hx-ext="form-json">
 
     <div class="form-group">
         <label for="ride-date">Ride Date</label>
@@ -18,7 +19,7 @@
                 <div class="form-group">
                     <label for="weather-temperature">Temperature</label>
                     <div class="select-wrapper">
-                        <select id="weather-temperature" name="weather_temperature" required>
+                        <select id="weather-temperature" name="weather.temperature" required>
                             {% for item in Weather.Temperature %}
                                 <option value="{{ item.value }}" {% if item.value == Weather.Temperature.NEUTRAL %}selected{% endif %}>
                                     {{ item.value }}
@@ -31,7 +32,7 @@
                 <div class="form-group">
                     <label for="weather-light">Light</label>
                     <div class="select-wrapper">
-                        <select id="weather-light" name="weather_light" required>
+                        <select id="weather-light" name="weather.light" required>
                             {% for item in Weather.LightLevel %}
                                 <option value="{{ item.value }}">{{ item.value }}</option>
                             {% endfor %}
@@ -42,7 +43,7 @@
                 <div class="form-group">
                     <label for="weather-type">Type</label>
                     <div class="select-wrapper">
-                        <select id="weather-type" name="weather_type"
+                        <select id="weather-type" name="weather.type"
                               data-no-precipitation="{{ ','.join(Weather.HAS_NO_PRECIPITATION) }}" required>
                             {% for item in Weather.Type %}
                                 <option value="{{ item.value }}">{{ item.value }}</option>
@@ -54,7 +55,7 @@
                 <div class="form-group">
                     <label for="weather-precipitation">Precipitation</label>
                     <div class="select-wrapper">
-                        <select id="weather-precipitation" name="weather_precipitation"
+                        <select id="weather-precipitation" name="weather.precipitation"
                               data-none-value="{{ Weather.Intensity.NONE.value }}" required>
                             {% for item in Weather.Intensity %}
                                 <option value="{{ item.value }}">{{ item.value }}</option>
@@ -66,7 +67,7 @@
                 <div class="form-group">
                     <label for="weather-wind">Wind</label>
                     <div class="select-wrapper">
-                        <select id="weather-wind" name="weather_wind" required>
+                        <select id="weather-wind" name="weather.wind" required>
                             {% for item in Weather.Intensity %}
                                 <option value="{{ item.value }}">{{ item.value }}</option>
                             {% endfor %}
@@ -77,7 +78,7 @@
                 <div class="form-group">
                     <label for="weather-fog">Fog</label>
                     <div class="select-wrapper">
-                        <select id="weather-fog" name="weather_fog" required>
+                        <select id="weather-fog" name="weather.fog" required>
                             {% for item in Weather.Intensity %}
                                 <option value="{{ item.value }}">{{ item.value }}</option>
                             {% endfor %}
@@ -98,7 +99,7 @@
                     <label for="{{ criterion.slug }}" title="{{ criterion.description }}">{{ criterion.slug.replace('_', ' ') | title }}</label>
                     <input type="range"
                         id="{{ criterion.slug }}"
-                        name="criterion_{{ criterion.slug }}"
+                        name="ratings.{{ criterion.slug }}"
                         min="{{ criterion_min_value }}"
                         max="{{ criterion_max_value }}"
                         value="{{ criterion_initial_value }}"

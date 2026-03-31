@@ -23,15 +23,22 @@ class FilterOwnership(str, Enum):
     OWN = "own"
     NOT_OWN = "notown"
 
+
 class FilterPavement(str, Enum):
     ALL = "all"
     PAVED = "paved"
     UNPAVED = "unpaved"
 
+
 class FilterRide(str, Enum):
     ALL = "all"
     SUBMITTED = "submitted"
     UNSUBMITTED = "unsubmitted"
+
+
+class RatingRange(BaseModel):
+    min: float = Field(0.0, ge=Criterion.MIN_VALUE, le=Criterion.MAX_VALUE)
+    max: float = Field(10.0, ge=Criterion.MIN_VALUE, le=Criterion.MAX_VALUE)
 
 
 class TwistFilterParameters(BaseModel):
@@ -47,6 +54,9 @@ class TwistFilterParameters(BaseModel):
     rides: FilterRide = FilterRide.ALL
     min_rating: float = Field(0.0, ge=Criterion.MIN_VALUE, le=Criterion.MAX_VALUE)
     max_rating: float = Field(10.0, ge=Criterion.MIN_VALUE, le=Criterion.MAX_VALUE)
+
+    # Criteria Filtering
+    excluded_criteria_slugs: list[str] = Field(Query([]))
 
     # Weather Filtering
     weather_temperature: list[Weather.Temperature] = Field(Query([]))
