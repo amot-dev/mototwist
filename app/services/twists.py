@@ -160,7 +160,8 @@ async def render_list(
         statement = statement.where(false())
 
     # Ride Rating Range Filtering
-    if filter.min_rating > 0 or filter.max_rating < 10:
+    if filter.min_rating > Criterion.MIN_VALUE or filter.max_rating < Criterion.MAX_VALUE:
+        print("!!!rating filter!!!")
         # Dynamically build the average calculation for paved Twists
         paved_criteria = await Criterion.get_list(session, is_paved=True)
         paved_sum = sum(
@@ -200,14 +201,15 @@ async def render_list(
 
     # Weather Filtering
     weather_conditions = weather_conditions_from(filter)
-    weather_subquery = (
-        select(Ride.id)
-        .where(
-            Ride.twist_id == Twist.id,
-            *weather_conditions
-        ).exists()
-    )
-    statement = statement.where(weather_subquery)
+    if weather_conditions:
+        weather_subquery = (
+            select(Ride.id)
+            .where(
+                Ride.twist_id == Twist.id,
+                *weather_conditions
+            ).exists()
+        )
+        statement = statement.where(weather_subquery)
 
     # Pagination
     page = filter.page
