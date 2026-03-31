@@ -1,7 +1,7 @@
 from datetime import date
 from fastapi import APIRouter, Depends, Query, Request
 from fastapi.responses import HTMLResponse
-from sqlalchemy import delete, func, select
+from sqlalchemy import delete, false, func, select
 from sqlalchemy.exc import MultipleResultsFound, NoResultFound
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -10,7 +10,7 @@ from app.database import get_db
 from app.events import EventSet
 from app.models import Criterion, Twist, Ride, User
 from app.schemas.rides import TwistRideData
-from app.schemas.twists import TwistBasic, TwistFilter, TwistFilterWithRideOwnership, TwistUltraBasic
+from app.schemas.twists import FilterOwnership, TwistBasic, TwistFilterWithRideOwnership, TwistUltraBasic
 from app.services.rides import render_averages, render_ride_modal, render_view_all_button, render_view_modal, weather_conditions_from
 from app.users import current_user, current_user_optional, verify
 from app.utility import raise_http
@@ -160,24 +160,30 @@ async def serve_averages(
 async def serve_view_all_button(
     request: Request,
     twist_id: int,
-    filter: TwistFilter,
+    filter: TwistFilterWithRideOwnership,
+    user: User | None = Depends(current_user_optional),
     session: AsyncSession = Depends(get_db)
 ) -> HTMLResponse:
     """
     Serve an HTML fragment containing the view all rides button, including the number of rides.
     """
     # Calculate filters
+    filtered = False
+    statement = select(func.count(Ride.id)).where(
+        Ride.twist_id == twist_id
+    )
+
+    if filter.ride_ownership == FilterOwnership.OWN:
+        filtered = True
+        statement = statement.where(Ride.author_id == user.id) if user else statement.where(false())
+
     weather_conditions = weather_conditions_from(filter.weather)
-    filtered = True if len(weather_conditions) else False
+    if len(weather_conditions):
+        filtered = True
+        statement = statement.where(*weather_conditions)
 
     try:
-        result = await session.scalars(
-            select(func.count(Ride.id)).where(
-                Ride.twist_id == Twist.id,
-                Twist.id == twist_id,
-                *weather_conditions
-            )
-        )
+        result = await session.scalars(statement)
         ride_count = result.one()
     except NoResultFound:
         raise_http(f"Twist with id '{twist_id}' not found", status_code=404)
@@ -212,7 +218,7 @@ async def serve_ride_modal(
 async def serve_view_modal(
     request: Request,
     twist_id: int,
-    filter: TwistFilter,
+    filter: TwistFilterWithRideOwnership,
     offset: int = Query(0),
     user: User | None = Depends(current_user_optional),
     session: AsyncSession = Depends(get_db)

@@ -334,7 +334,8 @@ async def _build_twist_dropdown_context(
         "user": user,
         "twist_id": twist.id,
         "twist_author_name": twist.author_name,
-        "can_delete_twist": can_delete_twist
+        "can_delete_twist": can_delete_twist,
+        "FilterOwnership": FilterOwnership
     }
 
 

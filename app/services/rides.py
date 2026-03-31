@@ -10,7 +10,7 @@ from typing import cast
 from app.config import logger, templates
 from app.models import Criterion, Ride, User
 from app.schemas.rides import AverageRating, RideList, RideListItem
-from app.schemas.twists import FilterWeather, TwistBasic, TwistFilter, TwistFilterWithRideOwnership, TwistUltraBasic
+from app.schemas.twists import FilterOwnership, FilterWeather, TwistBasic, TwistFilterWithRideOwnership, TwistUltraBasic
 from app.schemas.types import Weather
 from app.settings import settings
 
@@ -142,7 +142,7 @@ async def calculate_average_rating(
     )
 
     # Filtering
-    if filter.ride_ownership == "own":
+    if filter.ride_ownership == FilterOwnership.OWN:
         statement = statement.where(Ride.author_id == user.id) if user else statement.where(false())
 
     result = await session.execute(statement)
@@ -238,19 +238,27 @@ async def render_view_modal(
     session: AsyncSession,
     user: User | None,
     twist: TwistBasic,
-    filter: TwistFilter,
+    filter: TwistFilterWithRideOwnership,
     offset: int
 ) -> HTMLResponse:
     """
     Build and return the TemplateResponse for the ride view modal.
     """
+    # Filtering
+    statement = select(Ride).where(
+        Ride.twist_id == twist.id
+    )
+
+    if filter.ride_ownership == FilterOwnership.OWN:
+        statement = statement.where(Ride.author_id == user.id) if user else statement.where(false())
+
+    weather_conditions = weather_conditions_from(filter.weather)
+    if len(weather_conditions):
+        statement = statement.where(*weather_conditions)
+
     # Collect rides in order, offset and limited by settings
     result = await session.scalars(
-        select(Ride)
-        .where(
-            Ride.twist_id == twist.id,
-            *weather_conditions_from(filter.weather)
-        )
+        statement
         .order_by(Ride.date.desc())
         .offset(offset)
         .limit(settings.RIDES_FETCHED_PER_QUERY)

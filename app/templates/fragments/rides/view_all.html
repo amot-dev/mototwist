@@ -2,7 +2,7 @@
     onclick="document.querySelector('#modal-view-twist-rides').showModal()"
     hx-ext="form-json"
     hx-post="/twists/{{ twist_id }}/rides/templates/view-modal"
-    hx-include="#twist-filter-form"
+    hx-include="#twist-filter-form,#twist-{{ twist_id }}-ride-filter-form"
     hx-target="#modal-view-twist-rides"
     hx-swap="innerHTML">
 

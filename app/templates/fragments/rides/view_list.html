@@ -5,7 +5,7 @@
 {% if loop.last %}
     hx-ext="form-json"
     hx-post="/twists/{{ twist.id }}/rides/templates/view-modal?offset={{ next_offset }}"
-    hx-include="#twist-filter-form"
+    hx-include="#twist-filter-form,#twist-{{ twist.id }}-ride-filter-form"
     hx-swap="afterend"
     hx-trigger="intersect once"
 {% endif %}

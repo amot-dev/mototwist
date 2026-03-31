@@ -12,7 +12,7 @@
     {% endif %}
 </header>
 
-<form class="filter-form"
+<form id="twist-{{ twist_id }}-ride-filter-form" class="filter-form"
     hx-ext="form-json,morph"
     hx-post="/twists/{{ twist_id }}/rides/templates/averages"
     hx-target="next .averages-list"
@@ -22,10 +22,10 @@
 
     <fieldset class="filter-fieldset">
         <div class="filter-group" title="Filter between all or your Twists">
-            <input type="radio" id="all_rides_in_{{ twist_id }}" name="ride_ownership" value="all" checked>
-            <label class="label-button" for="all_rides_in_{{ twist_id }}">All Rides</label>
-            <input type="radio" id="own_rides_in_{{ twist_id }}" name="ride_ownership" value="own">
-            <label class="label-button" for="own_rides_in_{{ twist_id }}">My Rides</label>
+            <input type="radio" id="all-rides-in-{{ twist_id }}" name="ride_ownership" value="{{ FilterOwnership.ALL.value }}" checked>
+            <label class="label-button" for="all-rides-in-{{ twist_id }}">All Rides</label>
+            <input type="radio" id="own-rides-in-{{ twist_id }}" name="ride_ownership" value="{{ FilterOwnership.OWN.value }}">
+            <label class="label-button" for="own-rides-in-{{ twist_id }}">My Rides</label>
         </div>
     </fieldset>
 </form>
@@ -42,9 +42,11 @@
     hx-ext="form-json"
     hx-post="/twists/{{ twist_id }}/rides/templates/view_all_button"
     hx-target="find button"
-    hx-include="#twist-filter-form"
+    hx-include="#twist-filter-form,#twist-{{ twist_id }}-ride-filter-form"
     hx-swap="outerHTML"
-    hx-trigger="load, {{ EVENTS.REFRESH_AVERAGES }}[event.detail.value == '{{ twist_id }}'] from:body">
+    hx-trigger="load,
+        change from:#twist-{{ twist_id }}-ride-filter-form
+        {{ EVENTS.REFRESH_AVERAGES }}[event.detail.value == '{{ twist_id }}'] from:body">
 
     {% include "fragments/rides/view_all.html" %}
 
