@@ -88,9 +88,9 @@ class Weather:
 
         TEMPERATURE_EMOJIS = {
             self.Temperature.FREEZING: "🥶",
-            self.Temperature.COLD: "🧣",
-            self.Temperature.NEUTRAL: "🌡️",
-            self.Temperature.WARM: "😌",
+            self.Temperature.COLD: "😬",
+            self.Temperature.NEUTRAL: "🙂",
+            self.Temperature.WARM: "😎",
             self.Temperature.HOT: "🥵"
         }
 
@@ -115,6 +115,7 @@ class Weather:
             emojis.append(SPACER)
             emojis.append(TYPE_EMOJIS.get(self.type, "") * INTENSITY_MULTIPLIERS[self.precipitation])
         else:
+            emojis.append(SPACER)
             emojis.append(TYPE_EMOJIS.get(self.type, ""))
 
         # Wind intensity

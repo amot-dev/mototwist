@@ -53,15 +53,6 @@
 
             <div class="filter-panel">
                 <fieldset class="filter-fieldset">
-                    <div class="filter-group" title="Filter Twists by ownership">
-                        <input type="radio" id="own_all_twists" name="ownership" value="all" checked>
-                        <label class="label-button" for="own_all_twists">All</label>
-                        <input type="radio" id="own_own_twists" name="ownership" value="own">
-                        <label class="label-button" for="own_own_twists">Mine</label>
-                        <input type="radio" id="own_notown_twists" name="ownership" value="notown">
-                        <label class="label-button" for="own_notown_twists">Not Mine</label>
-                    </div>
-
                     <div class="filter-group" title="Filter Twists by pavement type">
                         <input type="radio" id="pavement_all_twists" name="pavement" value="all" checked>
                         <label class="label-button" for="pavement_all_twists">All</label>
@@ -71,13 +62,22 @@
                         <label class="label-button" for="pavement_unpaved_twists">Unpaved</label>
                     </div>
 
-                    <div class="filter-group" title="Filter Twists by ride submission">
+                    <div class="filter-group" title="Filter Twists by author">
+                        <input type="radio" id="own_all_twists" name="ownership" value="all" checked>
+                        <label class="label-button" for="own_all_twists">All</label>
+                        <input type="radio" id="own_own_twists" name="ownership" value="own">
+                        <label class="label-button" for="own_own_twists">My Twists</label>
+                        <input type="radio" id="own_notown_twists" name="ownership" value="notown">
+                        <label class="label-button" for="own_notown_twists">Other</label>
+                    </div>
+
+                    <div class="filter-group" title="Filter Twists by rides submitted by author">
                         <input type="radio" id="rides_all_twists" name="rides" value="all" checked>
                         <label class="label-button" for="rides_all_twists">All</label>
                         <input type="radio" id="rides_submitted_twists" name="rides" value="submitted">
-                        <label class="label-button" for="rides_submitted_twists">Submitted</label>
+                        <label class="label-button" for="rides_submitted_twists">My Rides</label>
                         <input type="radio" id="rides_unsubmitted_twists" name="rides" value="unsubmitted">
-                        <label class="label-button" for="rides_unsubmitted_twists">Unsubmitted</label>
+                        <label class="label-button" for="rides_unsubmitted_twists">Other</label>
                     </div>
 
                     <div class="filter-group range-filter-group" title="Filter by Overall Rating range">
@@ -86,17 +86,17 @@
                         <div class="range-slider-container">
                             <input type="range"
                                 name="overall_rating_range.min"
-                                id="rating-slider-min"
+                                id="overall-rating-slider-min"
                                 min="0" max="10" step="0.1" value="0.0">
                             <input type="range"
                                 name="overall_rating_range.max"
-                                id="rating-slider-max"
+                                id="overall-rating-slider-max"
                                 min="0" max="10" step="0.1" value="10.0">
                         </div>
 
                         <div class="range-values-floating">
-                            <output id="rating-slider-min-out" class="range-output" style="--pos: 0;">0.0</output>
-                            <output id="rating-slider-max-out" class="range-output" style="--pos: 100;">10.0</output>
+                            <output id="overall-rating-slider-min-out" class="range-output" style="--pos: 0;">0.0</output>
+                            <output id="overall-rating-slider-max-out" class="range-output" style="--pos: 100;">10.0</output>
                         </div>
                     </div>
 

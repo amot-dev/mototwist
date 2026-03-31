@@ -2,7 +2,7 @@ from enum import Enum
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 from sqlalchemy import Label, literal
 from sqlalchemy.orm.attributes import InstrumentedAttribute
-from typing import Annotated, ClassVar
+from typing import Annotated, ClassVar, Literal
 from uuid import UUID
 
 from app.models import Criterion, Twist, User
@@ -78,6 +78,9 @@ class TwistFilter(BaseModel):
     # Criteria Filtering
     excluded_criteria_slugs: Annotated[set[str], Field()] = set()
 
+    # Individual Criteria Ranges
+    individual_rating_ranges: Annotated[dict[str, FilterRatingRange], Field()] = {}
+
     # Weather Filtering
     weather: Annotated[FilterWeather, Field()] = FilterWeather()
 
@@ -103,6 +106,10 @@ class TwistFilter(BaseModel):
         if self.map_center is not None:
             self.map_center.lng = (self.map_center.lng + 180) % 360 - 180
         return self
+
+
+class TwistFilterWithRideOwnership(TwistFilter):
+    ride_ownership: Annotated[Literal["all", "own"], Field()] = "all"
 
 
 class TwistUltraBasic(BaseModel):

@@ -3,12 +3,11 @@
 {% call render_modal_content("Advanced Filters") %}
 <div class="modal-form filter-form">
     <fieldset class="form-fieldset">
-        <legend>Criteria</legend>
+        <legend title="Exclude criteria from the average used by the Overall Rating slider">Exclude from Overall Rating</legend>
         <div class="form-group">
             <fieldset class="filter-fieldset">
-                <legend>Exclude from Average</legend>
                 {% for row in criteria|batch(3) %}
-                <div class="filter-group" title="Exclude from Averahe">
+                <div class="filter-group">
                     {% for criterion in row %}
                         <input type="checkbox" id="exclude_criterion_{{ criterion.slug }}" name="excluded_criteria_slugs" value="{{ criterion.slug }}" form="twist-filter-form">
                         <label class="label-button" for="exclude_criterion_{{ criterion.slug }}">{{ criterion.slug.replace('_', ' ') | title }}</label>
@@ -19,12 +18,13 @@
         </div>
     </fieldset>
     <br>
+    <br>
     <fieldset class="form-fieldset">
         <legend>Weather</legend>
         <div class="form-group">
             <fieldset class="filter-fieldset">
-                <legend>Temperature</legend>
-                <div class="filter-group" title="Filter by temperature">
+                <legend title="Filter by temperature">Temperature</legend>
+                <div class="filter-group">
                     {% for item in Weather.Temperature %}
                         <input type="checkbox" id="filter_temp_{{ item.name }}" name="weather.temperature" value="{{ item.value }}" form="twist-filter-form">
                         <label class="label-button" for="filter_temp_{{ item.name }}">{{ item.value }}</label>
@@ -35,8 +35,8 @@
 
         <div class="form-group">
             <fieldset class="filter-fieldset">
-                <legend>Light Level</legend>
-                <div class="filter-group" title="Filter by light level">
+                <legend title="Filter by light level">Light Level</legend>
+                <div class="filter-group">
                     {% for item in Weather.LightLevel %}
                         <input type="checkbox" id="filter_light_{{ item.name }}" name="weather.light" value="{{ item.value }}" form="twist-filter-form">
                         <label class="label-button" for="filter_light_{{ item.name }}">{{ item.value }}</label>
@@ -47,8 +47,8 @@
 
         <div class="form-group">
             <fieldset class="filter-fieldset">
-                <legend>Weather Type</legend>
-                <div class="filter-group" title="Filter by weather type">
+                <legend title="Filter by weather type">Weather Type</legend>
+                <div class="filter-group">
                     {% for item in Weather.Type %}
                         <input type="checkbox" id="filter_type_{{ item.name }}" name="weather.type" value="{{ item.value }}" form="twist-filter-form">
                         <label class="label-button" for="filter_type_{{ item.name }}">{{ item.value }}</label>
@@ -59,8 +59,8 @@
 
         <div class="form-group">
             <fieldset class="filter-fieldset">
-                <legend>Precipitation</legend>
-                <div class="filter-group" title="Filter by precipitation intensity">
+                <legend title="Filter by precipitation intensity">Precipitation</legend>
+                <div class="filter-group">
                     {% for item in Weather.Intensity %}
                         <input type="checkbox" id="filter_precip_{{ item.name }}" name="weather.precipitation" value="{{ item.value }}" form="twist-filter-form">
                         <label class="label-button" for="filter_precip_{{ item.name }}">{{ item.value }}</label>
@@ -71,8 +71,8 @@
 
         <div class="form-group">
             <fieldset class="filter-fieldset">
-                <legend>Wind</legend>
-                <div class="filter-group" title="Filter by wind intensity">
+                <legend title="Filter by wind intensity">Wind</legend>
+                <div class="filter-group">
                     {% for item in Weather.Intensity %}
                         <input type="checkbox" id="filter_wind_{{ item.name }}" name="weather.wind" value="{{ item.value }}" form="twist-filter-form">
                         <label class="label-button" for="filter_wind_{{ item.name }}">{{ item.value }}</label>
@@ -83,8 +83,8 @@
 
         <div class="form-group">
             <fieldset class="filter-fieldset">
-                <legend>Fog</legend>
-                <div class="filter-group" title="Filter by fog intensity">
+                <legend title="Filter by fog intensity">Fog</legend>
+                <div class="filter-group">
                     {% for item in Weather.Intensity %}
                         <input type="checkbox" id="filter_fog_{{ item.name }}" name="weather.fog" value="{{ item.value }}" form="twist-filter-form">
                         <label class="label-button" for="filter_fog_{{ item.name }}">{{ item.value }}</label>

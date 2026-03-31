@@ -82,4 +82,4 @@ overrideXHR();
 
 registerRideFormWeatherTypeListener();
 
-initRangeSlider('rating');
+initRangeSlider('overall-rating');

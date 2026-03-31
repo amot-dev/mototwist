@@ -4,14 +4,13 @@ from fastapi.responses import HTMLResponse
 from sqlalchemy import delete, func, select
 from sqlalchemy.exc import MultipleResultsFound, NoResultFound
 from sqlalchemy.ext.asyncio import AsyncSession
-from typing import Literal
 
 from app.config import logger
 from app.database import get_db
 from app.events import EventSet
 from app.models import Criterion, Twist, Ride, User
 from app.schemas.rides import TwistRideData
-from app.schemas.twists import TwistBasic, TwistFilter, TwistUltraBasic
+from app.schemas.twists import TwistBasic, TwistFilter, TwistFilterWithRideOwnership, TwistUltraBasic
 from app.services.rides import render_averages, render_ride_modal, render_view_all_button, render_view_modal, weather_conditions_from
 from app.users import current_user, current_user_optional, verify
 from app.utility import raise_http
@@ -137,8 +136,7 @@ async def delete_ride(
 async def serve_averages(
     request: Request,
     twist_id: int,
-    filter: TwistFilter,
-    ride_ownership: Literal["all", "own"] = Query("all"),
+    filter: TwistFilterWithRideOwnership,
     user: User | None = Depends(current_user_optional),
     session: AsyncSession = Depends(get_db)
 ) -> HTMLResponse:
@@ -155,7 +153,7 @@ async def serve_averages(
     except MultipleResultsFound:
         raise_http(f"Multiple twists found for id '{twist_id}'", status_code=500)
 
-    return await render_averages(request, session, user, twist, filter, ride_ownership)
+    return await render_averages(request, session, user, twist, filter)
 
 
 @router.post("/templates/view_all_button", tags=["Templates"], response_class=HTMLResponse)

@@ -5,12 +5,12 @@ from humanize import intcomma, metric, ordinal
 from sqlalchemy import ColumnExpressionArgument, false, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
-from typing import cast, Literal
+from typing import cast
 
 from app.config import logger, templates
 from app.models import Criterion, Ride, User
 from app.schemas.rides import AverageRating, RideList, RideListItem
-from app.schemas.twists import FilterWeather, TwistBasic, TwistFilter, TwistUltraBasic
+from app.schemas.twists import FilterWeather, TwistBasic, TwistFilter, TwistFilterWithRideOwnership, TwistUltraBasic
 from app.schemas.types import Weather
 from app.settings import settings
 
@@ -119,8 +119,7 @@ async def calculate_average_rating(
     session: AsyncSession,
     user: User | None,
     twist: TwistUltraBasic,
-    filter: TwistFilter,
-    ownership: Literal["all", "own"]
+    filter: TwistFilterWithRideOwnership
 ) -> dict[str, AverageRating]:
     """
     Calculate the average ratings for a Twist.
@@ -143,7 +142,7 @@ async def calculate_average_rating(
     )
 
     # Filtering
-    if ownership == "own":
+    if filter.ride_ownership == "own":
         statement = statement.where(Ride.author_id == user.id) if user else statement.where(false())
 
     result = await session.execute(statement)
@@ -170,15 +169,14 @@ async def render_averages(
     session: AsyncSession,
     user: User | None,
     twist: TwistUltraBasic,
-    filter: TwistFilter,
-    ownership: Literal["all", "own"] = "all",
+    filter: TwistFilterWithRideOwnership
 ) -> HTMLResponse:
     """
     Build and return the TemplateResponse for the ratings averages.
     """
     return templates.TemplateResponse("fragments/rides/averages.html", {
         "request": request,
-        "average_ratings": await calculate_average_rating(session, user, twist, filter, ownership),
+        "average_ratings": await calculate_average_rating(session, user, twist, filter),
         "criterion_max_value": Criterion.MAX_VALUE
     })
 
