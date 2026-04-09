@@ -10,7 +10,7 @@ from app.database import get_db
 from app.events import EventSet
 from app.models import Criterion, Twist, Ride, User
 from app.schemas.rides import TwistRideData
-from app.schemas.twists import FilterOwnership, TwistBasic, TwistFilterWithRideOwnership, TwistUltraBasic
+from app.schemas.twists import FilterOwnership, TwistBasic, TwistFilterWithRideOwnership
 from app.services.rides import render_averages, render_ride_modal, render_view_all_button, render_view_modal, weather_conditions_from
 from app.users import current_user, current_user_optional, verify
 from app.utility import raise_http
@@ -145,9 +145,9 @@ async def serve_averages(
     """
     try:
         result = await session.execute(
-            select(*TwistUltraBasic.fields).where(Twist.id == twist_id)
+            select(*TwistBasic.fields).where(Twist.id == twist_id)
         )
-        twist = TwistUltraBasic.model_validate(result.one())
+        twist = TwistBasic.model_validate(result.one())
     except NoResultFound:
         raise_http(f"Twist with id '{twist_id}' not found", status_code=404)
     except MultipleResultsFound:

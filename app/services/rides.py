@@ -10,7 +10,7 @@ from typing import cast
 from app.config import logger, templates
 from app.models import Criterion, Ride, User
 from app.schemas.rides import AverageRating, RideList, RideListItem
-from app.schemas.twists import FilterOwnership, FilterWeather, TwistBasic, TwistFilterWithRideOwnership, TwistUltraBasic
+from app.schemas.twists import FilterOwnership, FilterWeather, TwistBasic, TwistFilterWithRideOwnership
 from app.schemas.types import Weather
 from app.settings import settings
 
@@ -118,7 +118,7 @@ def weather_conditions_from(weather_filter: FilterWeather) -> list[ColumnExpress
 async def calculate_average_rating(
     session: AsyncSession,
     user: User | None,
-    twist: TwistUltraBasic,
+    twist: TwistBasic,
     filter: TwistFilterWithRideOwnership
 ) -> dict[str, AverageRating]:
     """
@@ -168,7 +168,7 @@ async def render_averages(
     request: Request,
     session: AsyncSession,
     user: User | None,
-    twist: TwistUltraBasic,
+    twist: TwistBasic,
     filter: TwistFilterWithRideOwnership
 ) -> HTMLResponse:
     """
