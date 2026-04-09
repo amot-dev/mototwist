@@ -418,6 +418,8 @@ export function registerTwistListeners(map) {
     hideAllTwists.addTo(map);
 
     // Include additional parameters for Twist list requests
+    /** @type {L.LatLng | null} */
+    let cachedMapCenter = null;
     document.body.addEventListener('htmx:configRequest', function(event) {
         const customEvent = /** @type {CustomEvent<{path: string, parameters: Record<string, any>, triggeringEvent: Event | null}>} */ (event);
 
@@ -434,9 +436,17 @@ export function registerTwistListeners(map) {
                 p['open_id'] = activeTwistId;
             }
 
-            const mapCenter = getVisualMapCenter(map);
-            p['map_center.lat'] = mapCenter.lat;
-            p['map_center.lng'] = mapCenter.lng;
+            // If it's the first page or the map center cache is empty, update the map center cache
+            const pageNum = parseInt(p['page'], 10) || 1;
+            if (pageNum === 1 || !cachedMapCenter) {
+                cachedMapCenter = getVisualMapCenter(map);
+            }
+
+            // Always apply the cached map center to ensure pagination remains consistent
+            if (cachedMapCenter) {
+                p['map_center.lat'] = cachedMapCenter.lat;
+                p['map_center.lng'] = cachedMapCenter.lng;
+            }
         }
     });
 }
