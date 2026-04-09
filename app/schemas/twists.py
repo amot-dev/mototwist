@@ -73,7 +73,6 @@ class TwistFilter(BaseModel):
     # Display
     page: Annotated[int, Field(gt=0)] = 1
     pages: Annotated[int, Field(gt=0)] = 1
-    open_id: Annotated[int | None, Field()] = None
 
     # Basic Filtering
     search: Annotated[str | None, Field()] = None
@@ -186,10 +185,10 @@ class TwistListItem(TwistBasic):
         return value or False
 
 
-class TwistDropdown(TwistUltraBasic):
+class TwistPopup(TwistBasic):
     model_config = ConfigDict(from_attributes=True)
 
-    fields: ClassVar = TwistUltraBasic.fields + (Twist.author_id, User.name.label("author_name"))
+    fields: ClassVar = TwistBasic.fields + (Twist.author_id, User.name.label("author_name"))
 
     author_id: UUID | None
     author_name: str

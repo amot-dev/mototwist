@@ -14,7 +14,7 @@ from app.config import logger, templates
 from app.models import Criterion, Ride, Twist, User
 from app.schemas.twists import (
     FilterOwnership, FilterPavement, FilterRide,
-    TwistBasic, TwistDropdown, TwistFilter, TwistListItem
+    TwistBasic, TwistPopup, TwistFilter, TwistListItem
 )
 from app.schemas.types import Coordinate, Waypoint, Weather
 from app.services.rides import weather_conditions_from
@@ -261,38 +261,13 @@ async def render_list(
     )
     twists = [TwistListItem.model_validate(result) for result in results.all()]
 
-    # Prepare open Twist dropdown if needed
-    open_twist_id = None
-    dropdown_context = None
-    if filter.open_id:
-        # Check that the open Twist is still in the Twist list
-        if any(twist.id == filter.open_id for twist in twists):
-            result = await session.execute(
-                select(*TwistDropdown.fields)
-                .join(Twist.author, isouter=True)
-                .where(Twist.id == filter.open_id)
-            )
-            twist = result.one_or_none()
-            if twist:
-                twist_dropdown = TwistDropdown.model_validate(twist)
-                dropdown_context = await _build_twist_dropdown_context(user, twist_dropdown)
-                open_twist_id = twist_dropdown.id
-
-    # Build the base context
-    list_context: dict[str, Any] = {
+    return templates.TemplateResponse("fragments/twists/list.html", {
         "request": request,
         "twists": twists,
-        "open_twist_id": open_twist_id,
         "start_page": filter.page,
         "next_page": filter.page + filter.pages,
         "twists_per_page": settings.DEFAULT_TWISTS_LOADED
-    }
-
-    # If the dropdown context was generated, merge it into the main context
-    if dropdown_context:
-        list_context.update(dropdown_context)
-
-    return templates.TemplateResponse("fragments/twists/list.html", list_context)
+    })
 
 
 async def render_single_list_item(
@@ -322,38 +297,24 @@ async def render_single_list_item(
     })
 
 
-async def _build_twist_dropdown_context(
+async def render_twist_popup(
+    request: Request,
     user: User | None,
-    twist: TwistDropdown
-) -> dict[str, Any]:
+    twist: TwistPopup,
+) -> HTMLResponse:
     """
-    Build and return the template context for the Twist dropdown.
+    Build and return the TemplateResponse for the Twist popup.
     """
     # Check if the user is allowed to delete the Twist
     can_delete_twist = (user.is_superuser or user.id == twist.author_id) if user else False
 
-    return {
+    return templates.TemplateResponse("fragments/twists/popup.html", {
+        "request": request,
         "user": user,
-        "twist_id": twist.id,
-        "twist_author_name": twist.author_name,
+        "twist": twist,
         "can_delete_twist": can_delete_twist,
         "FilterOwnership": FilterOwnership
-    }
-
-
-async def render_twist_dropdown(
-    request: Request,
-    session: AsyncSession,
-    user: User | None,
-    twist: TwistDropdown,
-) -> HTMLResponse:
-    """
-    Build and return the TemplateResponse for the Twist dropdown.
-    """
-    context = await _build_twist_dropdown_context(user, twist)
-    context["request"] = request
-
-    return templates.TemplateResponse("fragments/twists/dropdown.html", context)
+    })
 
 
 async def render_delete_modal(

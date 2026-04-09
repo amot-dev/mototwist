@@ -763,32 +763,19 @@ aside {
 }
 
 
-/* --- Twists Dropdown --- */
+/* --- Twist Popup --- */
 
-.twist-dropdown {
-    overflow: hidden;
-    max-height: 0;
-    border-top: var(--border-default);
-    padding: 0 var(--padding-lg);
+.twist-popup {
     font-size: 0.9rem;
-    background-color: var(--bg-charcoal);
-
-    transition: max-height var(--transition-fast), padding var(--transition-fast);
-
-    &.htmx-swapping {
-        max-height: 0;
-        padding: 0 var(--padding-lg);
-    }
-
-    &.is-open {
-        max-height: 400px;
-        padding: var(--padding-md) var(--padding-lg);
-    }
 
     .author {
         margin: 0;
         font-size: 0.8rem;
         color: var(--text-muted)
+    }
+
+    h3 {
+        margin: 0;
     }
 
     h4 {
@@ -809,20 +796,6 @@ aside {
                     background-color: var(--accent);
                 }
             }
-        }
-    }
-}
-/* Where supported, animate using height: auto */
-@supports (interpolate-size: allow-keywords) {
-    .twist-dropdown {
-        max-height: none;
-        height: 0;
-
-        transition: height var(--transition-fast), padding var(--transition-fast);
-
-        &.is-open {
-            max-height: none;
-            height: auto;
         }
     }
 }
@@ -951,10 +924,8 @@ aside {
         padding: var(--padding-lg);
     }
 
-    &:has(.create-waypoint-popup) {
-        width: auto !important; /* Override Leaflet's fixed width */
-        min-width: 280px;
-    }
+    width: auto !important; /* Override Leaflet's fixed width */
+    min-width: 280px;
 }
 
 .create-waypoint-popup {

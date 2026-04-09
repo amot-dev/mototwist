@@ -73,13 +73,6 @@ class EventKey(str, Enum):
     No expected value.
     """
 
-    LOAD_DROPDOWN = "loadDropdown"
-    """
-    Signals that the dropdown associated with the header must be loaded.
-
-    No expected value. Must be triggered directly on `.twist-header`.
-    """
-
     REFRESH_AVERAGES = "refreshAverages"
     """
     Signals that the average ratings for a Twist must be re-calculated.
