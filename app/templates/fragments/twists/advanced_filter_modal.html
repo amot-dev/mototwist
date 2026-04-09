@@ -2,6 +2,39 @@
 
 {% call render_modal_content("Advanced Filters") %}
 <div class="modal-form filter-form">
+
+    <fieldset class="form-fieldset">
+        <legend>Individual Ratings</legend>
+        <div class="form-group">
+            <fieldset class="filter-fieldset">
+                {% for criterion in criteria %}
+                <div class="filter-group range-filter-group" title="Filter by {{ criterion.slug.replace('_', ' ') | title }} range">
+                    <label>{{ criterion.slug.replace('_', ' ') | title }}</label>
+
+                    <div class="range-slider-container" data-slug="{{ criterion.slug }}">
+
+                        <input type="range"
+                            name="individual_rating_ranges.{{ criterion.slug }}.min"
+                            id="{{ criterion.slug }}-rating-slider-min"
+                            min="0" max="10" step="0.1" value="0.0"
+                            form="twist-filter-form">
+                        <input type="range"
+                            name="individual_rating_ranges.{{ criterion.slug }}.max"
+                            id="{{ criterion.slug }}-rating-slider-max"
+                            min="0" max="10" step="0.1" value="10.0"
+                            form="twist-filter-form">
+                    </div>
+
+                    <div class="range-values-floating">
+                        <output id="{{ criterion.slug }}-rating-slider-min-out" class="range-output" style="--pos: 0;">0.0</output>
+                        <output id="{{ criterion.slug }}-rating-slider-max-out" class="range-output" style="--pos: 100;">10.0</output>
+                    </div>
+                </div>
+                {% endfor %}
+            </fieldset>
+        </div>
+    </fieldset>
+    <br>
     <fieldset class="form-fieldset">
         <legend title="Exclude criteria from the average used by the Overall Rating slider">Exclude from Overall Rating</legend>
         <div class="form-group">

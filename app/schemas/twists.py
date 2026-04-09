@@ -39,6 +39,13 @@ class FilterRatingRange(BaseModel):
     min: Annotated[float, Field(ge=Criterion.MIN_VALUE, le=Criterion.MAX_VALUE)] = Criterion.MIN_VALUE
     max: Annotated[float, Field(ge=Criterion.MIN_VALUE, le=Criterion.MAX_VALUE)] = Criterion.MAX_VALUE
 
+    @property
+    def is_active(self) -> bool:
+        """
+        True only if the range has been modified from the default min/max.
+        """
+        return self.min > Criterion.MIN_VALUE or self.max < Criterion.MAX_VALUE
+
 
 class FilterWeather(BaseModel):
     temperature: Annotated[list[Weather.Temperature], Field()] = []
@@ -77,6 +84,17 @@ class TwistFilter(BaseModel):
     # Range Filtering
     overall_rating_range: Annotated[FilterRatingRange, Field()] = FilterRatingRange()
     individual_rating_ranges: Annotated[dict[str, FilterRatingRange], Field()] = {}
+
+    @property
+    def active_individual_rating_ranges(self) -> dict[str, FilterRatingRange]:
+        """
+        Return only the individual rating ranges that are currently active.
+        """
+        return {
+            slug: rating_range
+            for slug, rating_range in self.individual_rating_ranges.items()
+            if rating_range.is_active
+        }
 
     # Criteria Exclusion
     excluded_criteria_slugs: Annotated[set[str], Field()] = set()

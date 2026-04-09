@@ -99,9 +99,42 @@ export function initRangeSlider(idPrefix) {
 
     // Attach listeners
     sliderMin.addEventListener('input', updateMin);
+    sliderMin.classList.add('initialized');
     sliderMax.addEventListener('input', updateMax);
+    sliderMax.classList.add('initialized');
 
     // Call once on init to ensure UI matches initial values
     updateMin();
     updateMax();
+}
+
+
+/**
+ * Sets up an event listener to initialize range sliders when new content
+ * is loaded via HTMX into the specified element.
+ *
+ * This function should be called once on application startup (e.g., in main.js)
+ * and passed the target container, such as the advanced filter modal.
+ *
+ * It listens for:
+ * - 'htmx:afterSettle': Finds all uninitialized '.range-slider-container'
+ * elements within the target and initializes them.
+ *
+ * @param {HTMLElement | null} modalElement - The modal or container element to observe for HTMX swaps.
+ * @returns {void}
+ */
+export function registerInitSliderListeners(modalElement) {
+    if (!modalElement) return;
+
+    // Listen locally on the provided element for when HTMX finishes swapping its innerHTML
+    modalElement.addEventListener('htmx:afterSettle', () => {
+        const newSliderContainers = modalElement.querySelectorAll('.range-slider-container:not(.initialized)');
+
+        newSliderContainers.forEach(container => {
+            if (!(container instanceof HTMLElement)) return;
+
+            initRangeSlider(container.dataset.slug + '-rating');
+            container.classList.add('initialized');
+        });
+    });
 }

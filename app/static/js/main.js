@@ -5,7 +5,7 @@ import {
 } from './createTwist.js';
 import { registerTwistListeners } from './displayTwist.js';
 import { initMap } from './map.js';
-import { initRangeSlider } from './slider.js';
+import { initRangeSlider, registerInitSliderListeners } from './slider.js';
 import { getFormDataAsString, registerRideFormWeatherTypeListener } from './utils.js';
 
 
@@ -82,4 +82,6 @@ overrideXHR();
 
 registerRideFormWeatherTypeListener();
 
+const filterModal = document.getElementById('modal-advanced-filter');
+registerInitSliderListeners(filterModal);
 initRangeSlider('overall-rating');

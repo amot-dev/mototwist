@@ -4,7 +4,7 @@ from fastapi.responses import HTMLResponse
 from geoalchemy2 import Geometry
 from shapely.geometry import LineString, Point
 from shapely.ops import nearest_points
-from sqlalchemy import Numeric, case, cast, false, func, literal, select, type_coerce
+from sqlalchemy import ColumnElement, Numeric, and_, case, cast, false, func, literal, select, type_coerce
 from sqlalchemy.exc import MultipleResultsFound, NoResultFound
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.sql.expression import ColumnExpressionArgument
@@ -162,66 +162,68 @@ async def render_list(
         statement = statement.where(false())
 
     # Ride Rating Range Filtering
-    if filter.overall_rating_range.min > Criterion.MIN_VALUE \
-        or filter.overall_rating_range.max < Criterion.MAX_VALUE:
+    has_overall_filter = filter.overall_rating_range.is_active
+    active_individual_filters = filter.active_individual_rating_ranges
+    if has_overall_filter or active_individual_filters:
+        having_conditions: list[ColumnElement[bool]] = []
 
-        # List is important here to maintain ordering
-        paved_criteria_slugs = [
-            c.slug for c in await Criterion.get_list(session, is_paved=True)
-            if c.slug not in filter.excluded_criteria_slugs
-        ]
-        unpaved_criteria_slugs = [
-            c.slug for c in await Criterion.get_list(session, is_paved=False)
-            if c.slug not in filter.excluded_criteria_slugs
-        ]
+        # Calculate overall average and add it to the conditions
+        if has_overall_filter:
+            # List is important here to maintain ordering (I... think?)
+            paved_criteria_slugs = [
+                c.slug for c in await Criterion.get_list(session, is_paved=True)
+                if c.slug not in filter.excluded_criteria_slugs
+            ]
+            unpaved_criteria_slugs = [
+                c.slug for c in await Criterion.get_list(session, is_paved=False)
+                if c.slug not in filter.excluded_criteria_slugs
+            ]
 
-        # Dynamically build the average calculation for paved Twists
-        if len(paved_criteria_slugs):
-            paved_sum = sum(
-                (
-                    func.avg(Ride.ratings[slug].as_integer())
-                    for slug in paved_criteria_slugs
-                ),
-                start=literal(0.0)
+            # Dynamically build the average calculations
+            def build_rounded_avg_expression(slugs: list[str]):
+                if not slugs:
+                    return literal(0.0)
+
+                avg = sum(
+                    (func.avg(Ride.ratings[slug].as_integer()) for slug in slugs),
+                    start=literal(0.0)
+                ) / len(slugs)
+
+                # Round same as UI before comparing to avoid user confusion
+                return func.round(cast(avg, Numeric), settings.AVERAGE_ROUNDING_DIGITS)
+            paved_avg_rounded = build_rounded_avg_expression(paved_criteria_slugs)
+            unpaved_avg_rounded = build_rounded_avg_expression(unpaved_criteria_slugs)
+
+            # Update the having clause
+            having_conditions.append(
+                case(
+                    (Twist.is_paved, paved_avg_rounded),
+                    else_=unpaved_avg_rounded
+                ).between(
+                    filter.overall_rating_range.min,
+                    filter.overall_rating_range.max
+                )
             )
-            paved_avg = paved_sum / len(paved_criteria_slugs)
-        else:
-            paved_avg = literal(0.0)
 
-        # Dynamically build the average calculation for unpaved Twists
-        if len(unpaved_criteria_slugs):
-            unpaved_sum = sum(
-                (
-                    func.avg(Ride.ratings[slug].as_integer())
-                    for slug in unpaved_criteria_slugs
-                ),
-                start=literal(0.0)
+        # Calculate individual averages and add each to the conditions
+        for slug, rating_range in active_individual_filters.items():
+            # Calculate average
+            condition_avg = func.avg(Ride.ratings[slug].as_integer())
+
+            # Round same as UI before comparing to avoid user confusion
+            condition_avg_rounded = func.round(cast(condition_avg, Numeric), settings.AVERAGE_ROUNDING_DIGITS)
+
+            # Update the having clause
+            having_conditions.append(
+                condition_avg_rounded.between(rating_range.min, rating_range.max)
             )
-            unpaved_avg = unpaved_sum / len(unpaved_criteria_slugs)
-        else:
-            unpaved_avg = literal(0.0)
-
-        # Round averages same as UI before comparing to avoid user confusion
-        paved_avg_rounded = func.round(cast(paved_avg, Numeric), settings.AVERAGE_ROUNDING_DIGITS)
-        unpaved_avg_rounded = func.round(cast(unpaved_avg, Numeric), settings.AVERAGE_ROUNDING_DIGITS)
 
         # Create the subquery
         rating_subquery = (
             select(Twist.id)
             .outerjoin(Ride, Twist.id == Ride.twist_id)
             .group_by(Twist.id)
-            .having(
-                case(
-                    (Twist.is_paved, paved_avg_rounded.between(
-                        filter.overall_rating_range.min,
-                        filter.overall_rating_range.max
-                    )),
-                    else_=unpaved_avg_rounded.between(
-                        filter.overall_rating_range.min,
-                        filter.overall_rating_range.max
-                    )
-                )
-            )
+            .having(and_(*having_conditions))
         )
 
         statement = statement.where(Twist.id.in_(rating_subquery))
