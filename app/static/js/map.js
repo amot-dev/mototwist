@@ -131,5 +131,13 @@ export function initMap() {
     });
     search.addTo(map);
 
+    const fabContainer = document.getElementById('twist-creation-buttons');
+
+    if (fabContainer) {
+        // Stops clicks, double-clicks, and scrolls from propagating to the map
+        L.DomEvent.disableClickPropagation(fabContainer);
+        L.DomEvent.disableScrollPropagation(fabContainer);
+    }
+
     return map;
 }

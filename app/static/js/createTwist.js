@@ -427,35 +427,38 @@ export function registerTwistCreationListeners(map) {
         stopTwistCreation(map);
     });
 
-    // Listen for map clicks when recording route geometry
-    map.on('click',
-        /** @param {{ latlng: L.LatLng }} event */
-        function(event) {
+    /**
+     * Adds a new point to the route.
+     * @param {L.LatLng} latlng The coordinates for the new point.
+     * @param {boolean} insertBeforeEnd Whether to insert right before the final waypoint.
+     */
+    function addPoint(latlng, insertBeforeEnd = false) {
         if (!assertedMapContainer.classList.contains('creating-twist')) return;
 
         // Create a new waypoint
         const newWaypoint = {
-            latlng: event.latlng,
+            latlng: latlng,
             name: '',
         };
-        waypoints.push(newWaypoint);
+        const insertIndex = (insertBeforeEnd && waypoints.length >= 2) ? waypoints.length - 1 : waypoints.length;
+        waypoints.splice(insertIndex, 0, newWaypoint);
 
         // Create a new marker
-        const marker = L.marker(event.latlng, { draggable: true }).addTo(map);
-        waypointMarkers.push(marker);
+        const marker = L.marker(latlng, { draggable: true }).addTo(map);
+        waypointMarkers.splice(insertIndex, 0, marker);
 
         // Bind a function that creates and returns the popup content on demand
         marker.bindPopup(() => createPopupContent(map, marker));
 
         // Listen for the marker being dragged and update route on end
         marker.on('dragend',
-            /** @param {{ target: L.Marker }} event */
-            (event) => {
+            /** @param {{ target: L.Marker }} dragEvent */
+            (dragEvent) => {
             const index = waypointMarkers.indexOf(marker);
             if (index === -1) throw new Error("Dragged marker not found in state array!")
 
             // Redraw the route with the new coordinates
-            waypoints[index].latlng = event.target.getLatLng();
+            waypoints[index].latlng = dragEvent.target.getLatLng();
             updateRoute(map);
         });
 
@@ -467,6 +470,26 @@ export function registerTwistCreationListeners(map) {
         // Update the route line with the new waypoint
         updateRoute(map);
         updateMarkerIcons();
+    }
+
+    // Listen for map clicks when recording route geometry
+    map.on('click',
+        /** @param {{ latlng: L.LatLng }} event */
+        function(event) {
+
+        addPoint(event.latlng);
+    });
+
+    // On right-click specifically, insert before final point
+    map.on('contextmenu',
+        /** @param {{ latlng: L.LatLng }} event */
+        function(event) {
+
+        if (waypoints.length < 2) {
+            addPoint(event.latlng)
+        } else {
+            addPoint(event.latlng, true);
+        }
     });
 }
 
@@ -495,6 +518,10 @@ export function overrideXHR() {
     XMLHttpRequest.prototype.send = /** @this {PatchedXMLHttpRequest} */ function(/** @type {any} */ body) {
         // Check if this is a POST request to /twists
         if (this._url && this._url.endsWith('/twists') && this._method === 'POST') {
+            if (!newRouteLine) {
+                throw new Error("Route missing from final payload!");
+            }
+
             // Serialize JSON
             const bodyJSON = JSON.parse(body);
 
