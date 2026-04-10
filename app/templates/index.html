@@ -22,8 +22,6 @@
 
 <aside>
     <h1>{{ SETTINGS.MOTOTWIST_INSTANCE_NAME }}</h1>
-    {% include "fragments/twists/creation_buttons.html" %}
-
     <form id="twist-filter-form" class="filter-form"
         hx-ext="form-json"
         hx-post="/twists/templates/list"
@@ -121,6 +119,14 @@
 </aside>
 
 <div id="map">
+    <div id="twist-creation-buttons" class="fab-container"
+        hx-get="/twists/templates/creation-buttons"
+        hx-trigger="{{ EVENTS.AUTH_CHANGE }} from:body"
+        hx-swap="innerHTML">
+
+        {% include "fragments/twists/creation_buttons.html" %}
+    </div>
+
     <button id="refresh-twists-button" class="button button-block"
         onclick="htmx.trigger(document.body, '{{ EVENTS.REFRESH_TWISTS }}');">
 

@@ -23,18 +23,38 @@ let numPagesLoaded = 1;
  * Pans and zooms the map to fit the bounds of a specific Twist if it
  * is loaded. Does not check visibility.
  *
- * @param {L.Map} map - The map to pan and zoom to the Twist on.
+ * @param {L.Map} map - The map containing the Twist.
  * @param {string} twistId - The ID of the Twist to show.
  */
 function showTwistOnMap(map, twistId) {
-    // Pan and zoom the map
     const layer = mapLayers[twistId];
     if (layer) {
         const bounds = layer.getBounds();
         if (bounds.isValid()) {
+            // Pan and zoom the map
             map.fitBounds(bounds);
         } else {
             console.warn(`Cannot fit map to Twist '${twistId}' because its layer has no valid bounds.`);
+        }
+    }
+}
+
+
+/**
+ * Opens the map popup for a specific Twist if it is loaded.
+ * Does not check visibility.
+ *
+ * @param {string} twistId - The ID of the Twist for which to open the popup.
+ */
+function openTwistPopup(twistId) {
+    const layer = mapLayers[twistId];
+    if (layer) {
+        const routeLine = layer.getLayers().find(layer => layer instanceof L.Polyline);
+        // Open popup (even if already open, to maintain autopan)
+        if (routeLine instanceof L.Polyline) {
+            routeLine.openPopup();
+        } else {
+            console.warn(`Cannot open popup of Twist '${twistId}' because its layer has no valid route.`);
         }
     }
 }
@@ -66,14 +86,37 @@ async function loadTwistLayer(map, twistId, show = false) {
         /** @type {TwistGeometryData} */
         const twist_data = await response.json();
 
-        // Create the route line
+        // Create the Twist route line
         const lineColor = twist_data.is_paved ? accentBlue : accentOrange;
         const routeLine = L.polyline(twist_data.route_geometry, {
             color: lineColor,
             weight: 5,
             opacity: 0.85
         });
-        routeLine.bindPopup(`<b>${twist_data.name}</b>`);
+
+        // Create the Twist popup
+        const popupContent = document.createElement('div');
+        popupContent.classList.add('twist-popup');
+        popupContent.setAttribute('hx-get', `/twists/${twistId}/templates/popup`);
+        popupContent.setAttribute('hx-swap', 'innerHTML');
+        popupContent.setAttribute('hx-trigger', 'intersect once');
+        popupContent.innerHTML = '<p class="loading">Loading details...</p>';
+        htmx.process(popupContent);
+        routeLine.bindPopup(popupContent, {
+            autoPan: true,
+            autoPanPaddingTopLeft: L.point(60, 60),
+            autoPanPaddingBottomRight: L.point(60, 60)
+        });
+
+        // Update popup pan after data loads
+        popupContent.addEventListener('htmx:afterSettle', function(event) {
+            const popup = routeLine.getPopup();
+
+            // If the popup is still open when the data arrives, tell Leaflet to resize/pan
+            if (popup && popup.isOpen()) {
+                popup.update();
+            }
+        });
 
         // Create the waypoint markers
         const namedWaypoints = twist_data.waypoints.filter(wp => wp.name.length > 0);
@@ -254,7 +297,7 @@ function getVisualMapCenter(map) {
  * - Loading initial layer visibility ('twistsLoaded').
  * - Adding/removing layers on create/delete ('twistAdded', 'twistDeleted').
  * - Toggling layer visibility via the '.visibility-toggle' button.
- * - Expanding/collapsing Twist dropdowns and fitting map bounds on click.
+ * - Fitting map bounds to Twist on click.
  * - Modifying Twist list requests to include visible Twist IDs.
  *
  * @param {L.Map} map The main Leaflet map instance.
@@ -336,12 +379,7 @@ export function registerTwistListeners(map) {
     const twistList = document.getElementById('twist-list');
     if (!twistList) throw new Error("Critical element #twist-list is missing!");
 
-    /** @type {string | null} */
-    let activeTwistId = null;
-
     // Listen for clicks on Twists
-    let twistListClickCount = 0
-    let twistListClickTimer = 0;
     twistList.addEventListener('click', function(event) {
         if (!(event.target instanceof Element)) return;
 
@@ -352,63 +390,32 @@ export function registerTwistListeners(map) {
         const twistId = twistItem.dataset.twistId;
         if (!twistId) throw new Error("Critical element .twist-item is missing twistId data!");
 
-        // Toggle visibility or dropdown on single click
         if (event.target.closest('.visibility-toggle')) {
             // Clicked on the eye icon
             const visibility = twistItem.classList.contains('is-visible');
-            toggleTwistItemEye(twistItem)
+            toggleTwistItemEye(twistItem);
             setTwistVisibility(map, twistId, !visibility);
         } else if (event.target.closest('.twist-header')) {
-            twistListClickCount++;
-            if (twistListClickCount === 1) {
-                twistListClickTimer = setTimeout(function() {
-                    twistListClickCount = 0;
-                    if (!(event.target instanceof Element)) return;
-
-                    activeTwistId = null;
-
-                    // Clicked on the Twist header
-                    const twistDropdown = twistItem.querySelector('.twist-dropdown');
-                    if (!(twistDropdown instanceof HTMLElement)) throw new Error("Critical element .twist-dropdown is missing!");
-                    const isCurrentlyOpen = twistDropdown.classList.contains('is-open');
-
-                    // Hide all Twist dropdowns
-                    const alltwistDropdowns = twistList.querySelectorAll('.twist-dropdown');
-                    alltwistDropdowns.forEach(container => {
-                        container.classList.remove('is-open');
-                    });
-
-                    // Show current Twist dropdown if it was hidden
-                    if (!isCurrentlyOpen) {
-                        twistDropdown.classList.add('is-open');
-                        activeTwistId = twistItem.dataset.twistId ?? null;
-
-                        // Load content if needed
-                        if (twistDropdown.querySelector('.loading')) {
-                            const twistHeader = twistItem.querySelector('.twist-header')
-                            htmx.trigger(twistHeader, EVENTS.LOAD_DROPDOWN);
-                        }
-                    }
-                }, doubleClickTimeout);
-            } else if (twistListClickCount === 2) {
-                console.log("double click")
-                clearTimeout(twistListClickTimer);
-                twistListClickCount = 0;
-
-                // Show the Twist on the map on double click
-                showTwistOnMap(map, twistId)
-
-                // Clear text selection
-                const selection = document.getSelection();
-                if(selection) selection.empty();
-            }
+            showTwistOnMap(map, twistId);
+            openTwistPopup(twistId);
         }
     });
 
+    const PAN_THRESHOLD_METERS = 5000;
+    /** @type {L.LatLng} */
+    let cachedMapCenter = getVisualMapCenter(map);
+
     // Show button to manually update Twists on map move
-    map.on('moveend', debounce(() => {
-        manualUpdateButton.classList.add('button--visible');
-    }, 500));
+    function updateManualUpdateButtonVisibility() {
+        if (!manualUpdateButton) throw new Error("Critical element #refresh-twists-button is missing!");
+
+        const distanceMoved = map.distance(cachedMapCenter, getVisualMapCenter(map));
+        if (distanceMoved > PAN_THRESHOLD_METERS) {
+            manualUpdateButton.classList.add('button--visible');
+        }
+    }
+    map.on('dragend', debounce(updateManualUpdateButtonVisibility, 500));
+    // map.on('zoomend', debounce(updateManualUpdateButtonVisibility, 500)); // TODO: cleanly ignore programatic zooms
 
     // On successful search, update Twists automatically
     map.on('geosearch/showlocation', () => {
@@ -418,8 +425,6 @@ export function registerTwistListeners(map) {
     hideAllTwists.addTo(map);
 
     // Include additional parameters for Twist list requests
-    /** @type {L.LatLng | null} */
-    let cachedMapCenter = null;
     document.body.addEventListener('htmx:configRequest', function(event) {
         const customEvent = /** @type {CustomEvent<{path: string, parameters: Record<string, any>, triggeringEvent: Event | null}>} */ (event);
 
@@ -430,10 +435,6 @@ export function registerTwistListeners(map) {
 
             if (trigger && trigger.type === EVENTS.AUTH_CHANGE) {
                 p['pages'] = numPagesLoaded;
-            }
-
-            if (activeTwistId) {
-                p['open_id'] = activeTwistId;
             }
 
             // If it's the first page or the map center cache is empty, update the map center cache

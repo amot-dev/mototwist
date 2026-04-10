@@ -1,0 +1,64 @@
+
+<h3>{{ twist.name }}</h3>
+<p class="author">Created by {{ twist.author_name }}</p>
+<header>
+    <h4 id="twist-{{ twist.id }}-average-rating">Average Rating</h4>
+    {% if user %}
+    <button class="button button-very-small button-block" onclick="document.querySelector('#modal-ride-twist').showModal()"
+        hx-get="/twists/{{ twist.id }}/rides/templates/ride-modal"
+        hx-target="#modal-ride-twist"
+        hx-swap="innerHTML">
+
+        Ride
+    </button>
+    {% endif %}
+</header>
+
+<form id="twist-{{ twist.id }}-ride-filter-form" class="filter-form"
+    hx-ext="form-json,morph"
+    hx-post="/twists/{{ twist.id }}/rides/templates/averages"
+    hx-target="next .averages-list"
+    hx-include="#twist-filter-form"
+    hx-swap="morph:innerHTML"
+    hx-trigger="change, {{ EVENTS.REFRESH_AVERAGES }}[event.detail.value == '{{ twist.id }}'] from:body">
+
+    <fieldset class="filter-fieldset">
+        <div class="filter-group" title="Filter between all or your Twists">
+            <input type="radio" id="all-rides-in-{{ twist.id }}" name="ride_ownership" value="{{ FilterOwnership.ALL.value }}" checked>
+            <label class="label-button" for="all-rides-in-{{ twist.id }}">All Rides</label>
+            <input type="radio" id="own-rides-in-{{ twist.id }}" name="ride_ownership" value="{{ FilterOwnership.OWN.value }}">
+            <label class="label-button" for="own-rides-in-{{ twist.id }}">My Rides</label>
+        </div>
+    </fieldset>
+</form>
+
+<ul class="averages-list"
+    hx-ext="form-json"
+    hx-post="/twists/{{ twist.id }}/rides/templates/averages"
+    hx-include="#twist-filter-form"
+    hx-swap="innerHTML"
+    hx-trigger="load">
+</ul>
+
+<footer
+    hx-ext="form-json"
+    hx-post="/twists/{{ twist.id }}/rides/templates/view_all_button"
+    hx-target="find button"
+    hx-include="#twist-filter-form,#twist-{{ twist.id }}-ride-filter-form"
+    hx-swap="outerHTML"
+    hx-trigger="load,
+        change from:#twist-{{ twist.id }}-ride-filter-form
+        {{ EVENTS.REFRESH_AVERAGES }}[event.detail.value == '{{ twist.id }}'] from:body">
+
+    {% include "fragments/rides/view_all.html" %}
+
+    {% if can_delete_twist %}
+    <button class="button button-very-small button-link" onclick="document.querySelector('#modal-delete-twist').showModal()"
+        hx-get="/twists/{{ twist.id }}/templates/delete-modal"
+        hx-target="#modal-delete-twist"
+        hx-swap="innerHTML">
+
+        <i class="fa-solid fa-trash"></i>
+    </button>
+    {% endif %}
+</footer>

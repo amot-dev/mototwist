@@ -73,7 +73,6 @@ class TwistFilter(BaseModel):
     # Display
     page: Annotated[int, Field(gt=0)] = 1
     pages: Annotated[int, Field(gt=0)] = 1
-    open_id: Annotated[int | None, Field()] = None
 
     # Basic Filtering
     search: Annotated[str | None, Field()] = None
@@ -130,21 +129,14 @@ class TwistFilterWithRideOwnership(TwistFilter):
     ride_ownership: Annotated[FilterOwnership, Field()] = FilterOwnership.ALL
 
 
-class TwistUltraBasic(BaseModel):
+class TwistBasic(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
-    fields: ClassVar = (Twist.id, Twist.is_paved)
+    fields: ClassVar = (Twist.id, Twist.name, Twist.is_paved)
 
     id: int
-    is_paved: bool
-
-
-class TwistBasic(TwistUltraBasic):
-    model_config = ConfigDict(from_attributes=True)
-
-    fields: ClassVar = TwistUltraBasic.fields + (Twist.name,)
-
     name: str
+    is_paved: bool
 
 
 class TwistGeometry(TwistBasic):
@@ -160,7 +152,7 @@ class TwistListItem(TwistBasic):
     model_config = ConfigDict(from_attributes=True)
 
     @classmethod
-    def get_fields(cls, user: User | None) -> tuple[InstrumentedAttribute[int], InstrumentedAttribute[bool], InstrumentedAttribute[str], Label[bool]]:
+    def get_fields(cls, user: User | None) -> tuple[InstrumentedAttribute[int], InstrumentedAttribute[str], InstrumentedAttribute[bool], Label[bool]]:
         """
         Determine database fields needed to populate this model,
         including dynamic expressions based on the current user.
@@ -186,10 +178,10 @@ class TwistListItem(TwistBasic):
         return value or False
 
 
-class TwistDropdown(TwistUltraBasic):
+class TwistPopup(TwistBasic):
     model_config = ConfigDict(from_attributes=True)
 
-    fields: ClassVar = TwistUltraBasic.fields + (Twist.author_id, User.name.label("author_name"))
+    fields: ClassVar = TwistBasic.fields + (Twist.author_id, User.name.label("author_name"))
 
     author_id: UUID | None
     author_name: str

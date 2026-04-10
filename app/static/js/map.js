@@ -96,8 +96,14 @@ export function initMap() {
     }
 
     // Initialize the map with the determined view (either default or loaded)
+    // We disable attributionControl to hide the default attribution
     // worldCopyJump is not an ideal solution here but it's better than confusing the user if they pan too far
-    const map = L.map(mapContainer, {worldCopyJump: true}).setView(currentView.center, currentView.zoom);
+    const map = L.map(mapContainer, {attributionControl: false, worldCopyJump: true}).setView(currentView.center, currentView.zoom);
+
+    // The attribution is re-added in the bottom left, less in the way
+    L.control.attribution({
+        position: 'bottomleft'
+    }).addTo(map);
 
     // Try to locate the user ONLY if we didn't load a saved view
     document.addEventListener('DOMContentLoaded', () => {

@@ -14,12 +14,7 @@
     {% endif %}
     >
 
-    <header class="twist-header"
-        hx-get="/twists/{{ twist.id }}/templates/dropdown"
-        hx-ext="morph"
-        hx-target="next .twist-dropdown"
-        hx-swap="morph:innerHTML"
-        hx-trigger="{{ EVENTS.LOAD_DROPDOWN }}">
+    <header class="twist-header">
 
         <span class="twist-name">{{ twist.name }}</span>
         <span>
@@ -33,14 +28,5 @@
             <i class="far {% if start_page == 1 and loop.index <= twists_per_page %}fa-eye{% else %}fa-eye-slash{% endif %}"></i>
         </span>
     </header>
-    {% if twist.id == open_twist_id %}
-    <div class="twist-dropdown is-open">
-        {% include "fragments/twists/dropdown.html" %}
-    </div>
-    {% else %}
-    <div class="twist-dropdown">
-        <p class="loading">Loading...</p>
-    </div>
-    {% endif %}
 </li>
 {% endfor %}

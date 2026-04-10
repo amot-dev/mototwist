@@ -8,8 +8,8 @@ from app.config import logger
 from app.database import get_db
 from app.events import EventSet
 from app.models import Criterion, Twist, User
-from app.schemas.twists import TwistBasic, TwistCreateForm, TwistDropdown, TwistFilter, TwistGeometry
-from app.services.twists import render_advanced_filter_modal, render_creation_buttons, render_delete_modal, render_list, render_single_list_item, render_twist_dropdown, simplify_route, snap_waypoints_to_route
+from app.schemas.twists import TwistBasic, TwistCreateForm, TwistPopup, TwistFilter, TwistGeometry
+from app.services.twists import render_advanced_filter_modal, render_creation_buttons, render_delete_modal, render_list, render_single_list_item, render_twist_popup, simplify_route, snap_waypoints_to_route
 from app.settings import settings
 from app.users import current_user, current_user_optional, verify
 from app.utility import raise_http
@@ -165,29 +165,29 @@ async def serve_list(
     return response
 
 
-@router.get("/{twist_id}/templates/dropdown", tags=["Templates"], response_class=HTMLResponse)
-async def serve_dropdown(
+@router.get("/{twist_id}/templates/popup", tags=["Templates"], response_class=HTMLResponse)
+async def serve_popup(
     request: Request,
     twist_id: int,
     user: User | None = Depends(current_user_optional),
     session: AsyncSession = Depends(get_db)
 ) -> HTMLResponse:
     """
-    Serve an HTML fragment containing the Twist dropdown for a given Twist.
+    Serve an HTML fragment containing the Twist popup for a given Twist.
     """
     try:
         result = await session.execute(
-            select(*TwistDropdown.fields)
+            select(*TwistPopup.fields)
             .join(Twist.author, isouter=True)
             .where(Twist.id == twist_id)
         )
-        twist = TwistDropdown.model_validate(result.one())
+        twist = TwistPopup.model_validate(result.one())
     except NoResultFound:
         raise_http(f"Twist with id '{twist_id}' not found", status_code=404)
     except MultipleResultsFound:
         raise_http(f"Multiple twists found for id '{twist_id}'", status_code=500)
 
-    return await render_twist_dropdown(request, session, user, twist)
+    return await render_twist_popup(request, user, twist)
 
 
 @router.get("/{twist_id}/templates/delete-modal", tags=["Templates"], response_class=HTMLResponse)

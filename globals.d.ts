@@ -26,10 +26,20 @@ declare namespace L {
     type LatLng = { lat: number, lng: number };
     type Map = any; 
     type Point = any;
-    type Marker = any;
-    type Polyline = any;
-    type TileLayer = any;
-    type FeatureGroup = any;
+    class Marker {
+        [key: string]: any;
+    }
+    class Polyline {
+        [key: string]: any;
+    }
+    class TileLayer {
+        [key: string]: any;
+    }
+    class FeatureGroup {
+        getLayers(): any[];
+        [key: string]: any;
+    }
+    declare var control: any;
     declare var Control: any;
     declare var DomEvent: any;
     declare var DomUtil: any;
