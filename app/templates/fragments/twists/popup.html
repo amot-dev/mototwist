@@ -2,7 +2,7 @@
 <h3>{{ twist.name }}</h3>
 <p class="author">Created by {{ twist.author_name }}</p>
 <header>
-    <h4>Average Rating</h4>
+    <h4 id="twist-{{ twist.id }}-average-rating">Average Rating</h4>
     {% if user %}
     <button class="button button-very-small button-block" onclick="document.querySelector('#modal-ride-twist').showModal()"
         hx-get="/twists/{{ twist.id }}/rides/templates/ride-modal"

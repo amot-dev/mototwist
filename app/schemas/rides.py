@@ -1,12 +1,43 @@
 from datetime import date
 from pydantic import BaseModel
 
+from app.settings import settings
+from app.models import Criterion
 from app.schemas.types import Weather
 
 
 class AverageRating(BaseModel):
     rating: float
     description: str
+
+
+class AverageRatings(BaseModel):
+    overall: float | None
+    by_criteria: dict[str, AverageRating]
+
+    @classmethod
+    def from_averages(cls, averages: dict[str, float | None], criteria: list[Criterion]) -> AverageRatings:
+        # Create a lookup dictionary for descriptions for easy access
+        descriptions = {c.slug: c.description for c in criteria}
+
+        # List valid ratings to use to calculate overall average
+        valid_ratings = [v for v in averages.values() if v is not None]
+
+        overall = round(
+            sum(valid_ratings) / len(valid_ratings),
+            settings.AVERAGE_ROUNDING_DIGITS
+        ) if valid_ratings else None
+
+        by_criteria = {
+            slug: AverageRating(
+                rating=round(rating, settings.AVERAGE_ROUNDING_DIGITS),
+                description=descriptions.get(slug) or ""
+            )
+            for slug, rating in averages.items()
+            if rating is not None
+        }
+
+        return cls(overall=overall, by_criteria=by_criteria)
 
 
 class RideListItem(BaseModel):

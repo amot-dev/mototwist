@@ -5,11 +5,10 @@ from humanize import intcomma, metric, ordinal
 from sqlalchemy import ColumnExpressionArgument, false, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
-from typing import cast
 
 from app.config import logger, templates
 from app.models import Criterion, Ride, User
-from app.schemas.rides import AverageRating, RideList, RideListItem
+from app.schemas.rides import AverageRatings, RideList, RideListItem
 from app.schemas.twists import FilterOwnership, FilterWeather, TwistBasic, TwistFilterWithRideOwnership
 from app.schemas.types import Weather
 from app.settings import settings
@@ -120,7 +119,7 @@ async def calculate_average_rating(
     user: User | None,
     twist: TwistBasic,
     filter: TwistFilterWithRideOwnership
-) -> dict[str, AverageRating]:
+) -> AverageRatings:
     """
     Calculate the average ratings for a Twist.
 
@@ -149,19 +148,10 @@ async def calculate_average_rating(
     averages = result.first()
 
     if not averages:
-        return {}
+        return AverageRatings(overall=None, by_criteria={})
+    averages_dict = averages._asdict()  # pyright: ignore [reportPrivateUsage]
 
-    # Create a lookup dictionary for descriptions for easy access
-    descriptions = {c.slug: c.description for c in criteria}
-
-    return {
-        slug: cast(AverageRating, {
-            "rating": round(criterion, settings.AVERAGE_ROUNDING_DIGITS),
-            "description": descriptions.get(slug, "")
-        })
-        for slug, criterion in averages._asdict().items()  # pyright: ignore [reportPrivateUsage]
-        if criterion is not None
-    }
+    return AverageRatings.from_averages(averages_dict, criteria)
 
 
 async def render_averages(
@@ -174,9 +164,13 @@ async def render_averages(
     """
     Build and return the TemplateResponse for the ratings averages.
     """
+    average_ratings = await calculate_average_rating(session, user, twist, filter)
+
     return templates.TemplateResponse("fragments/rides/averages.html", {
         "request": request,
-        "average_ratings": await calculate_average_rating(session, user, twist, filter),
+        "twist_id": twist.id,
+        "overall_average": average_ratings.overall,
+        "average_ratings": average_ratings.by_criteria,
         "criterion_max_value": Criterion.MAX_VALUE
     })
 

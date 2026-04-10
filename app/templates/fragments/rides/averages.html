@@ -1,5 +1,13 @@
 {% from "fragments/_macros.html" import render_rating %}
 
+<h4 id="twist-{{ twist_id }}-average-rating" hx-swap-oob="true">
+    {% if overall_average %}
+    Average Rating: {{ overall_average }}/10
+    {% else %}
+    Average Rating: N/A
+    {% endif %}
+</h4>
+
 {% if average_ratings %}
     {% for slug, criterion in average_ratings.items() %}
     {{ render_rating(slug, criterion.rating, criterion.description, criterion_max_value) }}
