@@ -23,8 +23,12 @@ interface TwistGeometryData {
 declare namespace L {
 
     // --- Basic Types ---
+    const Browser: {
+        mobile: boolean;
+        [key: string]: any;
+    };
+    type Map = any;
     type LatLng = { lat: number, lng: number };
-    type Map = any; 
     type Point = any;
     class Marker {
         [key: string]: any;

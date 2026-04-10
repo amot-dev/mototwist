@@ -131,6 +131,34 @@ async function loadTwistLayer(map, twistId, show = false) {
                 .bindPopup(`<b>${twist_data.name}</b>${point.name ? `<br>${point.name}` : ''}`);
         });
 
+        // On mobile, create a thicker invisible line to make it easier to tap
+        if (L.Browser.mobile) {
+            const tapLine = L.polyline(twist_data.route_geometry, {
+                weight: 30,
+                opacity: 0
+            });
+
+            // Forward the tap event
+            tapLine.on('click',
+                /** @param {{ latlng: L.LatLng }} event */
+                function(event) {
+
+                routeLine.fire('click', event);
+            });
+
+            // Automatically add/remove from the map along with actual route
+            routeLine.on('add', function() {
+                if (map) {
+                    tapLine.addTo(map);
+                    // Keep it behind markers
+                    tapLine.bringToBack();
+                }
+            });
+            routeLine.on('remove', function() {
+                tapLine.remove();
+            });
+        }
+
         // Group all layers together (already on the map)
         routeLine.addTo(twistLayer);
         waypointMarkers.forEach(marker => marker.addTo(twistLayer));
