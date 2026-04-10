@@ -39,6 +39,7 @@ declare namespace L {
         getLayers(): any[];
         [key: string]: any;
     }
+    declare var control: any;
     declare var Control: any;
     declare var DomEvent: any;
     declare var DomUtil: any;

@@ -1,25 +1,13 @@
-<div id="twist-creation-buttons"
-    hx-get="/twists/templates/creation-buttons"
-    hx-trigger="{{ EVENTS.AUTH_CHANGE }} from:body"
-    hx-swap="outerHTML">
+{% if user %}
+<button id="start-new-twist" class="button button-block twist-creation-button">
+    <i class="fa-solid fa-plus"></i>
+</button>
+<button id="finalize-new-twist" class="button button-block twist-creation-button gone"
+    onclick="document.querySelector('#modal-create-twist').showModal()">
 
-    {% if not user %}
-    <h4>Register or Login to create Twists!</h4>
-    {% else %}
-    {% if not user.is_verified and SETTINGS.EMAIL_ENABLED %}
-    <h4>Verify your account to create Twists!</h4>
-    {% else %}
-    <button id="start-new-twist" class="button button-block twist-creation-button">
-        New Twist
-    </button>
-    <button id="finalize-new-twist" class="button button-block twist-creation-button gone"
-        onclick="document.querySelector('#modal-create-twist').showModal()">
-
-        Finalize
-    </button>
-    <button id="cancel-new-twist" class="button button-block button-cancel twist-creation-button gone">
-        Cancel
-    </button>
-    {% endif %}
-    {% endif %}
-</div>
+    <i class="fa-solid fa-check"></i>
+</button>
+<button id="cancel-new-twist" class="button button-block button-cancel twist-creation-button gone">
+    <i class="fa-solid fa-ban"></i>
+</button>
+{% endif %}

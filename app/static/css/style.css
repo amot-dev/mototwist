@@ -877,8 +877,45 @@ aside {
         cursor: crosshair;
     }
 
+    .fab-container {
+        position: absolute;
+        bottom: var(--padding-lg);
+        right: var(--padding-lg);
+        z-index: 1000;
+        display: flex;
+        flex-direction: column-reverse;
+        gap: var(--padding-sm);
+        align-items: flex-end;
+        pointer-events: none; /* Ensures the container itself doesn't block map pans */
+    }
+
+    .twist-creation-button {
+        height: 46px;
+        width: 46px;
+        padding: 0;
+        margin: 0;
+        box-shadow: var(--shadow-modal);
+        border-radius: 50%;
+        white-space: nowrap;
+        pointer-events: auto; /* Re-enable clicking for the buttons */
+
+        transition:
+            transform var(--transition-fast),
+            background-color var(--transition-fast),
+            box-shadow var(--transition-fast);
+
+        &:hover {
+            transform: translateY(-2px) scale(1.02);
+            box-shadow: 0 8px 15px rgba(0, 0, 0, 0.3);
+        }
+
+        &:active {
+            transform: translateY(0) scale(0.98);
+        }
+    }
+
     > #refresh-twists-button {
-        position: fixed;
+        position: absolute;
         bottom: var(--padding-lg);
         left: 50%;
         z-index: 1000;
@@ -1391,10 +1428,6 @@ aside {
     #map {
         order: 1;
         flex-grow: 1;
-
-        > #refresh-twists-button {
-            position: absolute;
-        }
     }
 
     .top-right-controls {
