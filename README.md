@@ -58,7 +58,7 @@ Below is an overview of all available environment variables for MotoTwist.
 | `TWIST_SIMPLIFICATION_TOLERANCE_M` | Sets the simplification tolerance for new Twist routes. A higher value (e.g., `"50m"`) removes more points and reduces storage size. Set to `"0m"` to disable. | `"30m"` |
 | `AVERAGE_ROUNDING_DIGITS` | Sets number of digits after the decimal to round to when calculating and displaying rating averages. | `1` |
 | `DEFAULT_TWISTS_LOADED` | Sets the default number of Twists that are loaded at once. This affects both the infinitely scrolling Twist list and the map. | `20` |
-| `MAX_TWISTS_LOADED` | Sets the maximum number of Twists that can be loaded at once. Setting a high number can have performance impacts. | `100` |
+| `MAX_TWISTS_LOADED` | Sets the maximum number of Twists that can be loaded at once. Setting a high number can have performance impacts. (UNUSED) | `100` |
 | `RIDES_FETCHED_PER_QUERY` | Sets the number of rides fetched per query during the infinite scroll when viewing all rides. Setting it too low or high can have performance impacts. | `20` |
 
 > [!WARNING]
@@ -132,7 +132,7 @@ These settings are useful for local development and debugging.
         Only an admin can create or promote more admins. Initially, MotoTwist starts up with exactly one admin user.
 
 2.  **Drawing a New Twist:**
-    When you a creating a Twist, your map cursor will be a crosshair. Waypoints can be placed, dragged, named, hidden, and deleted.
+    When you a creating a Twist, your map cursor will be a crosshair. Waypoints can be placed, dragged, named, and deleted.
 
     a)  **Placing Waypoints:**
         Placing waypoints is as easy as clicking on the map in the desired location. Note that this should be on or close to a road. Waypoints not near roads will be snapped to a road in the final route.
@@ -146,7 +146,10 @@ These settings are useful for local development and debugging.
     d)  **Shaping Points:**
         Waypoints other than the first and last are shaping points by default. These waypoints will be used to determine the Twist's final route, but will never be displayed. Use these as you would use dragging the route in Google Maps to achieve your desired route. You may name them to have them be displayed as part of the Twist.
 
-    e)  **Deleting Waypoints:**
+    e)  **Inserting Waypoints:**
+        Waypoints may be inserted before the last waypoint by right-clicking. This is useful for adding shaping points to modify the path taken.
+
+    f)  **Deleting Waypoints:**
         Clicking on a waypoint will allow deleting it. Keep in mind that at least two waypoints are required to create a Twist.
 
 3.  **Entering Twist Details:**
@@ -156,23 +159,23 @@ These settings are useful for local development and debugging.
 > Twists should be predominantly paved or unpaved. If they're a combination of both, select whichever was "the main attraction" of the Twist, as each type has different criteria they're rated on. If both segments are fun, consider splitting the Twist!
 
 4.  **Riding Twists:**
-    From the sidebar, you can now ride your Twist! There's a number of different criteria you can rate your ride on, and hovering over each will give a brief description.
+    From the sidebar, you can now ride your Twist! There's a number of different criteria you can rate your ride on, and hovering over each will give a brief description. You will also need to specify the weather conditions, which can be filtered for later.
 
 > [!TIP]
 > With some, but minimal, technical knowledge, the available criteria can be changed! Eventually this may be configurable via environment variables. See [#11](https://github.com/amot-dev/mototwist/issues/11).
 
 5.  **Searching/Filtering:**
-    Twists may be searched and filtered by a few different criteria. Rides can be filtered.
+    Twists may be searched and filtered by a few different criteria. Rides can be filtered. The "Advanced Filters" menu may be of use if you wish to filter by individual rating, ignore criteria in the overall rating, or only look at rides in certain weather conditions.
 
 6.  **General Use:**
 
-    a) Clicking on a Twist will reveal more information about it.
+    a) Clicking on a Twist in the list will pan the map to that Twist and open its popup.
 
-    b) Double clicking on a Twist will take you to it on the map.
+    b) Clicking on a Twist on the map will open its popup, revealing more information about it.
 
     c) Twists can be hidden.
 
-    d) Twists and Waypoints on the map can be clicked to show their name.
+    d) Clicking on a Waypoints on the map will show its name.
 
     e) Twists and rides can be deleted (but not modified).
 
