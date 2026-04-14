@@ -23,4 +23,5 @@ USER mototwist
 
 EXPOSE 8000
 
-ENTRYPOINT ["python", "-m", "app.main"]
+ENTRYPOINT ["python3", "-m", "app.main"]
+
