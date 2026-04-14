@@ -1,4 +1,5 @@
 import { EVENTS, SETTINGS } from './constants.js';
+import { removeTwistLayer, setTwistVisibility, toggleTwistItemEye } from './displayTwist.js';
 import { flash } from './flash.js';
 import {
     startIcon,
@@ -9,10 +10,12 @@ import {
 import { getRootProperty } from './utils.js';
 
 
-const accentBlueHoverLight = getRootProperty('--accent-blue-hover-light')
+const accentBlueHoverLight = getRootProperty('--accent-blue-hover-light');
 
 /** @returns {HTMLButtonElement | null} */
 const getStartTwistButton = () => document.querySelector('#start-new-twist');
+/** @returns {HTMLButtonElement | null} */
+const getEditTwistButton = () => document.querySelector('#edit-twist');
 /** @returns {HTMLButtonElement | null} */
 const getFinalizeTwistButton = () => document.querySelector('#finalize-new-twist');
 /** @returns {HTMLButtonElement | null} */
@@ -25,8 +28,12 @@ const createWaypointPopupTemplate = document.querySelector('#create-waypoint-pop
 if (!(createWaypointPopupTemplate instanceof HTMLTemplateElement)) throw new Error("Critical element #create-waypoint-popup-template is missing or not a <template>!");
 const createWaypointPopupTemplateContent = createWaypointPopupTemplate.content;
 
-const twistForm = document.querySelector('#modal-create-twist form');
-if (!(twistForm instanceof HTMLFormElement)) throw new Error("Critical element #modal-create-twist form is missing or not a <form>!");
+/** @returns {HTMLFormElement} */
+const getTwistForm = () => {
+    const form = document.querySelector('#modal-create-edit-twist form');
+    if (!(form instanceof HTMLFormElement)) throw new Error("Critical element #modal-create-edit-twist form is missing or not a <form>!");
+    return form;
+};
 
 
 /** @type {Waypoint[]} */
@@ -44,6 +51,68 @@ let routeRequestController;
 /** @type {L.Polyline | null} */
 let newRouteLine = null;
 
+/** @type {string | null} */
+let editingTwistId = null;
+
+
+/**
+ * Adds a new point to the route.
+ * @param {L.Map} map The main Leaflet map instance.
+ * @param {L.LatLng} latlng The coordinates for the new point.
+ * @param {boolean} insertBeforeEnd Whether to insert right before the final waypoint.
+ */
+function addPoint(map, latlng, insertBeforeEnd = false) {
+    const assertedMapContainer = /** @type {HTMLElement} */ (mapContainer);
+    if (!assertedMapContainer.classList.contains('editing-twist')) return;
+
+    // Create a new waypoint
+    const newWaypoint = {
+        latlng: latlng,
+        name: '',
+    };
+    const insertIndex = (insertBeforeEnd && waypoints.length >= 2) ? waypoints.length - 1 : waypoints.length;
+    waypoints.splice(insertIndex, 0, newWaypoint);
+
+    // Create a new marker
+    const marker = L.marker(latlng, { draggable: true }).addTo(map);
+    waypointMarkers.splice(insertIndex, 0, marker);
+
+    // Bind a function that creates and returns the popup content on demand
+    marker.bindPopup(() => createPopupContent(map, marker));
+
+    // Listen for the marker being dragged and update route on end
+    marker.on('dragend',
+            /** @param {L.LeafletEvent} event */
+            (event) => handleMarkerDrag(event, map)
+        );
+
+    // Listen for the marker's popup being closed and update icons
+    marker.getPopup().on('remove', function() {
+        updateMarkerIcons();
+    });
+
+    // Update the route line with the new waypoint
+    updateRoute(map);
+    updateMarkerIcons();
+}
+
+
+/**
+ * Shared handler for marker drag events to update the route.
+ * * @param {L.LeafletEvent} event The dragend event.
+ * @param {L.Map} map The map instance to update the route on.
+ */
+function handleMarkerDrag(event, map) {
+    const marker = event.target;
+    const index = waypointMarkers.indexOf(marker);
+
+    if (index === -1) throw new Error("Dragged marker not found in state array!")
+
+    // Redraw the route with the new coordinates
+    waypoints[index].latlng = marker.getLatLng();
+    updateRoute(map);
+}
+
 
 /**
  * Fetches and draws the route on the map using the current waypoints.
@@ -57,9 +126,7 @@ async function updateRoute(map) {
     if (waypoints.length < 2) return;
 
     // Abort any ongoing fetch requests
-    if (routeRequestController) {
-        routeRequestController.abort();
-    }
+    if (routeRequestController) routeRequestController.abort();
 
     // Create a new AbortController for the new request
     routeRequestController = new AbortController();
@@ -242,13 +309,13 @@ function updateMarkerIcons() {
  * The check is based off of form and route validity.
  */
 function updateTwistFormSubmitState() {
-    const assertedTwistForm = /** @type {HTMLFormElement} */ (twistForm);
+    const twistForm = getTwistForm()
 
     /** @type {HTMLButtonElement | null} */
-    const submitButton = assertedTwistForm.querySelector('[type="submit"]');
+    const submitButton = twistForm.querySelector('[type="submit"]');
     if (!submitButton) throw new Error("Critical element [type=\"submit\"] is missing from .twist-form!")
 
-    submitButton.disabled = !assertedTwistForm.checkValidity() || assertedTwistForm.dataset.routeValid != 'true';
+    submitButton.disabled = !twistForm.checkValidity() || twistForm.dataset.routeValid != 'true';
 }
 
 
@@ -273,19 +340,93 @@ function writeToStatus(element, message, mode = 'w') {
 
 
 /**
- * Resets the Twist creation state, removing all waypoints, markers,
+ * Initiates the Twist editing state, setting UI elements
+ * accordingly.
+ *
+ * @param {L.Map} map The main Leaflet map instance.
+ * @param {string} flashMessage The message to display to the user.
+ */
+export function startTwistEdit(map, flashMessage) {
+    // Allow map interaction
+    const assertedMapContainer = /** @type {HTMLElement} */ (mapContainer);
+    assertedMapContainer.classList.add('editing-twist');
+    map.closePopup();
+    flash(flashMessage, { duration: 5000 });
+
+    // Swap button visibility
+    getStartTwistButton()?.classList.add('gone');
+    getFinalizeTwistButton()?.classList.remove('gone');
+    getCancelTwistButton()?.classList.remove('gone');
+}
+
+
+/**
+ * Loads existing Twist data into the map's editing state.
+ *
+ * @param {L.Map} map The main Leaflet map instance.
+ * @param {TwistGeometryData} twistData The fetched geometry data.
+ */
+export function loadTwistEdit(map, twistData) {
+    // Populate waypoints
+    waypoints = twistData.waypoints.map(wp => ({
+        latlng: L.latLng(wp.lat, wp.lng),
+        name: wp.name
+    }));
+
+    // Create markers
+    waypointMarkers = waypoints.map((wp) => {
+        const marker = L.marker(wp.latlng, { draggable: true }).addTo(map);
+
+        // Bind existing popup and drag logic
+        marker.bindPopup(() => createPopupContent(map, marker));
+        marker.on('dragend',
+            /** @param {L.LeafletEvent} event */
+            (event) => handleMarkerDrag(event, map)
+        );
+
+        marker.getPopup().on('remove', () => updateMarkerIcons());
+        return marker;
+    });
+
+    // Hide original route
+    editingTwistId = `${twistData.id}`
+    if (!editingTwistId) throw new Error("Critical twistId data is missing from Twist Geometry!")
+
+    const twistItem = document.getElementById(`twist-item-${editingTwistId}`);
+    if (twistItem) toggleTwistItemEye(twistItem);
+    setTwistVisibility(map, editingTwistId, false);
+
+    const list = document.getElementById('twist-list');
+    if (list) list.dataset.editingId = editingTwistId;
+
+    // Update route and icons
+    updateRoute(map);
+    updateMarkerIcons();
+}
+
+
+/**
+ * Resets the Twist editing state, removing all waypoints, markers,
  * and the route line from the map and resetting UI elements.
  *
- * @param {L.Map} map The map to stop Twist creation on.
+ * @param {L.Map} map The main Leaflet map instance.
  */
-export function stopTwistCreation(map) {
+export function stopTwistEdit(map) {
+    // Immediate return if not editing Twist
     const assertedMapContainer = /** @type {HTMLElement} */ (mapContainer);
-    const assertedTwistForm = /** @type {HTMLFormElement} */ (twistForm);
+    if (!assertedMapContainer.classList.contains('editing-twist')) return;
 
-    // Immediate return if not creating Twist
-    if (!assertedMapContainer.classList.contains('creating-twist')) return;
+    const twistForm = getTwistForm()
 
-    assertedMapContainer.classList.remove('creating-twist');
+    // Abort any ongoing fetch requests
+    if (routeRequestController) routeRequestController.abort();
+    if (hideLoadingFlash) {
+        hideLoadingFlash();
+        hideLoadingFlash = null;
+    }
+
+    // Reset map state
+    assertedMapContainer.classList.remove('editing-twist');
 
     map.closePopup();
     waypointMarkers.forEach(marker => marker.remove());
@@ -297,9 +438,20 @@ export function stopTwistCreation(map) {
         newRouteLine = null;
     }
 
+    if (editingTwistId) {
+        const twistItem = document.getElementById(`twist-item-${editingTwistId}`);
+        if (twistItem) toggleTwistItemEye(twistItem);
+
+        setTwistVisibility(map, editingTwistId, true);
+        editingTwistId = null;
+
+        const list = document.getElementById('twist-list');
+        if (list) delete list.dataset.editingId;
+    }
+
     // Reset the status indicator and submit button
     /** @type {HTMLButtonElement | null} */
-    const submitButton = assertedTwistForm.querySelector('[type="submit"]');
+    const submitButton = twistForm.querySelector('[type="submit"]');
     if (!submitButton) throw new Error("Critical element [type=\"submit\"] is missing from .twist-form!")
     const statusIndicator = document.querySelector('#route-status-indicator');
     if (!statusIndicator || !(statusIndicator instanceof HTMLElement)) {
@@ -318,166 +470,143 @@ export function stopTwistCreation(map) {
 
 
 /**
- * Sets up event listeners for conditional Twist creation buttons.
- * These are reloaded by htmx after auth changes.
- *
- * @param {L.Map} map The main Leaflet map instance.
- */
-function registerTwistCreationButtonListeners(map) {
-    const assertedMapContainer = /** @type {HTMLElement} */ (mapContainer);
-    const assertedTwistForm = /** @type {HTMLFormElement} */ (twistForm);
-
-    // Begin recording route geometry
-    getStartTwistButton()?.addEventListener('click', () => {
-        assertedMapContainer.classList.add('creating-twist');
-        flash('Click on the map to create a Twist!', { duration: 5000 });
-
-        // Swap button visibility
-        getStartTwistButton()?.classList.add('gone');
-        getFinalizeTwistButton()?.classList.remove('gone');
-        getCancelTwistButton()?.classList.remove('gone');
-    });
-
-    // Handle saving of route geometry
-    getFinalizeTwistButton()?.addEventListener('click', () => {
-        const statusIndicator = document.querySelector('#route-status-indicator');
-        if (!statusIndicator || !(statusIndicator instanceof HTMLElement)) {
-            throw new Error("Critical element #route-status-indicator is missing!");
-        }
-
-        // Check if there's a route to save
-        const namedWaypoints = waypoints.filter(wp => wp.name.length > 0);
-        const shapingPoints = waypoints.filter(wp => wp.name.length === 0);
-        if (waypoints.length > 1 && newRouteLine) {
-            // Check if first and last waypoints have names
-            if (waypoints[0].name.length > 0 && waypoints[waypoints.length - 1].name.length > 0) {
-                assertedTwistForm.dataset.routeValid = "true";
-                writeToStatus(
-                    statusIndicator,
-                    `✅ Route captured with ${namedWaypoints.length} waypoints and ${newRouteLine.getLatLngs().length} geometry points.`
-                );
-
-                // Inform about shaping points on a new line
-                if (shapingPoints.length > 0) {
-                    const noun = shapingPoints.length === 1 ? "shaping point" : "shaping points";
-                    const message = `ℹ️ ${shapingPoints.length} ${noun} will be stored for routing but not displayed.`;
-
-                    writeToStatus(statusIndicator, message, "a");
-                }
-            } else {
-                // Handle case where user finalizes without naming start or end
-                assertedTwistForm.dataset.routeValid = "false";
-                writeToStatus(
-                    statusIndicator,
-                    '⚠️ Start/End waypoint(s) remain unnamed.'
-                );
-            }
-        } else {
-            // Handle case where user finalizes without a valid route
-            assertedTwistForm.dataset.routeValid = "false";
-            writeToStatus(
-                statusIndicator,
-                '⚠️ No valid route was created.'
-            );
-        }
-        updateTwistFormSubmitState()
-        statusIndicator.classList.remove('gone');
-    });
-
-    // Handle cancellation of route geometry recording
-    getCancelTwistButton()?.addEventListener('click', () => {
-        stopTwistCreation(map);
-    });
-}
-
-
-/**
- * Sets up all event listeners for creation of new Twists.
+ * Sets up all event listeners for creation/editing of Twists.
  *
  * This function attaches listeners for:
- * - The 'Start New Twist' button to enter creation mode.
+ * - The 'Start New Twist' button to enter editing mode and start a new Twist.
  * - The 'Finalize Twist' button to validate and prepare route data.
- * - The 'Cancel Twist' button to stop creation mode.
- * - The main map 'click' event (only when in creation mode)
+ * - The 'Cancel Twist' button to stop editing mode.
+ * - The 'Edit Twist' button to enter editing mode and edit an existing Twist.
+ * - The main map 'click' event (only when in editing mode)
  * to add new waypoints.
  *
  * This should be called once on application startup.
  *
  * @param {L.Map} map The main Leaflet map instance.
  */
-export function registerTwistCreationListeners(map) {
-    const assertedMapContainer = /** @type {HTMLElement} */ (mapContainer);
-    const assertedTwistForm = /** @type {HTMLFormElement} */ (twistForm);
-
-    // Add Twist Form validation listener and set initial state
-    assertedTwistForm.addEventListener('input', updateTwistFormSubmitState);
-    updateTwistFormSubmitState();
-
-    // Register Twist creation button listeners both on initial load and after htmx swap
+export function registerTwistEditingListeners(map) {
     document.body.addEventListener('htmx:afterSwap', (event) => {
         const customEvent = /** @type {CustomEvent<{elt: Element}>} */ (event);
+
+        // Register listener for Create Twist button
         if (customEvent.detail.elt.id === 'twist-creation-buttons') {
-            registerTwistCreationButtonListeners(map);
+            getStartTwistButton()?.addEventListener('click', () => {
+                stopTwistEdit(map);
+                startTwistEdit(map, 'Click on the map to create a Twist!')
+            });
+        }
+
+        // Register listener for Edit Twist button
+        if (customEvent.detail.elt.classList.contains('twist-popup')) {
+            getEditTwistButton()?.addEventListener('click', async () => {
+                const editButton = getEditTwistButton()
+                if (!editButton) throw new Error("Critical element #edit-twist is missing!");
+
+                const twistId = editButton.dataset.twistId;
+                if (!twistId) throw new Error("Element #edit-twist is missing twistId data!");
+
+                try {
+                    const response = await fetch(`/twists/${twistId}/geometry`);
+                    if (!response.ok) throw new Error(`Server responded with status: ${response.status}`);
+
+                    /** @type {TwistGeometryData} */
+                    const twistData = await response.json();
+
+                    // Ensure a clean state before starting
+                    stopTwistEdit(map);
+                    loadTwistEdit(map, twistData);
+                    startTwistEdit(map, 'Interact with the map to edit this Twist!')
+
+                } catch (error) {
+                    console.error(`Failed to load route editing for Twist '${twistId}':`, error);
+                    flash(`Failed to load route for editing for Twist '${twistId}'`, { duration: 5000, type: 'error' })
+                }
+            });
+        }
+
+        // Register listeners for form finalization when Twist Form is swapped in (on start create/edit)
+        if (customEvent.detail.elt.querySelector('form.modal-form')) {
+            const twistForm = getTwistForm();
+            twistForm.addEventListener('input', updateTwistFormSubmitState);
+            updateTwistFormSubmitState();
+
+            // Handle saving of route geometry
+            getFinalizeTwistButton()?.addEventListener('click', () => {
+                const statusIndicator = document.querySelector('#route-status-indicator');
+                if (!statusIndicator || !(statusIndicator instanceof HTMLElement)) {
+                    throw new Error("Critical element #route-status-indicator is missing!");
+                }
+
+                // Check if there's a route to save
+                const namedWaypoints = waypoints.filter(wp => wp.name.length > 0);
+                const shapingPoints = waypoints.filter(wp => wp.name.length === 0);
+                if (waypoints.length > 1 && newRouteLine) {
+                    // Check if first and last waypoints have names
+                    if (waypoints[0].name.length > 0 && waypoints[waypoints.length - 1].name.length > 0) {
+                        twistForm.dataset.routeValid = "true";
+                        writeToStatus(
+                            statusIndicator,
+                            `✅ Route captured with ${namedWaypoints.length} waypoints and ${newRouteLine.getLatLngs().length} geometry points.`
+                        );
+
+                        // Inform about shaping points on a new line
+                        if (shapingPoints.length > 0) {
+                            const noun = shapingPoints.length === 1 ? "shaping point" : "shaping points";
+                            const message = `ℹ️ ${shapingPoints.length} ${noun} will be stored for routing but not displayed.`;
+
+                            writeToStatus(statusIndicator, message, "a");
+                        }
+                    } else {
+                        // Handle case where user finalizes without naming start or end
+                        twistForm.dataset.routeValid = "false";
+                        writeToStatus(
+                            statusIndicator,
+                            '⚠️ Start/End waypoint(s) remain unnamed.'
+                        );
+                    }
+                } else {
+                    // Handle case where user finalizes without a valid route
+                    twistForm.dataset.routeValid = "false";
+                    writeToStatus(
+                        statusIndicator,
+                        '⚠️ No valid route was created.'
+                    );
+                }
+                updateTwistFormSubmitState()
+                statusIndicator.classList.remove('gone');
+            });
+
+            // Handle cancellation of route geometry recording
+            getCancelTwistButton()?.addEventListener('click', () => {
+                stopTwistEdit(map);
+            });
         }
     });
-    registerTwistCreationButtonListeners(map);
+
+    // Listen for the custom event sent from the server after a new Twist is created/edited
+    document.body.addEventListener(EVENTS.TWIST_CHANGED, (event) => {
+        const customEvent = /** @type {CustomEvent<{value: string}>} */ (event);
+
+        const newTwistId = customEvent.detail.value;
+        if (newTwistId) {
+            // Stop editing, remove old geometry layer (if any), then load new geometry and display
+            stopTwistEdit(map);
+            removeTwistLayer(map, newTwistId);
+            setTwistVisibility(map, newTwistId, true, true);
+        }
+    });
 
     // Listen for the custom event sent from the server after an auth change
     document.body.addEventListener(EVENTS.AUTH_CHANGE, () => {
-        stopTwistCreation(map);
+        stopTwistEdit(map);
     });
-
-    /**
-     * Adds a new point to the route.
-     * @param {L.LatLng} latlng The coordinates for the new point.
-     * @param {boolean} insertBeforeEnd Whether to insert right before the final waypoint.
-     */
-    function addPoint(latlng, insertBeforeEnd = false) {
-        if (!assertedMapContainer.classList.contains('creating-twist')) return;
-
-        // Create a new waypoint
-        const newWaypoint = {
-            latlng: latlng,
-            name: '',
-        };
-        const insertIndex = (insertBeforeEnd && waypoints.length >= 2) ? waypoints.length - 1 : waypoints.length;
-        waypoints.splice(insertIndex, 0, newWaypoint);
-
-        // Create a new marker
-        const marker = L.marker(latlng, { draggable: true }).addTo(map);
-        waypointMarkers.splice(insertIndex, 0, marker);
-
-        // Bind a function that creates and returns the popup content on demand
-        marker.bindPopup(() => createPopupContent(map, marker));
-
-        // Listen for the marker being dragged and update route on end
-        marker.on('dragend',
-            /** @param {{ target: L.Marker }} dragEvent */
-            (dragEvent) => {
-            const index = waypointMarkers.indexOf(marker);
-            if (index === -1) throw new Error("Dragged marker not found in state array!")
-
-            // Redraw the route with the new coordinates
-            waypoints[index].latlng = dragEvent.target.getLatLng();
-            updateRoute(map);
-        });
-
-        // Listen for the marker's popup being closed and update icons
-        marker.getPopup().on('remove', function() {
-            updateMarkerIcons();
-        });
-
-        // Update the route line with the new waypoint
-        updateRoute(map);
-        updateMarkerIcons();
-    }
 
     // Listen for map clicks when recording route geometry
     map.on('click',
         /** @param {{ latlng: L.LatLng }} event */
         function(event) {
 
-        addPoint(event.latlng);
+        addPoint(map, event.latlng);
     });
 
     // On right-click specifically, insert before final point
@@ -486,9 +615,9 @@ export function registerTwistCreationListeners(map) {
         function(event) {
 
         if (waypoints.length < 2) {
-            addPoint(event.latlng)
+            addPoint(map, event.latlng)
         } else {
-            addPoint(event.latlng, true);
+            addPoint(map, event.latlng, true);
         }
     });
 }
@@ -499,8 +628,8 @@ export function registerTwistCreationListeners(map) {
  * to intercept the HTMX form submission for creating a new Twist.
  *
  * This function finds the POST request to '/twists', parses its
- * JSON body, injects the 'waypoints' and 'route_geometry' data
- * from the twistCreation module, and sends the modified request.
+ * JSON body, injects the 'waypoints' and 'route_geometry' data,
+ * and sends the modified request.
  *
  * This should be called once on application startup.
  *
@@ -516,8 +645,11 @@ export function overrideXHR() {
 
     // Override XHR send to intercept outgoing requests
     XMLHttpRequest.prototype.send = /** @this {PatchedXMLHttpRequest} */ function(/** @type {any} */ body) {
-        // Check if this is a POST request to /twists
-        if (this._url && this._url.endsWith('/twists') && this._method === 'POST') {
+        // Check if this is a POST/PUT request to /twists
+        const isCoreTwistEndpoint = this._url && /\/twists(\/[^\/]+)?$/.test(this._url);
+        const isModifying = this._method === 'POST' || this._method === 'PUT';
+
+        if (isCoreTwistEndpoint && isModifying) {
             if (!newRouteLine) {
                 throw new Error("Route missing from final payload!");
             }

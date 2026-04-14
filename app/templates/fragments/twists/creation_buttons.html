@@ -1,9 +1,13 @@
 {% if user %}
-<button id="start-new-twist" class="button button-block twist-creation-button">
+<button id="start-new-twist" class="button button-block twist-creation-button"
+    hx-get="/twists/templates/create-edit-modal"
+    hx-target="#modal-create-edit-twist"
+    hx-swap="innerHTML">
+
     <i class="fa-solid fa-plus"></i>
 </button>
 <button id="finalize-new-twist" class="button button-block twist-creation-button gone"
-    onclick="document.querySelector('#modal-create-twist').showModal()">
+    onclick="document.querySelector('#modal-create-edit-twist').showModal()">
 
     <i class="fa-solid fa-check"></i>
 </button>

@@ -1,8 +1,8 @@
 import { EVENTS } from './constants.js';
 import {
     overrideXHR,
-    registerTwistCreationListeners
-} from './createTwist.js';
+    registerTwistEditingListeners
+} from './editTwist.js';
 import { registerTwistListeners } from './displayTwist.js';
 import { initMap } from './map.js';
 import { initRangeSlider, registerInitSliderListeners } from './slider.js';
@@ -77,7 +77,7 @@ const map = initMap();
 
 registerServerCommandListeners();
 registerTwistListeners(map);
-registerTwistCreationListeners(map);
+registerTwistEditingListeners(map);
 overrideXHR();
 
 registerRideFormWeatherTypeListener();

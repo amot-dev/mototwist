@@ -1,5 +1,3 @@
-export const doubleClickTimeout = 200;
-
 /**
  * Delays invoking a function until after `delay`
  * milliseconds have elapsed since the last time it was invoked.

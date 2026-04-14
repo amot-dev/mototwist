@@ -105,6 +105,19 @@ async def render_creation_buttons(
     })
 
 
+async def render_create_edit_modal(
+    request: Request,
+    twist: TwistBasic | None,
+) -> HTMLResponse:
+    """
+     Build and return the TemplateResponse for the Twist create/edit modal.
+    """
+    return templates.TemplateResponse("fragments/twists/create_edit_modal.html", {
+        "request": request,
+        "twist": twist
+    })
+
+
 async def render_advanced_filter_modal(
     request: Request,
     criteria: list[Criterion]

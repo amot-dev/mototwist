@@ -45,9 +45,9 @@ class EventKey(str, Enum):
     No expected value.
     """
 
-    TWIST_ADDED = "twistAdded"
+    TWIST_CHANGED = "twistChanged"
     """
-    Signals that a new Twist has been added.
+    Signals that a Twist has been added or edited.
 
     Expected value is the Twist's ID.
     """
@@ -121,8 +121,8 @@ class EventSet:
         CLOSE_MODAL = (EventKey.CLOSE_MODAL, "")
 
         @staticmethod
-        def TWIST_ADDED(twist_id: int) -> Event:
-            return (EventKey.TWIST_ADDED, str(twist_id))
+        def TWIST_CHANGED(twist_id: int) -> Event:
+            return (EventKey.TWIST_CHANGED, str(twist_id))
 
         @staticmethod
         def TWIST_DELETED(twist_id: int) -> Event:

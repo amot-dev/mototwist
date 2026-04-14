@@ -1,0 +1,42 @@
+{% from "fragments/_macros.html" import render_modal_content, render_form_buttons %}
+
+{% set is_edit = twist is not none %}
+{% set modal_title = "Edit " ~ twist.name if is_edit else "New Twist" %}
+{% set submit_text = "Save Changes" if is_edit else "Create Twist" %}
+
+{% call render_modal_content(modal_title) %}
+
+{% if is_edit %}
+<form class="modal-form manual-validation"
+    hx-ext="form-json"
+    hx-put="/twists/{{ twist.id }}"
+    hx-target="#twist-item-{{ twist.id }}"
+    hx-swap="outerHTML">
+{% else %}
+<form class="modal-form manual-validation"
+    hx-ext="form-json"
+    hx-post="/twists"
+    hx-target="#twist-list"
+    hx-swap="afterbegin">
+{% endif %}
+
+    <div class="form-group">
+        <label for="modal-name">Twist Name</label>
+        <input type="text" id="modal-name" name="name" value="{{ twist.name if is_edit else '' }}" required>
+    </div>
+
+    <div class="form-group">
+        <fieldset class="form-fieldset">
+            <legend>Surface Type</legend>
+            <div class="radio-group">
+                <label><input type="radio" name="is_paved" value="true" {% if not is_edit or twist.is_paved %}checked{% endif %}> Paved</label>
+                <label><input type="radio" name="is_paved" value="false" {% if is_edit and not twist.is_paved %}checked{% endif %}> Unpaved</label>
+            </div>
+        </fieldset>
+    </div>
+
+    <div id="route-status-indicator" class="gone"></div>
+
+    {{ render_form_buttons(submit_text=submit_text) }}
+</form>
+{% endcall %}

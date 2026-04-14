@@ -13,6 +13,7 @@ interface ServerWaypoint extends ServerCoordinate {
 }
 
 interface TwistGeometryData {
+    id: number;
     name: string;
     is_paved: boolean;
     waypoints: ServerWaypoint[];
@@ -27,6 +28,7 @@ declare namespace L {
         mobile: boolean;
         [key: string]: any;
     };
+    type LeafletEvent = any;
     type Map = any;
     type LatLng = { lat: number, lng: number };
     type Point = any;
@@ -56,6 +58,7 @@ declare namespace L {
     // --- Functions on L ---
     function map(id: string | HTMLElement, options?: object): Map;
     function point(x: number, y: number): Point;
+    function latLng(lat: number, lng: number): LatLng;
     function marker(latlng: LatLng, options?: object): Marker;
     function polyline(latlngs: LatLng[], options?: object): Polyline;
     function icon(options: object): Icon;

@@ -121,10 +121,8 @@
 <div id="map">
     <div id="twist-creation-buttons" class="fab-container"
         hx-get="/twists/templates/creation-buttons"
-        hx-trigger="{{ EVENTS.AUTH_CHANGE }} from:body"
+        hx-trigger="load, {{ EVENTS.AUTH_CHANGE }} from:body"
         hx-swap="innerHTML">
-
-        {% include "fragments/twists/creation_buttons.html" %}
     </div>
 
     <button id="refresh-twists-button" class="button button-block"
@@ -236,34 +234,8 @@
     <p>Loading...</p>
 </dialog>
 
-<dialog id="modal-create-twist" class="modal">
-    {% call render_modal_content("New Twist") %}
-    <form class="modal-form manual-validation"
-        hx-ext="form-json"
-        hx-post="/twists"
-        hx-target="#twist-list"
-        hx-swap="afterbegin">
-
-        <div class="form-group">
-            <label for="modal-name">Twist Name</label>
-            <input type="text" id="modal-name" name="name" required>
-        </div>
-
-        <div class="form-group">
-            <fieldset class="form-fieldset">
-                <legend>Surface Type</legend>
-                <div class="radio-group">
-                    <label><input type="radio" name="is_paved" value="true" checked> Paved</label>
-                    <label><input type="radio" name="is_paved" value="false"> Unpaved</label>
-                </div>
-            </fieldset>
-        </div>
-
-        <div id="route-status-indicator" class="gone"></div>
-
-        {{ render_form_buttons(submit_text="Create Twist") }}
-    </form>
-    {% endcall %}
+<dialog id="modal-create-edit-twist" class="modal">
+    <p>Loading...</p>
 </dialog>
 
 <dialog id="modal-advanced-filter" class="modal modal-dynamic"

@@ -1,9 +1,10 @@
 from datetime import date
 from fastapi import APIRouter, Depends, Query, Request
 from fastapi.responses import HTMLResponse
-from sqlalchemy import delete, false, func, select
+from sqlalchemy import false, func, select
 from sqlalchemy.exc import MultipleResultsFound, NoResultFound
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import load_only
 
 from app.config import logger
 from app.database import get_db
@@ -91,27 +92,24 @@ async def delete_ride(
     """
     Delete a ride from the given Twist.
     """
-    if not user.is_superuser:
-        try:
-            result = await session.scalars(
-                select(Ride.author_id).where(Ride.id == ride_id)
+    try:
+        result = await session.scalars(
+            select(Ride).where(Ride.id == ride_id).options(
+                load_only(Ride.id, Ride.author_id)
             )
-            author_id = result.one()
-        except NoResultFound:
-            raise_http(f"Ride with id '{ride_id}' not found for Twist with id '{twist_id}'", status_code=404)
-        except MultipleResultsFound:
-            raise_http(f"Multiple rides with id '{ride_id}' found for Twist with id '{twist_id}'", status_code=500)
+        )
+        ride = result.one()
+    except NoResultFound:
+        raise_http(f"Ride with id '{ride_id}' not found for Twist with id '{twist_id}'", status_code=404)
+    except MultipleResultsFound:
+        raise_http(f"Multiple rides with id '{ride_id}' found for Twist with id '{twist_id}'", status_code=500)
 
-        if user.id != author_id:
-            raise_http("You do not have permission to delete this ride", status_code=403)
+    # If not admin, check if the user authored the ride (and can delete it)
+    if not user.is_superuser and user.id != ride.author_id:
+        raise_http("You do not have permission to delete this ride", status_code=403)
 
     # Delete the Ride
-    result = await session.scalar(
-        delete(Ride).where(Ride.id == ride_id, Ride.twist_id == twist_id).returning(Ride.id)
-    )
-    if result is None:
-        raise_http(f"Ride with id '{ride_id}' not found for Twist with id '{twist_id}'", status_code=404)
-
+    await session.delete(ride)
     await session.commit()
     logger.debug(f"Deleted ride with id '{ride_id}' from Twist with id '{twist_id}'")
 

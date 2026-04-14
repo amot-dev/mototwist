@@ -1,12 +1,11 @@
 import { EVENTS } from './constants.js';
-import { stopTwistCreation } from './createTwist.js';
 import { flash } from './flash.js';
 import {
     startIcon,
     endIcon,
     waypointIcon
 } from './map.js';
-import { debounce, doubleClickTimeout, getRootProperty } from './utils.js';
+import { debounce, getRootProperty } from './utils.js';
 
 
 // Object to store the map layers
@@ -20,50 +19,9 @@ let numPagesLoaded = 1;
 
 
 /**
- * Pans and zooms the map to fit the bounds of a specific Twist if it
- * is loaded. Does not check visibility.
- *
- * @param {L.Map} map - The map containing the Twist.
- * @param {string} twistId - The ID of the Twist to show.
- */
-function showTwistOnMap(map, twistId) {
-    const layer = mapLayers[twistId];
-    if (layer) {
-        const bounds = layer.getBounds();
-        if (bounds.isValid()) {
-            // Pan and zoom the map
-            map.fitBounds(bounds);
-        } else {
-            console.warn(`Cannot fit map to Twist '${twistId}' because its layer has no valid bounds.`);
-        }
-    }
-}
-
-
-/**
- * Opens the map popup for a specific Twist if it is loaded.
- * Does not check visibility.
- *
- * @param {string} twistId - The ID of the Twist for which to open the popup.
- */
-function openTwistPopup(twistId) {
-    const layer = mapLayers[twistId];
-    if (layer) {
-        const routeLine = layer.getLayers().find(layer => layer instanceof L.Polyline);
-        // Open popup (even if already open, to maintain autopan)
-        if (routeLine instanceof L.Polyline) {
-            routeLine.openPopup();
-        } else {
-            console.warn(`Cannot open popup of Twist '${twistId}' because its layer has no valid route.`);
-        }
-    }
-}
-
-
-/**
  * Loads a Twist's geometry data and adds it to the map as a new layer.
  *
- * @param {L.Map} map The map to load a Twist onto.
+ * @param {L.Map} map The main Leaflet map instance.
  * @param {string} twistId The ID of the Twist to load.
  * @param {boolean} [show=false] If true, pan/zoom to the Twist after load.
  */
@@ -79,11 +37,9 @@ async function loadTwistLayer(map, twistId, show = false) {
     // Fetch Twist data
     try {
         const response = await fetch(`/twists/${twistId}/geometry`);
-        if (!response.ok) {
-            throw new Error(`Server responded with status: ${response.status}`);
-        }
+        if (!response.ok) throw new Error(`Server responded with status: ${response.status}`);
 
-        /** @type {TwistGeometryData} */
+        /** @type {TwistGeometryData & {name: string, is_paved: boolean}} */
         const twist_data = await response.json();
 
         // Create the Twist route line
@@ -99,7 +55,7 @@ async function loadTwistLayer(map, twistId, show = false) {
         popupContent.classList.add('twist-popup');
         popupContent.setAttribute('hx-get', `/twists/${twistId}/templates/popup`);
         popupContent.setAttribute('hx-swap', 'innerHTML');
-        popupContent.setAttribute('hx-trigger', 'intersect once');
+        popupContent.setAttribute('hx-trigger', `intersect once, ${EVENTS.AUTH_CHANGE} from:body`);
         popupContent.innerHTML = '<p class="loading">Loading details...</p>';
         htmx.process(popupContent);
         routeLine.bindPopup(popupContent, {
@@ -170,8 +126,63 @@ async function loadTwistLayer(map, twistId, show = false) {
         flash(`Failed to load route for Twist '${twistId}'`, { duration: 5000, type: 'error' })
 
         // Ensure a failed layer doesn't stick around
-        map.removeLayer(twistLayer);
-        delete mapLayers[twistId];
+        removeTwistLayer(map, twistId);
+    }
+}
+
+
+/**
+ * Removes a given Twist's geometry layer from the map.
+ *
+ * @param {L.Map} map The main Leaflet map instance.
+ * @param {string} twistId The ID of the Twist to remove.
+ */
+export async function removeTwistLayer(map, twistId) {
+    const layer = mapLayers[twistId];
+    if (!layer) return;
+
+    if (map.hasLayer(layer)) map.removeLayer(layer);
+    delete mapLayers[twistId];
+}
+
+
+/**
+ * Opens the map popup for a specific Twist if it is loaded.
+ * Does not check visibility.
+ *
+ * @param {string} twistId The ID of the Twist for which to open the popup.
+ */
+function openTwistPopup(twistId) {
+    const layer = mapLayers[twistId];
+    if (layer) {
+        const routeLine = layer.getLayers().find(layer => layer instanceof L.Polyline);
+        // Open popup (even if already open, to maintain autopan)
+        if (routeLine instanceof L.Polyline) {
+            routeLine.openPopup();
+        } else {
+            console.warn(`Cannot open popup of Twist '${twistId}' because its layer has no valid route.`);
+        }
+    }
+}
+
+
+/**
+ * Pans and zooms the map to fit the bounds of a specific Twist if it
+ * is loaded. Does not check visibility.
+ *
+ * @param {L.Map} map The main Leaflet map instance.
+ * @param {string} twistId The ID of the Twist to show.
+ */
+function showTwistOnMap(map, twistId) {
+    const layer = mapLayers[twistId];
+    if (layer) {
+        const bounds = layer.getBounds();
+        if (bounds.isValid()) {
+            // Pan and zoom the map
+            map.fitBounds(bounds);
+        } else {
+            console.warn(`Cannot fit map to Twist '${twistId}' because its layer has no valid bounds.`);
+        }
     }
 }
 
@@ -179,12 +190,12 @@ async function loadTwistLayer(map, twistId, show = false) {
 /**
  * Set the visibility state of a Twist layer.
  *
- * @param {L.Map} map The map to set the visibility of a Twist on.
+ * @param {L.Map} map The main Leaflet map instance.
  * @param {string} twistId The ID of the Twist to modify.
  * @param {boolean} makeVisible True to show the layer, false to hide it.
  * @param {boolean} [show=false] If true and `makeVisible` is true, show Twist on map.
  */
-async function setTwistVisibility(map, twistId, makeVisible, show = false) {
+export async function setTwistVisibility(map, twistId, makeVisible, show = false) {
     const layer = mapLayers[twistId];
 
     // Unload if hiding
@@ -212,7 +223,7 @@ async function setTwistVisibility(map, twistId, makeVisible, show = false) {
  *
  * @param {HTMLElement} twistItem The TwistItem to toggle the visibility eye for.
  */
-async function toggleTwistItemEye(twistItem) {
+export async function toggleTwistItemEye(twistItem) {
     const visibility = twistItem.classList.contains('is-visible');
     const icon = twistItem.querySelector('.visibility-toggle i');
     if (!icon) throw new Error("Critical element .visibility-toggle icon is missing!");
@@ -296,7 +307,7 @@ const hideAllTwists = new L.Control.hideAllTwists();
  * Gets the geographic coordinates (Lat/Lng) at the center of the viewport,
  * accounting for map offsets (such as the sidebar).
  *
- * @param {L.Map} map - The active Leaflet map instance.
+ * @param {L.Map} map The main Leaflet map instance.
  * @returns {L.LatLng} The coordinates at the visual center of the screen.
  */
 function getVisualMapCenter(map) {
@@ -361,7 +372,11 @@ export function registerTwistListeners(map) {
             });
 
             // Set visibility for first page Twists
+            const editingId = document.getElementById('twist-list')?.dataset.editingId;
             visibleTwistIds.forEach(twistId => {
+                // The Twist being edited (if any) should remain hidden
+                if (twistId === editingId) return;
+
                 setTwistVisibility(map, twistId, true);
             });
 
@@ -379,17 +394,6 @@ export function registerTwistListeners(map) {
         }
     });
 
-    // Listen for the custom event sent from the server after a new Twist is created
-    document.body.addEventListener(EVENTS.TWIST_ADDED, (event) => {
-        const customEvent = /** @type {CustomEvent<{value: string}>} */ (event);
-
-        const newTwistId = customEvent.detail.value;
-        if (newTwistId) {
-            stopTwistCreation(map);
-            setTwistVisibility(map, newTwistId, true, true);
-        }
-    });
-
     // Listen for the custom event sent from the server after a Twist is deleted
     document.body.addEventListener(EVENTS.TWIST_DELETED, async (event) => {
         const customEvent = /** @type {CustomEvent<{value: string}>} */ (event);
@@ -399,9 +403,7 @@ export function registerTwistListeners(map) {
             await setTwistVisibility(map, deletedTwistId, false);
         }
 
-        if (mapLayers[deletedTwistId]) {
-            delete mapLayers[deletedTwistId];
-        }
+        removeTwistLayer(map, deletedTwistId);
     });
 
     const twistList = document.getElementById('twist-list');

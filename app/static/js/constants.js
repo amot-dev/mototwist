@@ -14,7 +14,7 @@
  * @property {string} SESSION_CLEARED
  * @property {string} RESET_FORM
  * @property {string} CLOSE_MODAL
- * @property {string} TWIST_ADDED
+ * @property {string} TWIST_CHANGED
  * @property {string} TWIST_DELETED
  * @property {string} TWISTS_LOADED
  * @property {string} REFRESH_TWISTS

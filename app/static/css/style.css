@@ -798,6 +798,10 @@ aside {
             }
         }
     }
+
+    .twist-popup-buttons > button {
+        margin-left: var(--padding-sm);
+    }
 }
 
 
@@ -873,7 +877,7 @@ aside {
     position: relative;
     flex-grow: 1;
 
-    &.creating-twist {
+    &.editing-twist {
         cursor: crosshair;
     }
 

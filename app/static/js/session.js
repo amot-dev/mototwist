@@ -61,7 +61,6 @@ function formatSeconds(totalSeconds) {
     const minutes = Math.floor(totalSeconds / 60);
     const seconds = totalSeconds % 60;
 
-    let parts = [];
     if (minutes > 0) {
         return `${minutes}m${seconds.toString().padStart(2, '0')}s`
     } else {
