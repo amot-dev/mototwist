@@ -1,7 +1,9 @@
 from asyncio import gather
 from collections import Counter
 from datetime import date, timedelta
+from gzip import compress, decompress
 from fastapi import APIRouter, Depends, File, Form, Request, UploadFile
+from fastapi.encoders import jsonable_encoder
 from fastapi.responses import HTMLResponse, Response, StreamingResponse
 from io import BytesIO
 import json
@@ -108,16 +110,19 @@ async def save_state(
     }
 
     # Convert the Python dictionary to a JSON string
-    json_data = json.dumps(db_state, indent=2)
+    json_data = json.dumps(jsonable_encoder(db_state)).encode("utf-8")
+
+    # Compress the json
+    compressed_bytes = compress(json_data)
 
     # Create a file-like object in memory to stream the response
-    json_stream = BytesIO(json_data.encode("utf-8"))
+    file_stream = BytesIO(compressed_bytes)
 
     return StreamingResponse(
-        content=json_stream,
+        content=file_stream,
         media_type="application/json",
         headers={
-            "Content-Disposition": f"attachment; filename=\"mototwist_debug_db.json\""
+            "Content-Disposition": f"attachment; filename=\"mototwist_debug_db.json.gz\""
         }
     )
 
@@ -134,10 +139,15 @@ async def load_state(
     """
     try:
         contents = await json_file.read()
+
+        # Decompress if it's a gzip file, otherwise treat as raw JSON
+        if json_file.filename and json_file.filename.endswith('.gz'):
+            contents = decompress(contents)
+
         data = json.loads(contents)
     except Exception as e:
         raise_http("Invalid JSON", status_code=422, exception=e)
-    
+
     # Read data
     users_data = data.get("users", [])
     twists_data = data.get("twists", [])
@@ -154,6 +164,7 @@ async def load_state(
     try:
         twists_to_create = [
             Twist(
+                id=t.get("id"),
                 name=t.get("name"),
                 author_id=t.get("author_id"),
                 is_paved=t.get("is_paved"),
