@@ -40,11 +40,11 @@ async function loadTwistLayer(map, twistId, show = false) {
         if (!response.ok) throw new Error(`Server responded with status: ${response.status}`);
 
         /** @type {TwistGeometryData & {name: string, is_paved: boolean}} */
-        const twist_data = await response.json();
+        const twistData = await response.json();
 
         // Create the Twist route line
-        const lineColor = twist_data.is_paved ? accentBlue : accentOrange;
-        const routeLine = L.polyline(twist_data.route_geometry, {
+        const lineColor = twistData.is_paved ? accentBlue : accentOrange;
+        const routeLine = L.polyline(twistData.route_geometry, {
             color: lineColor,
             weight: 5,
             opacity: 0.85
@@ -75,7 +75,7 @@ async function loadTwistLayer(map, twistId, show = false) {
         });
 
         // Create the waypoint markers
-        const namedWaypoints = twist_data.waypoints.filter(wp => wp.name.length > 0);
+        const namedWaypoints = twistData.waypoints.filter(wp => wp.name.length > 0);
         const waypointMarkers = namedWaypoints.map((point, index) => {
             let icon = waypointIcon;
             const totalPoints = namedWaypoints.length;
@@ -84,12 +84,12 @@ async function loadTwistLayer(map, twistId, show = false) {
             else if (index === totalPoints - 1) icon = endIcon;
 
             return L.marker(point, { icon: icon })
-                .bindPopup(`<b>${twist_data.name}</b>${point.name ? `<br>${point.name}` : ''}`);
+                .bindPopup(`<b>${twistData.name}</b>${point.name ? `<br>${point.name}` : ''}`);
         });
 
         // On mobile, create a thicker invisible line to make it easier to tap
         if (L.Browser.mobile) {
-            const tapLine = L.polyline(twist_data.route_geometry, {
+            const tapLine = L.polyline(twistData.route_geometry, {
                 weight: 30,
                 opacity: 0
             });

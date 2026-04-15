@@ -11,6 +11,7 @@ import { getRootProperty } from './utils.js';
 
 
 const accentBlueHoverLight = getRootProperty('--accent-blue-hover-light');
+const accentOrangeHoverLight = getRootProperty('--accent-orange-hover-light');
 
 /** @returns {HTMLButtonElement | null} */
 const getStartTwistButton = () => document.querySelector('#start-new-twist');
@@ -50,6 +51,9 @@ let routeRequestController;
 
 /** @type {L.Polyline | null} */
 let newRouteLine = null;
+
+/** @type {string} */
+let newRouteColor = accentBlueHoverLight;
 
 /** @type {string | null} */
 let editingTwistId = null;
@@ -121,8 +125,10 @@ function handleMarkerDrag(event, map) {
  * @param {L.Map} map The map to update the route on.
  */
 async function updateRoute(map) {
+    // Remove old route
     if (newRouteLine) map.removeLayer(newRouteLine);
 
+    // Don't start new route if less than 2 waypoints (start and end)
     if (waypoints.length < 2) return;
 
     // Abort any ongoing fetch requests
@@ -133,8 +139,7 @@ async function updateRoute(map) {
     const signal = routeRequestController.signal;
 
     // Create a new loading flash if one doesn't already exist
-    if (!hideLoadingFlash)
-        hideLoadingFlash = flash("Finding route", { duration: 0, type: 'loading' });
+    if (!hideLoadingFlash) hideLoadingFlash = flash("Finding route", { duration: 0, type: 'loading' });
 
     // Format coordinates and call the OSRM API
     const coordinates = waypoints.map(waypoint => `${waypoint.latlng.lng},${waypoint.latlng.lat}`).join(';');
@@ -154,7 +159,8 @@ async function updateRoute(map) {
         );
 
         // Create a new polyline and add it to the map
-        newRouteLine = L.polyline(latLngs, { color: accentBlueHoverLight }).addTo(map);
+        const twistForm = getTwistForm();
+        newRouteLine = L.polyline(latLngs, { color: newRouteColor }).addTo(map);
     } catch (error) {
         // If the error is an AbortError, do nothing
         if (error instanceof Error && error.name === 'AbortError') {
@@ -389,8 +395,8 @@ export function loadTwistEdit(map, twistData) {
     });
 
     // Hide original route
-    editingTwistId = `${twistData.id}`
-    if (!editingTwistId) throw new Error("Critical twistId data is missing from Twist Geometry!")
+    editingTwistId = `${twistData.id}`;
+    if (!editingTwistId) throw new Error("Critical twistId data is missing from Twist Geometry!");
 
     const twistItem = document.getElementById(`twist-item-${editingTwistId}`);
     if (twistItem) toggleTwistItemEye(twistItem);
@@ -400,6 +406,7 @@ export function loadTwistEdit(map, twistData) {
     if (list) list.dataset.editingId = editingTwistId;
 
     // Update route and icons
+    newRouteColor = twistData.is_paved ? accentBlueHoverLight : accentOrangeHoverLight;
     updateRoute(map);
     updateMarkerIcons();
 }
@@ -427,17 +434,21 @@ export function stopTwistEdit(map) {
 
     // Reset map state
     assertedMapContainer.classList.remove('editing-twist');
-
     map.closePopup();
+
+    // Remove waypoints
     waypointMarkers.forEach(marker => marker.remove());
     waypoints.length = 0;
     waypointMarkers.length = 0;
 
+    // Clear route line and reset default color
     if (newRouteLine) {
         map.removeLayer(newRouteLine);
         newRouteLine = null;
     }
+    newRouteColor = accentBlueHoverLight;
 
+    // Unset editing Twist
     if (editingTwistId) {
         const twistItem = document.getElementById(`twist-item-${editingTwistId}`);
         if (twistItem) toggleTwistItemEye(twistItem);
@@ -457,7 +468,6 @@ export function stopTwistEdit(map) {
     if (!statusIndicator || !(statusIndicator instanceof HTMLElement)) {
         throw new Error("Critical element #route-status-indicator is missing!");
     }
-
     submitButton.disabled = true;
     statusIndicator.classList.add('gone');
     writeToStatus(statusIndicator, "");
@@ -529,6 +539,18 @@ export function registerTwistEditingListeners(map) {
             const twistForm = getTwistForm();
             twistForm.addEventListener('input', updateTwistFormSubmitState);
             updateTwistFormSubmitState();
+
+            // Handle changing of route color on radio button select
+            const pavementRadios = twistForm.querySelectorAll('input[name="is_paved"]');
+            pavementRadios.forEach(radio => {
+                if (!(radio instanceof HTMLInputElement)) return;
+                radio.addEventListener('change', () => {
+                    if (newRouteLine) {
+                        newRouteColor = radio.value === 'false' ? accentOrangeHoverLight : accentBlueHoverLight;
+                        newRouteLine.setStyle({ color: newRouteColor });
+                    }
+                });
+            });
 
             // Handle saving of route geometry
             getFinalizeTwistButton()?.addEventListener('click', () => {
