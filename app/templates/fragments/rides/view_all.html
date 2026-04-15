@@ -1,4 +1,9 @@
-<button class="button button-very-small button-link {% if not ride_count or ride_count == '0' %}invisible{% endif %}"
+{% if not ride_count or ride_count == '0' %}
+    <button class="button button-very-small button-link" disabled>
+        {{ ride_count_str }}
+    </button>
+{% else %}
+<button class="button button-very-small button-link"
     onclick="document.querySelector('#modal-view-twist-rides').showModal()"
     hx-ext="form-json"
     hx-post="/twists/{{ twist_id }}/rides/templates/view-modal"
@@ -8,3 +13,4 @@
 
     {{ ride_count_str }}
 </button>
+{% endif %}

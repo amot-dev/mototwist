@@ -184,7 +184,9 @@ async def render_view_all_button(
     """
     Build and return the TemplateResponse for the view all rides button.
     """
-    if ride_count == 1:
+    if ride_count == 0:
+        ride_count_str = "No rides to view"
+    elif ride_count == 1:
         ride_count_str = "View single ride"
     elif ride_count > 9999:
         ride_count_str = "View " + metric(ride_count).replace(" ", "") + " rides"

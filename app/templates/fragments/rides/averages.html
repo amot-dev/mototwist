@@ -13,5 +13,7 @@
     {{ render_rating(slug, criterion.rating, criterion.description, criterion_max_value) }}
     {% endfor %}
 {% else %}
-    <li class="rating-slider-container">No rides yet</li>
+    <li class="rating-slider-container rating-slider-container-empty">
+        <p>Be the first to ride this!</p>
+    </li>
 {% endif %}
