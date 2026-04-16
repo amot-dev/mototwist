@@ -12,7 +12,7 @@
 >
     <header>
         <h3>{{ ride.formatted_date }}<span class="author"> by {{ ride.author_name }}</span></h3>
-        {% if ride.can_delete %}
+        {% if ride.editable %}
         <button class="button button-link"
             hx-delete="/twists/{{ twist.id }}/rides/{{ ride.id }}"
             hx-target="closest .ride-card"

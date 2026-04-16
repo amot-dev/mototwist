@@ -786,7 +786,7 @@ aside {
 .twist-popup {
     font-size: 0.9rem;
 
-    .author {
+    .subtitle {
         margin: 0;
         font-size: 0.8rem;
         color: var(--text-muted)

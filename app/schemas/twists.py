@@ -1,5 +1,6 @@
 from enum import Enum
-from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
+from humanize import intcomma
+from pydantic import BaseModel, ConfigDict, Field, computed_field, field_validator, model_validator
 from sqlalchemy import Label, literal
 from sqlalchemy.orm.attributes import InstrumentedAttribute
 from typing import Annotated, ClassVar
@@ -181,10 +182,22 @@ class TwistListItem(TwistBasic):
 class TwistPopup(TwistBasic):
     model_config = ConfigDict(from_attributes=True)
 
-    fields: ClassVar = TwistBasic.fields + (Twist.author_id, User.name.label("author_name"))
+    fields: ClassVar = TwistBasic.fields + (Twist.author_id, User.name.label("author_name"), Twist.length_m)
+
+    length_round_to: ClassVar = 2
 
     author_id: UUID | None
     author_name: str
+    length_m: float
+
+    @computed_field
+    @property
+    def length_str(self) -> str:
+        # At 1005, jump to 1.01km (1004 would be 1.00 otherwise which is lame)
+        if self.length_m < 1005:
+            return f"{round(self.length_m, self.length_round_to)}m"
+        else:
+            return f"{intcomma(self.length_m/1000, self.length_round_to)}km"
 
     @field_validator("author_name", mode="before")
     @classmethod

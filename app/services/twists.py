@@ -318,14 +318,14 @@ async def render_twist_popup(
     """
     Build and return the TemplateResponse for the Twist popup.
     """
-    # Check if the user is allowed to delete the Twist
-    can_delete_twist = (user.is_superuser or user.id == twist.author_id) if user else False
+    # Check if the user is allowed to edit/delete the Twist
+    editable = (user.is_superuser or user.id == twist.author_id) if user else False
 
     return templates.TemplateResponse("fragments/twists/popup.html", {
         "request": request,
         "user": user,
         "twist": twist,
-        "can_delete_twist": can_delete_twist,
+        "editable": editable,
         "FilterOwnership": FilterOwnership
     })
 

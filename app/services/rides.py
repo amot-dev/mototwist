@@ -276,12 +276,12 @@ async def render_view_modal(
         author_name = ride.author.name if ride.author else settings.DELETED_USER_NAME
 
         # Check if the user is allowed to delete the ride
-        can_delete = (user.is_superuser or user.id == ride.author_id) if user else False
+        editable = (user.is_superuser or user.id == ride.author_id) if user else False
 
         ride_list_items.append(RideListItem(
             id=ride.id,
             author_name=author_name,
-            can_delete=can_delete,
+            editable=editable,
             formatted_date=formatted_date,
             weather=ride.weather,
             ratings={

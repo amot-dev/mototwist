@@ -6,7 +6,7 @@ from geoalchemy2.shape import from_shape, to_shape  # type: ignore[reportUnknown
 from pydantic import BaseModel
 from shapely.geometry import LineString
 from shapely.geometry.base import BaseGeometry
-from sqlalchemy import Boolean, Date, Enum, ForeignKey, Integer, Sequence, SmallInteger, String, inspect, select, true, type_coerce
+from sqlalchemy import Boolean, Computed, Date, Enum, Float, ForeignKey, Integer, Sequence, SmallInteger, String, inspect, select, true, type_coerce
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import DeclarativeBase, Mapped, composite, mapped_column, relationship
@@ -192,6 +192,12 @@ class Twist(SerializationMixin, Base):
     )  # Geometry object automatically creates an index
     simplification_tolerance_m: Mapped[int] = mapped_column(
         SmallInteger, nullable=False
+    )
+
+    length_m: Mapped[float] = mapped_column(
+        Float,
+        Computed("ST_Length(route_geometry::geography)"),
+        nullable=False
     )
 
     # Children

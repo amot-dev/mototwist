@@ -1,6 +1,6 @@
 
 <h3>{{ twist.name }}</h3>
-<p class="author">Created by {{ twist.author_name }}</p>
+<p class="subtitle">Created by {{ twist.author_name }} • {{ twist.length_str }}</p>
 <header>
     <h4 id="twist-{{ twist.id }}-average-rating">Average Rating</h4>
     {% if user %}
@@ -52,7 +52,7 @@
 
     {% include "fragments/rides/view_all.html" %}
 
-    {% if can_delete_twist %}
+    {% if editable %}
     <div class="twist-popup-buttons">
         <button id="edit-twist" class="button button-very-small button-link" type="button" data-twist-id="{{ twist.id }}"
             hx-get="/twists/templates/create-edit-modal?twist_id={{ twist.id }}"
