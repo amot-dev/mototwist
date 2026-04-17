@@ -543,16 +543,6 @@ aside {
     padding: var(--padding-lg);
     background-color: var(--panel-slate);
 
-    .twist-creation-button {
-        display: block;
-        width: 100%;
-        margin-bottom: var(--padding-lg);
-        box-sizing: border-box;
-        padding: var(--padding-md);
-        text-align: center;
-        font-size: inherit;
-    }
-
     > h4 {
         color: var(--text-muted);
     }
@@ -942,7 +932,7 @@ aside {
         pointer-events: none; /* Ensures the container itself doesn't block map pans */
     }
 
-    .twist-creation-button {
+    .action-button {
         height: 46px;
         width: 46px;
         padding: 0;

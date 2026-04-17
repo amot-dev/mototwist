@@ -19,6 +19,19 @@ class TwistCreateForm(BaseModel):
     route_geometry: list[Coordinate] = Field(..., min_length=2)
 
 
+class TwistExportFormat(str, Enum):
+    JSON = "json"
+    GPX_TRACK = "gpx_track"
+    GPX_ROUTE = "gpx_route"
+
+    @property
+    def is_gpx(self) -> bool:
+        """
+        True only if the export format is a GPX type.
+        """
+        return self in [self.GPX_TRACK, self.GPX_ROUTE]
+
+
 class FilterOwnership(str, Enum):
     ALL = "all"
     OWN = "own"

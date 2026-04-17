@@ -80,6 +80,13 @@ class EventKey(str, Enum):
     Expected value is the Twist's ID.
     """
 
+    EXPORT_CART_CHANGED = "exportCartChanged"
+    """
+    Signals that the a Twist has been added or removed from the export cart.
+
+    No expected value.
+    """
+
     RELOAD_PROFILE = "reloadProfile"
     """
     Signals that the profile modal needs to be reloaded.
@@ -142,6 +149,8 @@ class EventSet:
         @staticmethod
         def REFRESH_AVERAGES(twist_id: int) -> Event:
             return (EventKey.REFRESH_AVERAGES, str(twist_id))
+
+        EXPORT_CART_CHANGED = (EventKey.EXPORT_CART_CHANGED, "")
 
         RELOAD_PROFILE = (EventKey.RELOAD_PROFILE, "")
         PROFILE_LOADED = (EventKey.PROFILE_LOADED, "")

@@ -1,5 +1,7 @@
-from fastapi import APIRouter, Depends, Request
-from fastapi.responses import HTMLResponse, JSONResponse
+from io import BytesIO
+
+from fastapi import APIRouter, Depends, Query, Request
+from fastapi.responses import HTMLResponse, JSONResponse, StreamingResponse
 from sqlalchemy import select
 from sqlalchemy.exc import MultipleResultsFound, NoResultFound
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -9,8 +11,8 @@ from app.config import logger
 from app.database import get_db
 from app.events import EventSet
 from app.models import Criterion, Twist, User
-from app.schemas.twists import TwistBasic, TwistCreateForm, TwistPopup, TwistFilter, TwistGeometry
-from app.services.twists import render_advanced_filter_modal, render_create_edit_modal, render_creation_buttons, render_delete_modal, render_list, render_single_list_item, render_twist_popup, simplify_route, snap_waypoints_to_route
+from app.schemas.twists import TwistBasic, TwistCreateForm, TwistExportFormat, TwistPopup, TwistFilter, TwistGeometry
+from app.services.twists import generate_gpx, render_action_buttons, render_advanced_filter_modal, render_create_edit_modal, render_delete_modal, render_list, render_single_list_item, render_twist_export_toggle, render_twist_popup, simplify_route, snap_waypoints_to_route
 from app.settings import settings
 from app.users import current_user, current_user_optional, verify
 from app.utility import raise_http
@@ -176,6 +178,74 @@ async def get_twist_geometry(
     return twist_geometry
 
 
+@router.post("/{twist_id}/toggle-export", response_class=HTMLResponse)
+async def toggle_twist_export(
+    request: Request,
+    twist_id: int
+) -> HTMLResponse:
+    """
+    Toggle a Twist in the user's session exports and return the updated button.
+    """
+    export_cart = request.session.get("export_cart", [])
+
+    if twist_id in export_cart:
+        export_cart.remove(twist_id)
+        in_export_cart = False
+    else:
+        export_cart.append(twist_id)
+        in_export_cart = True
+
+    request.session["export_cart"] = export_cart
+
+    response = await render_twist_export_toggle(request, twist_id, in_export_cart)
+    response.headers["HX-Trigger-After-Swap"] = EventSet(
+        EventSet.EXPORT_CART_CHANGED
+    ).dump()
+    return response
+
+
+@router.get("/{twist_id}/export", response_class=StreamingResponse)
+async def export_twist(
+    request: Request,
+    twist_id: int,
+    format: TwistExportFormat = Query(),
+    session: AsyncSession = Depends(get_db)
+) -> StreamingResponse:
+    """
+    Export a single Twist as a GPX Track or GPX Route.
+    """
+    try:
+        result = await session.scalars(
+            select(Twist).where(Twist.id == twist_id)
+        )
+        twist = result.one()
+    except NoResultFound:
+        raise_http(f"Twist with id '{twist_id}' not found", status_code=404)
+    except MultipleResultsFound:
+        raise_http(f"Multiple Twists found for id '{twist_id}'", status_code=500)
+
+    if TwistExportFormat.is_gpx:
+        # Generate the GPX XML string
+        export_string = generate_gpx(twist, format)
+    else:
+        raise_http("Export format not yet supported", status_code=501)
+
+    # Convert the string to bytes for streaming
+    export_bytes = export_string.encode("utf-8")
+    file_stream = BytesIO(export_bytes)
+
+    # Clean up the filename so it doesn't break browser downloads
+    safe_filename = "".join([c if c.isalnum() else "_" for c in twist.name]).strip("_")
+
+    return StreamingResponse(
+        content=file_stream,
+        media_type="application/gpx+xml",
+        headers={
+            "Content-Disposition": f'attachment; filename="{safe_filename}.gpx"'
+        }
+    )
+
+
 @router.get("/templates/create-edit-modal", tags=["Templates"], response_class=HTMLResponse)
 async def serve_create_edit_modal(
     request: Request,
@@ -202,15 +272,15 @@ async def serve_create_edit_modal(
     return await render_create_edit_modal(request, twist)
 
 
-@router.get("/templates/creation-buttons", tags=["Templates"], response_class=HTMLResponse)
-async def serve_creation_buttons(
+@router.get("/templates/action-buttons", tags=["Templates"], response_class=HTMLResponse)
+async def serve_action_buttons(
     request: Request,
     user: User | None = Depends(current_user_optional),
 ) -> HTMLResponse:
     """
     Serve an HTML fragment containing the Twist creation buttons.
     """
-    return await render_creation_buttons(request, user)
+    return await render_action_buttons(request, user)
 
 
 @router.get("/templates/advanced-filter-modal", tags=["Templates"], response_class=HTMLResponse)

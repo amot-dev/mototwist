@@ -2,6 +2,7 @@ from copy import deepcopy
 from fastapi import Request
 from fastapi.responses import HTMLResponse
 from geoalchemy2 import Geometry
+from gpxpy.gpx import GPX, GPXRoute, GPXRoutePoint, GPXTrack, GPXTrackPoint, GPXTrackSegment, GPXWaypoint
 from shapely.geometry import LineString, Point
 from shapely.ops import nearest_points
 from sqlalchemy import ColumnElement, Numeric, and_, case, cast, false, func, literal, select, type_coerce
@@ -14,7 +15,7 @@ from app.config import logger, templates
 from app.models import Criterion, Ride, Twist, User
 from app.schemas.twists import (
     FilterOwnership, FilterPavement, FilterRide,
-    TwistBasic, TwistPopup, TwistFilter, TwistListItem
+    TwistBasic, TwistExportFormat, TwistPopup, TwistFilter, TwistListItem
 )
 from app.schemas.types import Coordinate, Waypoint, Weather
 from app.services.rides import weather_conditions_from
@@ -92,16 +93,69 @@ def simplify_route(coordinates: list[Coordinate]) -> list[Coordinate]:
     return simplified_coordinates
 
 
-async def render_creation_buttons(
+def generate_gpx(twist: Twist, format: TwistExportFormat) -> str:
+    """
+    Generate a GPX XML string from a Twist object.
+    """
+    gpx = GPX()
+    gpx.creator = "MotoTwist"
+    gpx.name = twist.name
+    gpx.description = twist.description
+
+    # Add named waypoints
+    named_waypoints = [wp for wp in twist.waypoints if wp.name and wp.name.strip()]
+    for wp in named_waypoints:
+        gpx_wpt = GPXWaypoint(
+            latitude=wp.lat,
+            longitude=wp.lng,
+            name=wp.name
+        )
+        gpx.waypoints.append(gpx_wpt)
+
+    # Build the specific path structure based on format
+    if format == TwistExportFormat.GPX_TRACK:
+        # Create a track using route_geometry
+        gpx_track = GPXTrack(name=twist.name, description=twist.description)
+        gpx.tracks.append(gpx_track)
+        gpx_segment = GPXTrackSegment()
+        gpx_track.segments.append(gpx_segment)
+
+        for coord in twist.route_geometry:
+            gpx_segment.points.append(
+                GPXTrackPoint(latitude=coord.lat, longitude=coord.lng)
+            )
+
+    elif format == TwistExportFormat.GPX_ROUTE:
+        # Create a route using all waypoints (including shaping points)
+        gpx_route = GPXRoute(name=twist.name, description=twist.description)
+        gpx.routes.append(gpx_route)
+
+        for wp in twist.waypoints:
+            gpx_route.points.append(
+                GPXRoutePoint(
+                    latitude=wp.lat,
+                    longitude=wp.lng,
+                    name=wp.name if wp.name and wp.name.strip() else None
+                )
+            )
+
+    return gpx.to_xml()
+
+
+async def render_action_buttons(
     request: Request,
     user: User | None,
 ) -> HTMLResponse:
     """
      Build and return the TemplateResponse for the Twist creation buttons.
     """
-    return templates.TemplateResponse("fragments/twists/creation_buttons.html", {
+    # Get export cart size
+    export_cart = request.session.get("export_cart", [])
+
+    return templates.TemplateResponse("fragments/twists/action_buttons.html", {
         "request": request,
-        "user": user
+        "user": user,
+        "export_cart_count": len(export_cart)
     })
 
 
@@ -318,6 +372,10 @@ async def render_twist_popup(
     """
     Build and return the TemplateResponse for the Twist popup.
     """
+    # Check if the Twist is being exported
+    export_cart = request.session.get("export_cart", [])
+    in_export_cart = True if twist.id in export_cart else False
+
     # Check if the user is allowed to edit/delete the Twist
     editable = (user.is_superuser or user.id == twist.author_id) if user else False
 
@@ -326,7 +384,23 @@ async def render_twist_popup(
         "user": user,
         "twist": twist,
         "editable": editable,
+        "in_export_cart": in_export_cart,
         "FilterOwnership": FilterOwnership
+    })
+
+
+async def render_twist_export_toggle(
+    request: Request,
+    twist_id: int,
+    in_export_cart: bool
+) -> HTMLResponse:
+    """
+     Build and return the TemplateResponse for the Twist export toggle.
+    """
+    return templates.TemplateResponse("fragments/twists/export_toggle.html", {
+        "request": request,
+        "twist": {"id": twist_id}, # So {{ twist.id }} resolves in the template
+        "in_export_cart": in_export_cart
     })
 
 

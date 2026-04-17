@@ -119,9 +119,11 @@
 </aside>
 
 <div id="map">
-    <div id="twist-creation-buttons" class="fab-container"
-        hx-get="/twists/templates/creation-buttons"
-        hx-trigger="load, {{ EVENTS.AUTH_CHANGE }} from:body"
+    <div id="twist-action-buttons" class="fab-container"
+        hx-get="/twists/templates/action-buttons"
+        hx-trigger="load,
+            {{ EVENTS.EXPORT_CART_CHANGED }} from:body,
+            {{ EVENTS.AUTH_CHANGE }} from:body"
         hx-swap="innerHTML">
     </div>
 

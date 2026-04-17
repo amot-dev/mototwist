@@ -56,9 +56,11 @@
 
     {% include "fragments/rides/view_all.html" %}
 
-    {% if editable %}
     <div class="twist-popup-buttons">
-        <button id="edit-twist" class="button button-very-small button-link" type="button" data-twist-id="{{ twist.id }}"
+        {% include "fragments/twists/export_toggle.html" %}
+        {% if editable %}
+        <button id="edit-twist" class="button button-very-small button-link" type="button" title="Edit Twist"
+            data-twist-id="{{ twist.id }}"
             hx-get="/twists/templates/create-edit-modal?twist_id={{ twist.id }}"
             hx-params="none"
             hx-target="#modal-create-edit-twist"
@@ -66,7 +68,8 @@
 
             <i class="fa-solid fa-pen-to-square"></i>
         </button>
-        <button class="button button-very-small button-link" type="button" onclick="document.querySelector('#modal-delete-twist').showModal()"
+        <button class="button button-very-small button-link" type="button" title="Delete Twist"
+            onclick="document.querySelector('#modal-delete-twist').showModal()"
             hx-get="/twists/{{ twist.id }}/templates/delete-modal"
             hx-params="none"
             hx-target="#modal-delete-twist"
@@ -74,6 +77,6 @@
 
             <i class="fa-solid fa-trash"></i>
         </button>
+        {% endif %}
     </div>
-    {% endif %}
 </footer>

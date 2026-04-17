@@ -131,7 +131,7 @@ export function initMap() {
     });
     search.addTo(map);
 
-    const fabContainer = document.getElementById('twist-creation-buttons');
+    const fabContainer = document.getElementById('twist-action-buttons');
 
     if (fabContainer) {
         // Stops clicks, double-clicks, and scrolls from propagating to the map

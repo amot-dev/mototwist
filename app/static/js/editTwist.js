@@ -499,7 +499,7 @@ export function registerTwistEditingListeners(map) {
         const customEvent = /** @type {CustomEvent<{elt: Element}>} */ (event);
 
         // Register listener for Create Twist button
-        if (customEvent.detail.elt.id === 'twist-creation-buttons') {
+        if (customEvent.detail.elt.id === 'twist-action-buttons') {
             getStartTwistButton()?.addEventListener('click', () => {
                 stopTwistEdit(map);
                 startTwistEdit(map, 'Click on the map to create a Twist!')
