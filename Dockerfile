@@ -4,7 +4,7 @@ FROM python:3.14-slim AS builder
 WORKDIR /app
 COPY ./requirements.txt .
 
-RUN pip install --no-cache-dir --prefix="/install" -r requirements.txt
+RUN python3 -m pip install --no-cache-dir --prefix="/install" -r requirements.txt
 
 # Final Image
 FROM python:3.14-slim
