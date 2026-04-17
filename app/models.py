@@ -181,9 +181,13 @@ class Twist(SerializationMixin, Base):
     name: Mapped[str] = mapped_column(
         String(NAME_MAX_LENGTH), index=True, nullable=False
     )
+    description: Mapped[str] = mapped_column(
+        String, nullable=False, server_default=""
+    )
     is_paved: Mapped[bool] = mapped_column(
         Boolean, nullable=False
     )
+
     waypoints: Mapped[list[Waypoint]] = mapped_column(
         PydanticJSONB(Waypoint), nullable=False
     )
@@ -193,7 +197,6 @@ class Twist(SerializationMixin, Base):
     simplification_tolerance_m: Mapped[int] = mapped_column(
         SmallInteger, nullable=False
     )
-
     length_m: Mapped[float] = mapped_column(
         Float,
         Computed("ST_Length(route_geometry::geography)"),

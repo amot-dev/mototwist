@@ -13,6 +13,7 @@ from app.settings import settings
 
 class TwistCreateForm(BaseModel):
     name: str = Field(..., max_length=Twist.NAME_MAX_LENGTH)
+    description: str
     is_paved: bool
     waypoints: list[Waypoint] = Field(..., min_length=2)
     route_geometry: list[Coordinate] = Field(..., min_length=2)
@@ -182,13 +183,14 @@ class TwistListItem(TwistBasic):
 class TwistPopup(TwistBasic):
     model_config = ConfigDict(from_attributes=True)
 
-    fields: ClassVar = TwistBasic.fields + (Twist.author_id, User.name.label("author_name"), Twist.length_m)
+    fields: ClassVar = TwistBasic.fields + (Twist.author_id, User.name.label("author_name"), Twist.length_m, Twist.description)
 
     length_round_to: ClassVar = 2
 
     author_id: UUID | None
     author_name: str
     length_m: float
+    description: str
 
     @computed_field
     @property

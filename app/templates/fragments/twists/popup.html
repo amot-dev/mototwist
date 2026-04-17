@@ -1,6 +1,10 @@
 
 <h3>{{ twist.name }}</h3>
 <p class="subtitle">Created by {{ twist.author_name }} • {{ twist.length_str }}</p>
+{% if twist.description %}
+<p class="description">{{ twist.description }}</p>
+{% endif %}
+
 <header>
     <h4 id="twist-{{ twist.id }}-average-rating">Average Rating</h4>
     {% if user %}

@@ -53,6 +53,7 @@ async function loadTwistLayer(map, twistId, show = false) {
         // Create the Twist popup
         const popupContent = document.createElement('div');
         popupContent.classList.add('twist-popup');
+        popupContent.dataset.paved = `${twistData.is_paved}`;
         popupContent.setAttribute('hx-get', `/twists/${twistId}/templates/popup`);
         popupContent.setAttribute('hx-swap', 'innerHTML');
         popupContent.setAttribute('hx-trigger', `intersect once, ${EVENTS.AUTH_CHANGE} from:body`);

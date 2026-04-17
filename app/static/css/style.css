@@ -6,13 +6,15 @@
     --text-offwhite: #EAEAEA;
     --text-muted: #888;
     --accent-blue: #00A8FF;
+    --accent-blue-dark: #00598C;
     --accent-blue-hover: #0081C7;
     --accent-blue-hover-light: #4dc4ff;
-    --accent-blue-dark: #00598C;
-    --accent-blue-dark-hover: #004168;
+    --accent-blue-hover-dark: #004168;
     --accent-orange: #E8751A;
+    --accent-orange-dark: #823F0C;
     --accent-orange-hover: #BF6216;
     --accent-orange-hover-light: #F5A665;
+    --accent-orange-hover-dark: #622E09;
     --accent-gray: #6c757d;
     --accent-gray-hover: #5a6268;
     --accent-yellow: #D4A017;
@@ -41,8 +43,10 @@
 
     /* Elements will override these to get different accents */
     --accent: var(--accent-blue);
+    --accent-dark: var(--accent-blue-dark);
     --accent-hover: var(--accent-blue-hover);
     --accent-hover-light: var(--accent-blue-hover-light);
+    --accent-hover-dark: var(--accent-blue-hover-dark);
 
     interpolate-size: allow-keywords;
 }
@@ -381,6 +385,11 @@ label {
     cursor: pointer;
 
     transition: background-color var(--transition-fast);
+
+    &:has(+ :required)::after {
+        content: " *";
+        color: red;
+    }
 }
 
 input[type="text"],
@@ -389,7 +398,8 @@ input[type="email"],
 input[type="password"],
 input[type="number"],
 input[type="file"],
-input[type="date"] {
+input[type="date"],
+textarea {
     width: 100%;
     border: var(--border-default);
     border-radius: var(--radius-sm);
@@ -496,7 +506,7 @@ legend {
             background-color: transparent;
 
             &:hover {
-                background-color: var(--accent-blue-dark-hover);
+                background-color: var(--accent-blue-hover-dark);
             }
         }
     }
@@ -786,10 +796,24 @@ aside {
 .twist-popup {
     font-size: 0.9rem;
 
+    &[data-paved="false" i] {
+        --accent: var(--accent-orange);
+        --accent-hover: var(--accent-orange-hover);
+        --accent-hover-light: var(--accent-orange-hover-light);
+    }
+
     .subtitle {
         margin: 0;
         font-size: 0.8rem;
         color: var(--text-muted)
+    }
+
+    .description {
+        overflow-y: auto;
+        line-height: 1.5;
+        max-height: 6em; /* Limit the height to 4 lines */
+        color: var(--text-offwhite);
+        font-size: 0.75rem;
     }
 
     h3 {
