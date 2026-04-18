@@ -1,11 +1,13 @@
 
-<h3>{{ twist.name }}</h3>
-<p class="subtitle">Created by {{ twist.author_name }} • {{ twist.length_str }}</p>
-{% if twist.description %}
-<p class="description">{{ twist.description }}</p>
-{% endif %}
+<header id="twist-">
+    <h3>{{ twist.name }}</h3>
+    <p class="subtitle">Created by {{ twist.author_name }} • {{ twist.length_str }}</p>
+    {% if twist.description %}
+    <p class="description">{{ twist.description }}</p>
+    {% endif %}
+</header>
 
-<header>
+<section class="center-flex">
     <h4 id="twist-{{ twist.id }}-average-rating">Average Rating</h4>
     {% if user %}
     <button class="button button-very-small button-block" onclick="document.querySelector('#modal-ride-twist').showModal()"
@@ -16,7 +18,7 @@
         Ride
     </button>
     {% endif %}
-</header>
+</section>
 
 <form id="twist-{{ twist.id }}-ride-filter-form" class="filter-form"
     hx-ext="form-json,morph"
@@ -44,7 +46,7 @@
     hx-trigger="load">
 </ul>
 
-<footer
+<footer class="center-flex"
     hx-ext="form-json"
     hx-post="/twists/{{ twist.id }}/rides/templates/view_all_button"
     hx-target="find button"
