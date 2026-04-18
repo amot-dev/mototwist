@@ -1,6 +1,7 @@
 from pydantic import BaseModel, Field
 
-from app.models import Twist
+from app.components.core.models import Twist
+
 
 class SeedRidesForm(BaseModel):
     ride_count: int = Field(..., gt=0)

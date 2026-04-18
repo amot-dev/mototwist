@@ -2,8 +2,8 @@ from fastapi.templating import Jinja2Templates
 import logging.config
 from typing import Any
 
-from app.events import EventKey
-from app.settings import settings
+from app.components.core.events import EventKey
+from app.components.core.settings import settings
 
 
 # Configure logging

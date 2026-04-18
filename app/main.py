@@ -12,18 +12,23 @@ from time import time
 from typing import Awaitable, Callable, cast
 import uvicorn
 
-from app.config import logger, tags_metadata, templates
-from app.database import apply_migrations, create_automigration, get_db, wait_for_db
-from app.events import EventSet
-from app.models import User
-from app.redis_client import redis_client
-from app.routers import admin, auth, debug, rides, twists, users
-from app.services.admin import create_first_admin
-from app.services.auth import login_and_set_response_cookie
-from app.services.rides import initialize_criteria
-from app.settings import Settings, settings
-from app.users import current_user_optional
-from app.utility import format_loc_for_user, raise_http, sort_schema_names
+from app.components.admin import api as admin
+from app.components.admin.services import create_first_admin
+from app.components.auth import api as auth
+from app.components.auth.services import login_and_set_response_cookie
+from app.components.core.config import logger, tags_metadata, templates
+from app.components.core.database import apply_migrations, create_automigration, get_db, wait_for_db
+from app.components.core.events import EventSet
+from app.components.core.models import User
+from app.components.core.redis_client import redis_client
+from app.components.core.settings import Settings, settings
+from app.components.core.utility import format_loc_for_user, raise_http, sort_schema_names
+from app.components.debug import api as debug
+from app.components.rides import api as rides
+from app.components.rides.services import initialize_criteria
+from app.components.twists import api as twists
+from app.components.users import api as users
+from app.components.users.services import current_user_optional
 
 
 @asynccontextmanager

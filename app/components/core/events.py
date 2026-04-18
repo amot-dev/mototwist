@@ -2,6 +2,7 @@ from enum import Enum
 from json import dumps
 from typing import TypeAlias
 
+
 class EventKey(str, Enum):
     FLASH = "flashMessage"
     """

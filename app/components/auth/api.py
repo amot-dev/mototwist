@@ -6,14 +6,14 @@ from fastapi_users.exceptions import InvalidResetPasswordToken, InvalidVerifyTok
 from typing import Annotated
 from uuid import UUID
 
-from app.config import templates
-from app.events import EventSet
-from app.models import User
-from app.redis_client import get_redis_strategy
-from app.schemas.auth import ForgotPasswordForm, ResetPasswordForm, VerifyAccountForm
-from app.services.auth import login_and_set_response_cookie, logout_and_set_response_cookie
-from app.users import UserManager, current_user_optional, get_user_manager
-from app.utility import raise_http
+from app.components.auth.schema import ForgotPasswordForm, ResetPasswordForm, VerifyAccountForm
+from app.components.auth.services import login_and_set_response_cookie, logout_and_set_response_cookie
+from app.components.core.config import templates
+from app.components.core.events import EventSet
+from app.components.core.models import User
+from app.components.core.redis_client import get_redis_strategy
+from app.components.core.utility import raise_http
+from app.components.users.services import UserManager, current_user_optional, get_user_manager
 
 
 router = APIRouter(

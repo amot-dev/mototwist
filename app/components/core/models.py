@@ -14,7 +14,8 @@ from sqlalchemy.types import TypeDecorator
 from typing import Any, Type
 from uuid import UUID
 
-from app.schemas.types import Coordinate, Waypoint, Weather
+from app.components.core.schema import Coordinate, Waypoint, Weather
+
 
 class Base(DeclarativeBase):
     pass

@@ -2,10 +2,10 @@ from fastapi import Request, Response
 from fastapi_users.authentication import RedisStrategy
 from uuid import UUID
 
-from app.events import EventSet
-from app.models import User
-from app.users import auth_backend
-from app.utility import raise_http
+from app.components.core.events import EventSet
+from app.components.core.models import User
+from app.components.core.utility import raise_http
+from app.components.users.services import auth_backend
 
 
 async def login_and_set_response_cookie(

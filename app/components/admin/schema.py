@@ -1,6 +1,7 @@
 from pydantic import BaseModel, Field
 
-from app.models import User
+from app.components.core.models import User
+
 
 class UserCreateFormAdmin(BaseModel):
     name: str = Field(..., max_length=User.NAME_MAX_LENGTH)

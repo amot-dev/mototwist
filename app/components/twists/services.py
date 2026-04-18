@@ -11,16 +11,16 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.sql.expression import ColumnExpressionArgument
 from typing import Any
 
-from app.config import logger, templates
-from app.models import Criterion, Ride, Twist, User
-from app.schemas.twists import (
+from app.components.core.config import logger, templates
+from app.components.core.models import Criterion, Ride, Twist, User
+from app.components.twists.schema import (
     FilterOwnership, FilterPavement, FilterRide,
     TwistBasic, TwistExportFormat, TwistPopup, TwistFilter, TwistListItem
 )
-from app.schemas.types import Coordinate, Waypoint, Weather
-from app.services.rides import weather_conditions_from
-from app.settings import settings
-from app.utility import raise_http
+from app.components.core.schema import Coordinate, Waypoint, Weather
+from app.components.rides.services import weather_conditions_from
+from app.components.core.settings import settings
+from app.components.core.utility import raise_http
 
 
 def snap_waypoints_to_route(waypoints: list[Waypoint], route_geometry: list[Coordinate]) -> list[Waypoint]:

@@ -10,14 +10,14 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from typing import Any, AsyncGenerator, cast
 from uuid import UUID
 
-from app.config import logger, templates
-from app.database import get_db
-from app.smtp import SMTPEmailTransport
-from app.models import User
-from app.redis_client import CooldownReason, get_redis_strategy, redis_cooldown
-from app.schemas.users import UserCreate
-from app.settings import settings
-from app.utility import raise_http
+from app.components.core.config import logger, templates
+from app.components.core.database import get_db
+from app.components.core.models import User
+from app.components.core.redis_client import CooldownReason, get_redis_strategy, redis_cooldown
+from app.components.core.settings import settings
+from app.components.core.smtp import SMTPEmailTransport
+from app.components.core.utility import raise_http
+from app.components.users.schema import UserCreate
 
 
 class InvalidUsernameException(FastAPIUsersException):

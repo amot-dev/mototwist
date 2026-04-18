@@ -9,18 +9,18 @@ from string import ascii_letters, digits
 from typing import Annotated
 from uuid import UUID
 
-from app.config import templates
-from app.database import get_db
-from app.events import Event, EventSet
-from app.models import User
-from app.redis_client import get_redis_strategy
-from app.schemas.admin import UserCreateFormAdmin
-from app.schemas.users import UserCreate, UserUpdate
-from app.services.admin import is_last_active_admin
-from app.services.auth import logout_and_set_response_cookie
-from app.settings import settings
-from app.users import InvalidUsernameException, UserManager, current_admin, get_user_manager, verify
-from app.utility import raise_http
+from app.components.admin.schema import UserCreateFormAdmin
+from app.components.admin.services import is_last_active_admin
+from app.components.auth.services import logout_and_set_response_cookie
+from app.components.core.config import templates
+from app.components.core.database import get_db
+from app.components.core.events import Event, EventSet
+from app.components.core.models import User
+from app.components.core.redis_client import get_redis_strategy
+from app.components.core.settings import settings
+from app.components.core.utility import raise_http
+from app.components.users.schema import UserCreate, UserUpdate
+from app.components.users.services import InvalidUsernameException, UserManager, current_admin, get_user_manager, verify
 
 
 router = APIRouter(

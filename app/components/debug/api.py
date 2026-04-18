@@ -14,14 +14,14 @@ from sqlalchemy.orm import Mapped
 from typing import Annotated, cast
 from uuid import UUID
 
-from app.config import templates
-from app.database import get_db
-from app.models import Ride, Twist, User
-from app.schemas.debug import SeedRidesForm
-from app.schemas.types import Coordinate, Waypoint
-from app.services.debug import generate_weights, reset_id_sequences_for, seed_twist_rides
-from app.users import current_user_optional, current_admin, verify
-from app.utility import raise_http
+from app.components.core.config import templates
+from app.components.core.database import get_db
+from app.components.core.models import Ride, Twist, User
+from app.components.core.schema import Coordinate, Waypoint
+from app.components.core.utility import raise_http
+from app.components.debug.schema import SeedRidesForm
+from app.components.debug.services import generate_weights, reset_id_sequences_for, seed_twist_rides
+from app.components.users.services import current_user_optional, current_admin, verify
 
 
 router = APIRouter(

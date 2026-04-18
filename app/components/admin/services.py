@@ -5,11 +5,11 @@ from sqlalchemy.orm import Mapped
 from typing import cast
 from uuid import UUID
 
-from app.settings import settings
-from app.config import logger
-from app.models import User
-from app.schemas.users import UserCreate
-from app.users import UserManager, get_user_db
+from app.components.core.config import logger
+from app.components.core.models import User
+from app.components.core.settings import settings
+from app.components.users.schema import UserCreate
+from app.components.users.services import UserManager, get_user_db
 
 
 async def create_first_admin(session: AsyncSession) -> bool:

@@ -4,8 +4,8 @@ from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession
 from typing import Type
 
-from app.models import Criterion, Ride, Twist, User
-from app.schemas.types import Weather
+from app.components.core.models import Criterion, Ride, Twist, User
+from app.components.core.schema import Weather
 
 
 async def reset_id_sequences_for(

@@ -6,9 +6,9 @@ from sqlalchemy.orm.attributes import InstrumentedAttribute
 from typing import Annotated, ClassVar
 from uuid import UUID
 
-from app.models import Criterion, Twist, User
-from app.schemas.types import Coordinate, Waypoint, Weather
-from app.settings import settings
+from app.components.core.models import Criterion, Twist, User
+from app.components.core.schema import Coordinate, Waypoint, Weather
+from app.components.core.settings import settings
 
 
 class TwistCreateForm(BaseModel):

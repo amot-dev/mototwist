@@ -5,9 +5,9 @@ from redis import asyncio as aioredis
 from typing import AsyncGenerator
 from uuid import UUID
 
-from app.models import User
-from app.settings import settings
-from app.utility import raise_http
+from app.components.core.models import User
+from app.components.core.settings import settings
+from app.components.core.utility import raise_http
 
 
 redis_client = aioredis.from_url(settings.REDIS_URL, decode_responses=True)  # pyright: ignore [reportUnknownMemberType]

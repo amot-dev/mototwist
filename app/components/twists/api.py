@@ -7,15 +7,15 @@ from sqlalchemy.exc import MultipleResultsFound, NoResultFound
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import load_only
 
-from app.config import logger
-from app.database import get_db
-from app.events import EventSet
-from app.models import Criterion, Twist, User
-from app.schemas.twists import TwistBasic, TwistCreateForm, TwistExportFormat, TwistPopup, TwistFilter, TwistGeometry
-from app.services.twists import generate_gpx, render_action_buttons, render_advanced_filter_modal, render_create_edit_modal, render_delete_modal, render_list, render_single_list_item, render_twist_export_toggle, render_twist_popup, simplify_route, snap_waypoints_to_route
-from app.settings import settings
-from app.users import current_user, current_user_optional, verify
-from app.utility import raise_http
+from app.components.core.config import logger
+from app.components.core.database import get_db
+from app.components.core.events import EventSet
+from app.components.core.models import Criterion, Twist, User
+from app.components.core.settings import settings
+from app.components.core.utility import raise_http
+from app.components.twists.schema import TwistBasic, TwistCreateForm, TwistExportFormat, TwistPopup, TwistFilter, TwistGeometry
+from app.components.twists.services import generate_gpx, render_action_buttons, render_advanced_filter_modal, render_create_edit_modal, render_delete_modal, render_list, render_single_list_item, render_twist_export_toggle, render_twist_popup, simplify_route, snap_waypoints_to_route
+from app.components.users.services import current_user, current_user_optional, verify
 
 
 router = APIRouter(

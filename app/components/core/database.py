@@ -4,9 +4,9 @@ from socket import socket
 from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker
 from time import sleep
 
-from app.config import logger
-from app.models import Base
-from app.settings import settings
+from app.components.core.config import logger
+from app.components.core.models import Base
+from app.components.core.settings import settings
 
 
 engine = create_async_engine(settings.SQLALCHEMY_DATABASE_URL, pool_pre_ping=True)

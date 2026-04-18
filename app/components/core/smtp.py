@@ -1,8 +1,8 @@
 from email.mime.text import MIMEText
 from smtplib import SMTP
 
-from app.settings import settings
-from app.utility import raise_http
+from app.components.core.settings import settings
+from app.components.core.utility import raise_http
 
 
 class SMTPEmailTransport:

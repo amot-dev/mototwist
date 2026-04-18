@@ -1,9 +1,9 @@
 from datetime import date
 from pydantic import BaseModel
 
-from app.settings import settings
-from app.models import Criterion
-from app.schemas.types import Weather
+from app.components.core.models import Criterion
+from app.components.core.schema import Weather
+from app.components.core.settings import settings
 
 
 class AverageRating(BaseModel):

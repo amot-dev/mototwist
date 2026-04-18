@@ -3,7 +3,7 @@ from fastapi.openapi.utils import get_openapi
 from starlette.routing import Route
 from typing import Any, Callable, NoReturn
 
-from app.config import logger
+from app.components.core.config import logger
 
 
 def raise_http(detail: str, status_code: int = 500, exception: Exception | None = None) -> NoReturn:

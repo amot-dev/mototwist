@@ -6,15 +6,15 @@ from sqlalchemy.exc import MultipleResultsFound, NoResultFound
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import load_only
 
-from app.config import logger
-from app.database import get_db
-from app.events import EventSet
-from app.models import Criterion, Twist, Ride, User
-from app.schemas.rides import TwistRideData
-from app.schemas.twists import FilterOwnership, TwistBasic, TwistFilterWithRideOwnership
-from app.services.rides import render_averages, render_ride_modal, render_view_all_button, render_view_modal, weather_conditions_from
-from app.users import current_user, current_user_optional, verify
-from app.utility import raise_http
+from app.components.core.config import logger
+from app.components.core.database import get_db
+from app.components.core.events import EventSet
+from app.components.core.models import Criterion, Twist, Ride, User
+from app.components.core.utility import raise_http
+from app.components.rides.schema import TwistRideData
+from app.components.rides.services import render_averages, render_ride_modal, render_view_all_button, render_view_modal, weather_conditions_from
+from app.components.twists.schema import FilterOwnership, TwistBasic, TwistFilterWithRideOwnership
+from app.components.users.services import current_user, current_user_optional, verify
 
 
 router = APIRouter(

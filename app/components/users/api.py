@@ -6,17 +6,17 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from typing import Annotated
 from uuid import UUID
 
-from app.config import logger, templates
-from app.database import get_db
-from app.events import EventSet
-from app.models import User
-from app.redis_client import get_redis_strategy
-from app.schemas.users import UserCreate, UserCreateForm, UserUpdate, UserUpdateForm
-from app.services.admin import is_last_active_admin
-from app.services.auth import login_and_set_response_cookie, logout_and_set_response_cookie
-from app.settings import settings
-from app.users import InvalidUsernameException, UserManager, current_user, get_user_manager
-from app.utility import raise_http
+from app.components.admin.services import is_last_active_admin
+from app.components.auth.services import login_and_set_response_cookie, logout_and_set_response_cookie
+from app.components.core.config import logger, templates
+from app.components.core.database import get_db
+from app.components.core.events import EventSet
+from app.components.core.models import User
+from app.components.core.redis_client import get_redis_strategy
+from app.components.core.settings import settings
+from app.components.core.utility import raise_http
+from app.components.users.schema import UserCreate, UserCreateForm, UserUpdate, UserUpdateForm
+from app.components.users.services import InvalidUsernameException, UserManager, current_user, get_user_manager
 
 
 router = APIRouter(

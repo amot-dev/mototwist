@@ -2,7 +2,7 @@ from fastapi_users import schemas
 from pydantic import BaseModel, Field
 from uuid import UUID
 
-from app.models import User
+from app.components.core.models import User
 
 class UserRead(schemas.BaseUser[UUID]):
     name: str

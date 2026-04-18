@@ -6,12 +6,12 @@ from sqlalchemy import ColumnExpressionArgument, false, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
-from app.config import logger, templates
-from app.models import Criterion, Ride, User
-from app.schemas.rides import AverageRatings, RideList, RideListItem
-from app.schemas.twists import FilterOwnership, FilterWeather, TwistBasic, TwistFilterWithRideOwnership
-from app.schemas.types import Weather
-from app.settings import settings
+from app.components.core.config import logger, templates
+from app.components.core.models import Criterion, Ride, User
+from app.components.core.schema import Weather
+from app.components.core.settings import settings
+from app.components.rides.schema import AverageRatings, RideList, RideListItem
+from app.components.twists.schema import FilterOwnership, FilterWeather, TwistBasic, TwistFilterWithRideOwnership
 
 
 async def initialize_criteria(session: AsyncSession) -> bool:
