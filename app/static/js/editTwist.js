@@ -535,7 +535,7 @@ export function registerTwistEditingListeners(map) {
         }
 
         // Register listeners for form finalization when Twist Form is swapped in (on start create/edit)
-        if (customEvent.detail.elt.querySelector('form.modal-form')) {
+        if (customEvent.detail.elt.id === 'modal-create-edit-twist') {
             const twistForm = getTwistForm();
             twistForm.addEventListener('input', updateTwistFormSubmitState);
             updateTwistFormSubmitState();
