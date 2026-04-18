@@ -8,7 +8,7 @@ from uuid import UUID
 
 from app.components.admin.services import is_last_active_admin
 from app.components.auth.services import login_and_set_response_cookie, logout_and_set_response_cookie
-from app.components.core.config import logger, templates
+from app.components.core.config import logger
 from app.components.core.database import get_db
 from app.components.core.events import EventSet
 from app.components.core.models import User
@@ -23,6 +23,7 @@ router = APIRouter(
     prefix="/users",
     tags=["Users"]
 )
+
 
 @router.post("", response_class=Response)
 async def create_user(
@@ -208,24 +209,5 @@ async def deactivate_user(
         EventSet.FLASH("Account deactivated!"),
         EventSet.AUTH_CHANGE,
         EventSet.CLOSE_MODAL
-    ).dump()
-    return response
-
-
-@router.get("/templates/profile-modal", tags=["Templates"], response_class=HTMLResponse)
-async def render_profile_modal(
-    request: Request,
-    user: User = Depends(current_user)
-) -> HTMLResponse:
-    """
-    Serve an HTML fragment containing the current user's profile modal.
-    """
-
-    response = templates.TemplateResponse("fragments/users/profile_modal.html", {
-        "request": request,
-        "user": user
-    })
-    response.headers["HX-Trigger-After-Swap"] = EventSet(
-        EventSet.PROFILE_LOADED
     ).dump()
     return response

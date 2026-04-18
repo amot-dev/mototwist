@@ -3,7 +3,6 @@ from fastapi.responses import HTMLResponse
 from fastapi_users.authentication import RedisStrategy
 from fastapi_users.exceptions import UserNotExists
 from secrets import choice
-from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from string import ascii_letters, digits
 from typing import Annotated
@@ -195,28 +194,4 @@ async def toggle_user_admin(
             EventSet.CLOSE_MODAL
         ).dump()
 
-    return response
-
-
-@router.get("/templates/settings-modal", tags=["Templates"], response_class=HTMLResponse)
-async def render_settings_modal(
-    request: Request,
-    admin: User = Depends(verify(current_admin)),
-    session: AsyncSession = Depends(get_db)
-) -> HTMLResponse:
-    """
-    Serve an HTML fragment containing the admin settings modal.
-    """
-    result = await session.scalars(
-        select(User).order_by(User.name)
-    )
-    users = result.all()
-
-    response = templates.TemplateResponse("fragments/admin/settings_modal.html", {
-        "request": request,
-        "users": users
-    })
-
-    # Prevent browser caching
-    response.headers["Cache-Control"] = "no-store, no-cache, must-revalidate"
     return response

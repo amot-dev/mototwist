@@ -8,7 +8,6 @@ from uuid import UUID
 
 from app.components.auth.schema import ForgotPasswordForm, ResetPasswordForm, VerifyAccountForm
 from app.components.auth.services import login_and_set_response_cookie, logout_and_set_response_cookie
-from app.components.core.config import templates
 from app.components.core.events import EventSet
 from app.components.core.models import User
 from app.components.core.redis_client import get_redis_strategy
@@ -20,6 +19,7 @@ router = APIRouter(
     prefix="",
     tags=["Authentication"]
 )
+
 
 @router.post("/login", response_class=HTMLResponse)
 async def login(
@@ -82,46 +82,6 @@ def refresh(request: Request) -> HTMLResponse:
     return HTMLResponse(content="")
 
 
-@router.get("/auth/widget", response_class=HTMLResponse)
-async def serve_auth_widget(
-    request: Request,
-    user: User | None = Depends(current_user_optional)
-) -> HTMLResponse:
-    """
-    Serve the auth widget.
-    """
-    return templates.TemplateResponse("fragments/auth/widget.html", {
-        "request": request,
-        "user": user
-    })
-
-
-@router.get("/register", tags=["Index", "Templates"], response_class=HTMLResponse)
-async def render_register_page(request: Request) -> HTMLResponse:
-    """
-    Serve the register page.
-    """
-
-    return templates.TemplateResponse("register.html", {
-        "request": request
-    })
-
-
-@router.get("/verify", tags=["Index", "Templates"], response_class=HTMLResponse)
-async def render_verify_page(
-    request: Request,
-    token: str
-) -> HTMLResponse:
-    """
-    Serve the verify page.
-    """
-
-    return templates.TemplateResponse("verify.html", {
-        "request": request,
-        "token": token
-    })
-
-
 @router.post("/verify", response_class=Response)
 async def verify_account(
     request: Request,
@@ -165,21 +125,6 @@ async def send_forgot_password_email(
         EventSet.CLOSE_MODAL
     ).dump()
     return response
-
-
-@router.get("/reset-password", tags=["Index", "Templates"], response_class=HTMLResponse)
-async def render_reset_password_page(
-    request: Request,
-    token: str
-) -> HTMLResponse:
-    """
-    Serve the password reset page.
-    """
-
-    return templates.TemplateResponse("reset_password.html", {
-        "request": request,
-        "token": token
-    })
 
 
 @router.post("/reset-password", response_class=Response)

@@ -7,7 +7,7 @@ from fastapi_users.exceptions import FastAPIUsersException
 from fastapi_users.schemas import BaseUserCreate
 import sass
 from sqlalchemy.ext.asyncio import AsyncSession
-from typing import Any, AsyncGenerator, cast
+from typing import Any, AsyncGenerator, Awaitable, Callable, cast
 from uuid import UUID
 
 from app.components.core.config import logger, templates
@@ -143,7 +143,6 @@ current_user_optional = fastapi_users.current_user(active=True, optional=True)
 current_admin = fastapi_users.current_user(active=True, superuser=True)
 
 
-from typing import Awaitable, Callable
 def verify(
     user_dependency: Callable[..., Awaitable[User | None]]
 ):

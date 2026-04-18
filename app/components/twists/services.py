@@ -1,26 +1,22 @@
 from copy import deepcopy
-from fastapi import Request
-from fastapi.responses import HTMLResponse
 from geoalchemy2 import Geometry
 from gpxpy.gpx import GPX, GPXRoute, GPXRoutePoint, GPXTrack, GPXTrackPoint, GPXTrackSegment, GPXWaypoint
 from shapely.geometry import LineString, Point
 from shapely.ops import nearest_points
 from sqlalchemy import ColumnElement, Numeric, and_, case, cast, false, func, literal, select, type_coerce
-from sqlalchemy.exc import MultipleResultsFound, NoResultFound
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.sql.expression import ColumnExpressionArgument
 from typing import Any
 
-from app.components.core.config import logger, templates
+from app.components.core.config import logger
 from app.components.core.models import Criterion, Ride, Twist, User
 from app.components.twists.schema import (
     FilterOwnership, FilterPavement, FilterRide,
-    TwistBasic, TwistExportFormat, TwistPopup, TwistFilter, TwistListItem
+    TwistExportFormat, TwistFilter, TwistListItem
 )
-from app.components.core.schema import Coordinate, Waypoint, Weather
+from app.components.core.schema import Coordinate, Waypoint
 from app.components.rides.services import weather_conditions_from
 from app.components.core.settings import settings
-from app.components.core.utility import raise_http
 
 
 def snap_waypoints_to_route(waypoints: list[Waypoint], route_geometry: list[Coordinate]) -> list[Waypoint]:
@@ -93,105 +89,11 @@ def simplify_route(coordinates: list[Coordinate]) -> list[Coordinate]:
     return simplified_coordinates
 
 
-def generate_gpx(twist: Twist, format: TwistExportFormat) -> str:
-    """
-    Generate a GPX XML string from a Twist object.
-    """
-    gpx = GPX()
-    gpx.creator = "MotoTwist"
-    gpx.name = twist.name
-    gpx.description = twist.description
-
-    # Add named waypoints
-    named_waypoints = [wp for wp in twist.waypoints if wp.name and wp.name.strip()]
-    for wp in named_waypoints:
-        gpx_wpt = GPXWaypoint(
-            latitude=wp.lat,
-            longitude=wp.lng,
-            name=wp.name
-        )
-        gpx.waypoints.append(gpx_wpt)
-
-    # Build the specific path structure based on format
-    if format == TwistExportFormat.GPX_TRACK:
-        # Create a track using route_geometry
-        gpx_track = GPXTrack(name=twist.name, description=twist.description)
-        gpx.tracks.append(gpx_track)
-        gpx_segment = GPXTrackSegment()
-        gpx_track.segments.append(gpx_segment)
-
-        for coord in twist.route_geometry:
-            gpx_segment.points.append(
-                GPXTrackPoint(latitude=coord.lat, longitude=coord.lng)
-            )
-
-    elif format == TwistExportFormat.GPX_ROUTE:
-        # Create a route using all waypoints (including shaping points)
-        gpx_route = GPXRoute(name=twist.name, description=twist.description)
-        gpx.routes.append(gpx_route)
-
-        for wp in twist.waypoints:
-            gpx_route.points.append(
-                GPXRoutePoint(
-                    latitude=wp.lat,
-                    longitude=wp.lng,
-                    name=wp.name if wp.name and wp.name.strip() else None
-                )
-            )
-
-    return gpx.to_xml()
-
-
-async def render_action_buttons(
-    request: Request,
-    user: User | None,
-) -> HTMLResponse:
-    """
-     Build and return the TemplateResponse for the Twist creation buttons.
-    """
-    # Get export cart size
-    export_cart = request.session.get("export_cart", [])
-
-    return templates.TemplateResponse("fragments/twists/action_buttons.html", {
-        "request": request,
-        "user": user,
-        "export_cart_count": len(export_cart)
-    })
-
-
-async def render_create_edit_modal(
-    request: Request,
-    twist: TwistBasic | None,
-) -> HTMLResponse:
-    """
-     Build and return the TemplateResponse for the Twist create/edit modal.
-    """
-    return templates.TemplateResponse("fragments/twists/create_edit_modal.html", {
-        "request": request,
-        "twist": twist
-    })
-
-
-async def render_advanced_filter_modal(
-    request: Request,
-    criteria: list[Criterion]
-) -> HTMLResponse:
-    """
-    Build and return the TemplateResponse for the advanced filter modal.
-    """
-    return templates.TemplateResponse("fragments/twists/advanced_filter_modal.html", {
-        "request": request,
-        "criteria": criteria,
-        "Weather": Weather
-    })
-
-
-async def render_list(
-    request: Request,
+async def filter_twist_list(
     session: AsyncSession,
     user: User | None,
     filter: TwistFilter
-) -> HTMLResponse:
+) -> list[TwistListItem]:
     """
      Build and return the TemplateResponse for the Twist list.
     """
@@ -326,92 +228,53 @@ async def render_list(
     results = await session.execute(
         statement.order_by(*order_criteria).limit(filter.pages * settings.DEFAULT_TWISTS_LOADED).offset(offset)
     )
-    twists = [TwistListItem.model_validate(result) for result in results.all()]
-
-    return templates.TemplateResponse("fragments/twists/list.html", {
-        "request": request,
-        "twists": twists,
-        "start_page": filter.page,
-        "next_page": filter.page + filter.pages,
-        "twists_per_page": settings.DEFAULT_TWISTS_LOADED
-    })
+    return [TwistListItem.model_validate(result) for result in results.all()]
 
 
-async def render_single_list_item(
-    request: Request,
-    session: AsyncSession,
-    user: User,
-    twist_id: int,
-) -> HTMLResponse:
+def generate_gpx(twist: Twist, format: TwistExportFormat) -> str:
     """
-     Build and return the TemplateResponse for the Twist list, for a single Twist.
+    Generate a GPX XML string from a Twist object.
     """
-    try:
-        result = await session.execute(
-            select(*TwistListItem.get_fields(user)).where(Twist.id == twist_id)
+    gpx = GPX()
+    gpx.creator = "MotoTwist"
+    gpx.name = twist.name
+    gpx.description = twist.description
+
+    # Add named waypoints
+    named_waypoints = [wp for wp in twist.waypoints if wp.name and wp.name.strip()]
+    for wp in named_waypoints:
+        gpx_wpt = GPXWaypoint(
+            latitude=wp.lat,
+            longitude=wp.lng,
+            name=wp.name
         )
-        twist_list_item = TwistListItem.model_validate(result.one())
-    except NoResultFound:
-        raise_http(f"Twist with id '{twist_id}' not found", status_code=404)
-    except MultipleResultsFound:
-        raise_http(f"Multiple Twists found for id '{twist_id}'", status_code=500)
+        gpx.waypoints.append(gpx_wpt)
 
-    return templates.TemplateResponse("fragments/twists/list.html", {
-        "request": request,
-        "twists": [twist_list_item],
-        "start_page": 1,
-        "twists_per_page": 1
-    })
+    # Build the specific path structure based on format
+    if format == TwistExportFormat.GPX_TRACK:
+        # Create a track using route_geometry
+        gpx_track = GPXTrack(name=twist.name, description=twist.description)
+        gpx.tracks.append(gpx_track)
+        gpx_segment = GPXTrackSegment()
+        gpx_track.segments.append(gpx_segment)
 
+        for coord in twist.route_geometry:
+            gpx_segment.points.append(
+                GPXTrackPoint(latitude=coord.lat, longitude=coord.lng)
+            )
 
-async def render_twist_popup(
-    request: Request,
-    user: User | None,
-    twist: TwistPopup,
-) -> HTMLResponse:
-    """
-    Build and return the TemplateResponse for the Twist popup.
-    """
-    # Check if the Twist is being exported
-    export_cart = request.session.get("export_cart", [])
-    in_export_cart = True if twist.id in export_cart else False
+    elif format == TwistExportFormat.GPX_ROUTE:
+        # Create a route using all waypoints (including shaping points)
+        gpx_route = GPXRoute(name=twist.name, description=twist.description)
+        gpx.routes.append(gpx_route)
 
-    # Check if the user is allowed to edit/delete the Twist
-    editable = (user.is_superuser or user.id == twist.author_id) if user else False
+        for wp in twist.waypoints:
+            gpx_route.points.append(
+                GPXRoutePoint(
+                    latitude=wp.lat,
+                    longitude=wp.lng,
+                    name=wp.name if wp.name and wp.name.strip() else None
+                )
+            )
 
-    return templates.TemplateResponse("fragments/twists/popup.html", {
-        "request": request,
-        "user": user,
-        "twist": twist,
-        "editable": editable,
-        "in_export_cart": in_export_cart,
-        "FilterOwnership": FilterOwnership
-    })
-
-
-async def render_twist_export_toggle(
-    request: Request,
-    twist_id: int,
-    in_export_cart: bool
-) -> HTMLResponse:
-    """
-     Build and return the TemplateResponse for the Twist export toggle.
-    """
-    return templates.TemplateResponse("fragments/twists/export_toggle.html", {
-        "request": request,
-        "twist": {"id": twist_id}, # So {{ twist.id }} resolves in the template
-        "in_export_cart": in_export_cart
-    })
-
-
-async def render_delete_modal(
-    request: Request,
-    twist: TwistBasic
-) -> HTMLResponse:
-    """
-     Build and return the TemplateResponse for the Twist delete modal.
-    """
-    return templates.TemplateResponse("fragments/twists/delete_modal.html", {
-        "request": request,
-        "twist": twist
-    })
+    return gpx.to_xml()

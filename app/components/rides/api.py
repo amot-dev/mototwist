@@ -1,7 +1,6 @@
-from datetime import date
-from fastapi import APIRouter, Depends, Query, Request
+from fastapi import APIRouter, Depends, Request
 from fastapi.responses import HTMLResponse
-from sqlalchemy import false, func, select
+from sqlalchemy import func, select
 from sqlalchemy.exc import MultipleResultsFound, NoResultFound
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import load_only
@@ -12,9 +11,7 @@ from app.components.core.events import EventSet
 from app.components.core.models import Criterion, Twist, Ride, User
 from app.components.core.utility import raise_http
 from app.components.rides.schema import TwistRideData
-from app.components.rides.services import render_averages, render_ride_modal, render_view_all_button, render_view_modal, weather_conditions_from
-from app.components.twists.schema import FilterOwnership, TwistBasic, TwistFilterWithRideOwnership
-from app.components.users.services import current_user, current_user_optional, verify
+from app.components.users.services import current_user, verify
 
 
 router = APIRouter(
@@ -128,110 +125,3 @@ async def delete_ride(
         EventSet.REFRESH_AVERAGES(twist_id)
     ).dump()
     return response
-
-
-@router.post("/templates/averages", tags=["Templates"], response_class=HTMLResponse)
-async def serve_averages(
-    request: Request,
-    twist_id: int,
-    filter: TwistFilterWithRideOwnership,
-    user: User | None = Depends(current_user_optional),
-    session: AsyncSession = Depends(get_db)
-) -> HTMLResponse:
-    """
-    Serve an HTML fragment containing the ratings averages.
-    """
-    try:
-        result = await session.execute(
-            select(*TwistBasic.fields).where(Twist.id == twist_id)
-        )
-        twist = TwistBasic.model_validate(result.one())
-    except NoResultFound:
-        raise_http(f"Twist with id '{twist_id}' not found", status_code=404)
-    except MultipleResultsFound:
-        raise_http(f"Multiple twists found for id '{twist_id}'", status_code=500)
-
-    return await render_averages(request, session, user, twist, filter)
-
-
-@router.post("/templates/view_all_button", tags=["Templates"], response_class=HTMLResponse)
-async def serve_view_all_button(
-    request: Request,
-    twist_id: int,
-    filter: TwistFilterWithRideOwnership,
-    user: User | None = Depends(current_user_optional),
-    session: AsyncSession = Depends(get_db)
-) -> HTMLResponse:
-    """
-    Serve an HTML fragment containing the view all rides button, including the number of rides.
-    """
-    # Calculate filters
-    filtered = False
-    statement = select(func.count(Ride.id)).where(
-        Ride.twist_id == twist_id
-    )
-
-    if filter.ride_ownership == FilterOwnership.OWN:
-        filtered = True
-        statement = statement.where(Ride.author_id == user.id) if user else statement.where(false())
-
-    weather_conditions = weather_conditions_from(filter.weather)
-    if len(weather_conditions):
-        filtered = True
-        statement = statement.where(*weather_conditions)
-
-    try:
-        result = await session.scalars(statement)
-        ride_count = result.one()
-    except NoResultFound:
-        raise_http(f"Twist with id '{twist_id}' not found", status_code=404)
-
-    return await render_view_all_button(request, twist_id, ride_count, filtered)
-
-
-@router.get("/templates/ride-modal", tags=["Templates"], response_class=HTMLResponse)
-async def serve_ride_modal(
-    request: Request,
-    twist_id: int,
-    session: AsyncSession = Depends(get_db)
-) -> HTMLResponse:
-    """
-    Serve an HTML fragment containing a modal to ride a given Twist.
-    """
-    try:
-        result = await session.execute(
-            select(*TwistBasic.fields).where(Twist.id == twist_id)
-        )
-        twist = TwistBasic.model_validate(result.one())
-    except NoResultFound:
-        raise_http(f"Twist with id '{twist_id}' not found", status_code=404)
-    except MultipleResultsFound:
-        raise_http(f"Multiple twists found for id '{twist_id}'", status_code=500)
-
-    criteria = await Criterion.get_list(session, twist.is_paved)
-    return await render_ride_modal(request, twist, criteria, date.today())
-
-
-@router.post("/templates/view-modal", tags=["Templates"], response_class=HTMLResponse)
-async def serve_view_modal(
-    request: Request,
-    twist_id: int,
-    filter: TwistFilterWithRideOwnership,
-    offset: int = Query(0),
-    user: User | None = Depends(current_user_optional),
-    session: AsyncSession = Depends(get_db)
-) -> HTMLResponse:
-    """
-    Serve an HTML fragment containing a modal to view the rides for a given Twist.
-    """
-    try:
-        result = await session.execute(
-            select(*TwistBasic.fields).where(Twist.id == twist_id)
-        )
-        twist = TwistBasic.model_validate(result.one())
-    except NoResultFound:
-        raise_http(f"Twist with id '{twist_id}' not found", status_code=404)
-    except MultipleResultsFound:
-        raise_http(f"Multiple twists found for id '{twist_id}'", status_code=500)
-
-    return await render_view_modal(request, session, user, twist, filter, offset)

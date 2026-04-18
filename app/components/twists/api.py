@@ -1,7 +1,6 @@
-from io import BytesIO
-
 from fastapi import APIRouter, Depends, Query, Request
 from fastapi.responses import HTMLResponse, JSONResponse, StreamingResponse
+from io import BytesIO
 from sqlalchemy import select
 from sqlalchemy.exc import MultipleResultsFound, NoResultFound
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -10,12 +9,13 @@ from sqlalchemy.orm import load_only
 from app.components.core.config import logger
 from app.components.core.database import get_db
 from app.components.core.events import EventSet
-from app.components.core.models import Criterion, Twist, User
+from app.components.core.models import Twist, User
 from app.components.core.settings import settings
 from app.components.core.utility import raise_http
-from app.components.twists.schema import TwistBasic, TwistCreateForm, TwistExportFormat, TwistPopup, TwistFilter, TwistGeometry
-from app.components.twists.services import generate_gpx, render_action_buttons, render_advanced_filter_modal, render_create_edit_modal, render_delete_modal, render_list, render_single_list_item, render_twist_export_toggle, render_twist_popup, simplify_route, snap_waypoints_to_route
-from app.components.users.services import current_user, current_user_optional, verify
+from app.components.twists.fragments import build_single_list_item, build_twist_export_toggle
+from app.components.twists.schema import TwistCreateForm, TwistExportFormat, TwistGeometry
+from app.components.twists.services import generate_gpx, simplify_route, snap_waypoints_to_route
+from app.components.users.services import current_user, verify
 
 
 router = APIRouter(
@@ -52,7 +52,7 @@ async def create_twist(
     logger.debug(f"Created Twist '{twist}' for User '{user.id}'")
 
     # Render the twist list fragment with the new data
-    response = await render_single_list_item(request, session, user, twist.id)
+    response = await build_single_list_item(request, session, user, twist.id)
     response.headers["HX-Trigger-After-Swap"] = EventSet(
         EventSet.FLASH("Twist created successfully!"),
         EventSet.TWIST_CHANGED(twist.id),
@@ -106,7 +106,7 @@ async def edit_twist(
     logger.debug(f"Edited Twist '{twist}' for User '{user.id}'")
 
     # Render the twist list fragment with the new data
-    response = await render_single_list_item(request, session, user, twist.id)
+    response = await build_single_list_item(request, session, user, twist.id)
     response.headers["HX-Trigger-After-Swap"] = EventSet(
         EventSet.FLASH("Twist edited successfully!"),
         EventSet.TWIST_CHANGED(twist.id),
@@ -197,7 +197,7 @@ async def toggle_twist_export(
 
     request.session["export_cart"] = export_cart
 
-    response = await render_twist_export_toggle(request, twist_id, in_export_cart)
+    response = await build_twist_export_toggle(request, twist_id, in_export_cart)
     response.headers["HX-Trigger-After-Swap"] = EventSet(
         EventSet.EXPORT_CART_CHANGED
     ).dump()
@@ -244,115 +244,3 @@ async def export_twist(
             "Content-Disposition": f'attachment; filename="{safe_filename}.gpx"'
         }
     )
-
-
-@router.get("/templates/create-edit-modal", tags=["Templates"], response_class=HTMLResponse)
-async def serve_create_edit_modal(
-    request: Request,
-    twist_id: int | None = None,
-    user: User = Depends(verify(current_user)),
-    session: AsyncSession = Depends(get_db)
-) -> HTMLResponse:
-    """
-    Serve an HTML fragment containing the Twist create/edit modal.
-    """
-    twist = None
-
-    if twist_id is not None:
-        try:
-            result = await session.execute(
-                select(*TwistBasic.fields).where(Twist.id == twist_id)
-            )
-            twist = TwistBasic.model_validate(result.one())
-        except NoResultFound:
-            raise_http(f"Twist with id '{twist_id}' not found", status_code=404)
-        except MultipleResultsFound:
-            raise_http(f"Multiple Twists found for id '{twist_id}'", status_code=500)
-
-    return await render_create_edit_modal(request, twist)
-
-
-@router.get("/templates/action-buttons", tags=["Templates"], response_class=HTMLResponse)
-async def serve_action_buttons(
-    request: Request,
-    user: User | None = Depends(current_user_optional),
-) -> HTMLResponse:
-    """
-    Serve an HTML fragment containing the Twist creation buttons.
-    """
-    return await render_action_buttons(request, user)
-
-
-@router.get("/templates/advanced-filter-modal", tags=["Templates"], response_class=HTMLResponse)
-async def serve_advanced_filter_modal(
-    request: Request,
-    session: AsyncSession = Depends(get_db)
-) -> HTMLResponse:
-    """
-    Serve an HTML fragment containing the advanced filter modal.
-    """
-    return await render_advanced_filter_modal(request, await Criterion.get_list(session))
-
-
-@router.post("/templates/list", tags=["Templates"], response_class=HTMLResponse)
-async def serve_list(
-    request: Request,
-    filter: TwistFilter,
-    user: User | None = Depends(current_user_optional),
-    session: AsyncSession = Depends(get_db)
-) -> HTMLResponse:
-    """
-    Serve an HTML fragment containing the sorted list of Twists.
-    """
-    response = response = await render_list(request, session, user, filter)
-    response.headers["HX-Trigger-After-Settle"] = EventSet(
-        EventSet.TWISTS_LOADED(filter.page, filter.pages)
-    ).dump()
-    return response
-
-
-@router.get("/{twist_id}/templates/popup", tags=["Templates"], response_class=HTMLResponse)
-async def serve_popup(
-    request: Request,
-    twist_id: int,
-    user: User | None = Depends(current_user_optional),
-    session: AsyncSession = Depends(get_db)
-) -> HTMLResponse:
-    """
-    Serve an HTML fragment containing the Twist popup for a given Twist.
-    """
-    try:
-        result = await session.execute(
-            select(*TwistPopup.fields)
-            .join(Twist.author, isouter=True)
-            .where(Twist.id == twist_id)
-        )
-        twist = TwistPopup.model_validate(result.one())
-    except NoResultFound:
-        raise_http(f"Twist with id '{twist_id}' not found", status_code=404)
-    except MultipleResultsFound:
-        raise_http(f"Multiple twists found for id '{twist_id}'", status_code=500)
-
-    return await render_twist_popup(request, user, twist)
-
-
-@router.get("/{twist_id}/templates/delete-modal", tags=["Templates"], response_class=HTMLResponse)
-async def serve_delete_modal(
-    request: Request,
-    twist_id: int,
-    session: AsyncSession = Depends(get_db)
-) -> HTMLResponse:
-    """
-    Serve an HTML fragment containing the Twist deletion confirmation modal.
-    """
-    try:
-        result = await session.execute(
-            select(*TwistBasic.fields).where(Twist.id == twist_id)
-        )
-        twist = TwistBasic.model_validate(result.one())
-    except NoResultFound:
-        raise_http(f"Twist with id '{twist_id}' not found", status_code=404)
-    except MultipleResultsFound:
-        raise_http(f"Multiple Twists found for id '{twist_id}'", status_code=500)
-
-    return await render_delete_modal(request, twist)
