@@ -141,9 +141,11 @@ async function updateRoute(map) {
     // Create a new loading flash if one doesn't already exist
     if (!hideLoadingFlash) hideLoadingFlash = flash("Finding route", { duration: 0, type: 'loading' });
 
-    // Format coordinates and call the OSRM API
+    // Format coordinates
     const coordinates = waypoints.map(waypoint => `${waypoint.latlng.lng},${waypoint.latlng.lat}`).join(';');
-    const url = `${SETTINGS.OSRM_URL}/route/v1/driving/${coordinates}?overview=full&geometries=geojson`;
+
+    // Call OSRM. The continue_straight option prevents OSRM from taking previous direction into account during the next segment
+    const url = `${SETTINGS.OSRM_URL}/route/v1/driving/${coordinates}?overview=full&continue_straight=false&geometries=geojson`;
 
     try {
         const response = await fetch(url, { signal });
