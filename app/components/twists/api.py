@@ -8,13 +8,14 @@ from sqlalchemy.orm import load_only
 
 from app.components.core.config import logger
 from app.components.core.database import get_db
-from app.components.core.events import EventSet
+from app.components.core.events import Event, EventSet
 from app.components.core.models import Twist, User
 from app.components.core.settings import settings
 from app.components.core.utility import raise_http
+from app.components.twists.export import TwistExportCart, generate_gpx, get_twist_export_cart
 from app.components.twists.fragments import build_single_list_item, build_twist_export_toggle
 from app.components.twists.schema import TwistCreateForm, TwistExportFormat, TwistGeometry
-from app.components.twists.services import generate_gpx, simplify_route, snap_waypoints_to_route
+from app.components.twists.services import simplify_route, snap_waypoints_to_route
 from app.components.users.services import current_user, verify
 
 
@@ -178,55 +179,39 @@ async def get_twist_geometry(
     return twist_geometry
 
 
-@router.post("/{twist_id}/toggle-export", response_class=HTMLResponse)
-async def toggle_twist_export(
-    request: Request,
-    twist_id: int
-) -> HTMLResponse:
-    """
-    Toggle a Twist in the user's session exports and return the updated button.
-    """
-    export_cart = request.session.get("export_cart", [])
-
-    if twist_id in export_cart:
-        export_cart.remove(twist_id)
-        in_export_cart = False
-    else:
-        export_cart.append(twist_id)
-        in_export_cart = True
-
-    request.session["export_cart"] = export_cart
-
-    response = await build_twist_export_toggle(request, twist_id, in_export_cart)
-    response.headers["HX-Trigger-After-Swap"] = EventSet(
-        EventSet.EXPORT_CART_CHANGED
-    ).dump()
-    return response
-
-
-@router.get("/{twist_id}/export", response_class=StreamingResponse)
+@router.get("/export", response_class=StreamingResponse)
 async def export_twist(
     request: Request,
-    twist_id: int,
+    export_name: str | None = Query(None),
     format: TwistExportFormat = Query(),
+    export_cart: TwistExportCart = Depends(get_twist_export_cart),
     session: AsyncSession = Depends(get_db)
 ) -> StreamingResponse:
     """
     Export a single Twist as a GPX Track or GPX Route.
     """
-    try:
-        result = await session.scalars(
-            select(Twist).where(Twist.id == twist_id)
-        )
-        twist = result.one()
-    except NoResultFound:
-        raise_http(f"Twist with id '{twist_id}' not found", status_code=404)
-    except MultipleResultsFound:
-        raise_http(f"Multiple Twists found for id '{twist_id}'", status_code=500)
+    if not export_cart.items:
+        raise_http("Export cart is empty", status_code=400)
 
-    if TwistExportFormat.is_gpx:
+    result = await session.scalars(
+        select(Twist).where(
+            Twist.id.in_(export_cart.items)
+        ).order_by(Twist.name)
+    )
+    twists = result.all()
+
+    if not twists:
+        raise_http("No valid Twists found for export", status_code=404)
+
+    # Set export name if not set by the user
+    if not export_name:
+        export_name = twists[0].name
+        if len(twists) > 1:
+            export_name += " et al"
+
+    if format.is_gpx:
         # Generate the GPX XML string
-        export_string = generate_gpx(twist, format)
+        export_string = generate_gpx(twists, export_name, format)
     else:
         raise_http("Export format not yet supported", status_code=501)
 
@@ -235,7 +220,7 @@ async def export_twist(
     file_stream = BytesIO(export_bytes)
 
     # Clean up the filename so it doesn't break browser downloads
-    safe_filename = "".join([c if c.isalnum() else "_" for c in twist.name]).strip("_")
+    safe_filename = "".join([c if c.isalnum() else "_" for c in export_name]).strip("_")
 
     return StreamingResponse(
         content=file_stream,
@@ -244,3 +229,42 @@ async def export_twist(
             "Content-Disposition": f'attachment; filename="{safe_filename}.gpx"'
         }
     )
+
+
+@router.post("/{twist_id}/export/toggle", response_class=HTMLResponse)
+async def toggle_twist_export(
+    request: Request,
+    twist_id: int,
+    export_cart: TwistExportCart = Depends(get_twist_export_cart)
+) -> HTMLResponse:
+    """
+    Toggle a Twist in the user's session exports and return the updated button.
+    """
+    in_export_cart = export_cart.toggle(twist_id)
+
+    events: list[Event] = [EventSet.EXPORT_CART_CHANGED]
+
+    # Add flash message on first item added to cart
+    if export_cart.count == 1 and in_export_cart:
+        events.append(EventSet.FLASH("View your cart to export once you're ready!"),)
+
+    response = await build_twist_export_toggle(request, twist_id, in_export_cart)
+    response.headers["HX-Trigger-After-Swap"] = EventSet(*events).dump()
+    return response
+
+
+@router.post("/export/clear", response_class=HTMLResponse)
+async def clear_twist_export_cart(
+    request: Request,
+    export_cart: TwistExportCart = Depends(get_twist_export_cart)
+) -> HTMLResponse:
+    """
+    Empty the export cart and trigger an update.
+    """
+    export_cart.clear()
+
+    response = HTMLResponse(content="")
+    response.headers["HX-Trigger-After-Swap"] = EventSet(
+        EventSet.EXPORT_CART_CHANGED
+    ).dump()
+    return response

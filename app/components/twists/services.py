@@ -1,6 +1,5 @@
 from copy import deepcopy
 from geoalchemy2 import Geometry
-from gpxpy.gpx import GPX, GPXRoute, GPXRoutePoint, GPXTrack, GPXTrackPoint, GPXTrackSegment, GPXWaypoint
 from shapely.geometry import LineString, Point
 from shapely.ops import nearest_points
 from sqlalchemy import ColumnElement, Numeric, and_, case, cast, false, func, literal, select, type_coerce
@@ -10,10 +9,7 @@ from typing import Any
 
 from app.components.core.config import logger
 from app.components.core.models import Criterion, Ride, Twist, User
-from app.components.twists.schema import (
-    FilterOwnership, FilterPavement, FilterRide,
-    TwistExportFormat, TwistFilter, TwistListItem
-)
+from app.components.twists.schema import FilterOwnership, FilterPavement, FilterRide, TwistFilter, TwistListItem
 from app.components.core.schema import Coordinate, Waypoint
 from app.components.rides.services import weather_conditions_from
 from app.components.core.settings import settings
@@ -229,52 +225,3 @@ async def filter_twist_list(
         statement.order_by(*order_criteria).limit(filter.pages * settings.DEFAULT_TWISTS_LOADED).offset(offset)
     )
     return [TwistListItem.model_validate(result) for result in results.all()]
-
-
-def generate_gpx(twist: Twist, format: TwistExportFormat) -> str:
-    """
-    Generate a GPX XML string from a Twist object.
-    """
-    gpx = GPX()
-    gpx.creator = "MotoTwist"
-    gpx.name = twist.name
-    gpx.description = twist.description
-
-    # Add named waypoints
-    named_waypoints = [wp for wp in twist.waypoints if wp.name and wp.name.strip()]
-    for wp in named_waypoints:
-        gpx_wpt = GPXWaypoint(
-            latitude=wp.lat,
-            longitude=wp.lng,
-            name=wp.name
-        )
-        gpx.waypoints.append(gpx_wpt)
-
-    # Build the specific path structure based on format
-    if format == TwistExportFormat.GPX_TRACK:
-        # Create a track using route_geometry
-        gpx_track = GPXTrack(name=twist.name, description=twist.description)
-        gpx.tracks.append(gpx_track)
-        gpx_segment = GPXTrackSegment()
-        gpx_track.segments.append(gpx_segment)
-
-        for coord in twist.route_geometry:
-            gpx_segment.points.append(
-                GPXTrackPoint(latitude=coord.lat, longitude=coord.lng)
-            )
-
-    elif format == TwistExportFormat.GPX_ROUTE:
-        # Create a route using all waypoints (including shaping points)
-        gpx_route = GPXRoute(name=twist.name, description=twist.description)
-        gpx.routes.append(gpx_route)
-
-        for wp in twist.waypoints:
-            gpx_route.points.append(
-                GPXRoutePoint(
-                    latitude=wp.lat,
-                    longitude=wp.lng,
-                    name=wp.name if wp.name and wp.name.strip() else None
-                )
-            )
-
-    return gpx.to_xml()

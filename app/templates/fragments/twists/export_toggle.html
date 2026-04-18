@@ -1,14 +1,14 @@
 {% if in_export_cart %}
 <button class="button button-very-small button-link" type="button" title="Remove from Export Cart"
-    hx-post="/twists/{{ twist.id }}/toggle-export"
+    hx-post="/twists/{{ twist.id }}/export/toggle"
     hx-target="this"
     hx-swap="outerHTML">
 
-    <i class="fa-solid fa-cart-arrow-down"></i>
+    <i class="fa-solid fa-square-minus"></i>
 </button>
 {% else %}
 <button class="button button-very-small button-link" type="button" title="Add to Export Cart"
-    hx-post="/twists/{{ twist.id }}/toggle-export"
+    hx-post="/twists/{{ twist.id }}/export/toggle"
     hx-target="this"
     hx-swap="outerHTML">
 

@@ -11,7 +11,8 @@ from app.components.core.models import Criterion, Twist, User
 from app.components.core.schema import Weather
 from app.components.core.settings import settings
 from app.components.core.utility import raise_http
-from app.components.twists.schema import FilterOwnership, TwistBasic, TwistListItem, TwistPopup, TwistFilter
+from app.components.twists.export import TwistExportCart, get_twist_export_cart
+from app.components.twists.schema import FilterOwnership, TwistBasic, TwistExportFormat, TwistListItem, TwistPopup, TwistFilter
 from app.components.twists.services import filter_twist_list
 from app.components.users.services import current_user, current_user_optional, verify
 
@@ -25,18 +26,16 @@ router = APIRouter(
 @router.get("/templates/action-buttons", response_class=HTMLResponse)
 async def serve_action_buttons(
     request: Request,
-    user: User | None = Depends(current_user_optional),
+    export_cart: TwistExportCart = Depends(get_twist_export_cart),
+    user: User | None = Depends(current_user_optional)
 ) -> HTMLResponse:
     """
     Serve an HTML fragment containing the Twist creation buttons.
     """
-    # Get export cart size
-    export_cart = request.session.get("export_cart", [])
-
     return templates.TemplateResponse("fragments/twists/action_buttons.html", {
         "request": request,
         "user": user,
-        "export_cart_count": len(export_cart)
+        "export_cart_count": export_cart.count
     })
 
 
@@ -142,6 +141,7 @@ async def build_single_list_item(
 async def serve_popup(
     request: Request,
     twist_id: int,
+    export_cart: TwistExportCart = Depends(get_twist_export_cart),
     user: User | None = Depends(current_user_optional),
     session: AsyncSession = Depends(get_db)
 ) -> HTMLResponse:
@@ -160,10 +160,6 @@ async def serve_popup(
     except MultipleResultsFound:
         raise_http(f"Multiple twists found for id '{twist_id}'", status_code=500)
 
-    # Check if the Twist is being exported
-    export_cart = request.session.get("export_cart", [])
-    in_export_cart = True if twist.id in export_cart else False
-
     # Check if the user is allowed to edit/delete the Twist
     editable = (user.is_superuser or user.id == twist.author_id) if user else False
 
@@ -172,7 +168,7 @@ async def serve_popup(
         "user": user,
         "twist": twist,
         "editable": editable,
-        "in_export_cart": in_export_cart,
+        "in_export_cart": export_cart.contains(twist_id),
         "FilterOwnership": FilterOwnership
     })
 
@@ -189,6 +185,30 @@ async def build_twist_export_toggle(
         "request": request,
         "twist": {"id": twist_id}, # So {{ twist.id }} resolves in the template
         "in_export_cart": in_export_cart
+    })
+
+
+@router.get("/templates/export-modal", response_class=HTMLResponse)
+async def serve_export_modal(
+    request: Request,
+    export_cart: TwistExportCart = Depends(get_twist_export_cart),
+    session: AsyncSession = Depends(get_db)
+) -> HTMLResponse:
+    """
+    Serve an HTML fragment containing the Twist export cart modal.
+    """
+    result = await session.execute(
+        select(*TwistBasic.fields).where(
+            Twist.id.in_(export_cart.items)
+        ).order_by(Twist.name)
+    )
+    twists = [TwistBasic.model_validate(row) for row in result.all()]
+
+    return templates.TemplateResponse("fragments/twists/export_modal.html", {
+        "request": request,
+        "twists": twists,
+        "export_cart": export_cart,
+        "TwistExportFormat": TwistExportFormat
     })
 
 

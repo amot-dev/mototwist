@@ -1,9 +1,6 @@
 {% if export_cart_count and export_cart_count > 0 %}
 <button id="export-cart" class="button button-block action-button"
-    onclick="document.querySelector('#modal-export-cart').showModal()"
-    hx-get="/twists/templates/export-modal"
-    hx-target="#modal-export-cart"
-    hx-swap="innerHTML">
+    onclick="document.querySelector('#modal-export-twists').showModal()">
 
     <i class="fa-solid fa-file-export"></i>
 </button>

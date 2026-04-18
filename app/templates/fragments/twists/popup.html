@@ -53,7 +53,7 @@
     hx-include="#twist-filter-form,#twist-{{ twist.id }}-ride-filter-form"
     hx-swap="outerHTML"
     hx-trigger="load,
-        change from:#twist-{{ twist.id }}-ride-filter-form
+        change from:#twist-{{ twist.id }}-ride-filter-form,
         {{ EVENTS.REFRESH_AVERAGES }}[event.detail.value == '{{ twist.id }}'] from:body">
 
     {% include "fragments/rides/view_all.html" %}
