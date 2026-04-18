@@ -17,6 +17,7 @@
  * @property {string} TWIST_CHANGED
  * @property {string} TWIST_DELETED
  * @property {string} TWISTS_LOADED
+ * @property {string} EXPORT_CART_CHANGED
  * @property {string} REFRESH_TWISTS
  * @property {string} PROFILE_LOADED
  */

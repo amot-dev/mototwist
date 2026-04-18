@@ -499,7 +499,7 @@ export function registerTwistEditingListeners(map) {
         const customEvent = /** @type {CustomEvent<{elt: Element}>} */ (event);
 
         // Register listener for Create Twist button
-        if (customEvent.detail.elt.id === 'twist-creation-buttons') {
+        if (customEvent.detail.elt.id === 'twist-action-buttons') {
             getStartTwistButton()?.addEventListener('click', () => {
                 stopTwistEdit(map);
                 startTwistEdit(map, 'Click on the map to create a Twist!')
@@ -535,7 +535,7 @@ export function registerTwistEditingListeners(map) {
         }
 
         // Register listeners for form finalization when Twist Form is swapped in (on start create/edit)
-        if (customEvent.detail.elt.querySelector('form.modal-form')) {
+        if (customEvent.detail.elt.id === 'modal-create-edit-twist') {
             const twistForm = getTwistForm();
             twistForm.addEventListener('input', updateTwistFormSubmitState);
             updateTwistFormSubmitState();

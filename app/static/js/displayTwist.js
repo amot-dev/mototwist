@@ -56,7 +56,7 @@ async function loadTwistLayer(map, twistId, show = false) {
         popupContent.dataset.paved = `${twistData.is_paved}`;
         popupContent.setAttribute('hx-get', `/twists/${twistId}/templates/popup`);
         popupContent.setAttribute('hx-swap', 'innerHTML');
-        popupContent.setAttribute('hx-trigger', `intersect once, ${EVENTS.AUTH_CHANGE} from:body`);
+        popupContent.setAttribute('hx-trigger', `intersect, ${EVENTS.AUTH_CHANGE} from:body, ${EVENTS.EXPORT_CART_CHANGED} from:body`);
         popupContent.innerHTML = '<p class="loading">Loading details...</p>';
         htmx.process(popupContent);
         routeLine.bindPopup(popupContent, {

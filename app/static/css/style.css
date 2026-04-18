@@ -68,12 +68,6 @@ body {
     background-color: var(--bg-charcoal);
 }
 
-header, footer {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-}
-
 h1 {
     margin-top: 0;
 }
@@ -93,6 +87,12 @@ ul {
 
 .gone {
     display: none !important; /* Takes up no space */
+}
+
+.center-flex {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
 }
 
 .scroll-shut-on-delete {
@@ -543,16 +543,6 @@ aside {
     padding: var(--padding-lg);
     background-color: var(--panel-slate);
 
-    .twist-creation-button {
-        display: block;
-        width: 100%;
-        margin-bottom: var(--padding-lg);
-        box-sizing: border-box;
-        padding: var(--padding-md);
-        text-align: center;
-        font-size: inherit;
-    }
-
     > h4 {
         color: var(--text-muted);
     }
@@ -942,7 +932,7 @@ aside {
         pointer-events: none; /* Ensures the container itself doesn't block map pans */
     }
 
-    .twist-creation-button {
+    .action-button {
         height: 46px;
         width: 46px;
         padding: 0;
@@ -1327,6 +1317,27 @@ aside {
         border-bottom: var(--border-default);
         padding-bottom: var(--padding-sm);
     }
+}
+
+
+/* --- Twist Export --- */
+
+.twist-cart-list {
+    display: flex;
+    flex-direction: column;
+    gap: var(--padding-sm);
+}
+
+.twist-cart-item {
+    background-color: var(--bg-charcoal);
+    padding: var(--padding-sm) var(--padding-md);
+    border-radius: var(--radius-sm);
+}
+
+.empty-cart-message {
+    text-align: center;
+    padding: var(--padding-lg) 0;
+    color: var(--text-muted);
 }
 
 

@@ -1,0 +1,59 @@
+{% from "fragments/_macros.html" import render_modal_content, render_form_buttons %}
+
+{% call render_modal_content("Export Twists") %}
+<form class="modal-form manual-validation" method="GET" action="/twists/export">
+    {% if twists %}
+    <div class="form-group center-flex">
+        <p>You have <strong>{{ export_cart.count }}</strong> Twist(s) ready for export.</p>
+
+        <button type="button" class="button button-block button-small button-delete"
+            hx-post="/twists/export/clear"
+            hx-swap="none">
+            Clear Cart
+        </button>
+    </div>
+
+    <div class="form-group">
+        <fieldset class="form-fieldset">
+            <legend>Selected Twists</legend>
+            <ul class="twist-cart-list">
+                {% for twist in twists %}
+                <li class="center-flex twist-cart-item">
+                    <span class="twist-name">{{ twist.name }}</span>
+                    <button type="button" class="button button-link button-delete"
+                        title="Remove from cart"
+                        hx-post="/twists/{{ twist.id }}/export/toggle"
+                        hx-target="closest li"
+                        hx-swap="delete">
+                        <i class="fa-solid fa-square-minus"></i>
+                    </button>
+                </li>
+                {% endfor %}
+            </ul>
+        </fieldset>
+    </div>
+
+    <div class="form-group">
+        <label for="export-name">Collection Name</label>
+        <input type="text" id="export-name" name="export_name">
+    </div>
+
+    <div class="form-group">
+        <label for="export-format">Export Format</label>
+        <div class="select-wrapper">
+            <select id="export-format" name="format" required>
+                <option value="{{ TwistExportFormat.GPX_TRACK.value }}">GPX (Track)</option>
+                <option value="{{ TwistExportFormat.GPX_ROUTE.value }}">GPX (Route)</option>
+            </select>
+        </div>
+    </div>
+
+    {{ render_form_buttons(submit_text="Download") }}
+
+    {% else %}
+    <div class="form-group">
+        <p class="empty-cart-message">Your cart is empty. Add some Twists to export them!</p>
+    </div>
+    {% endif %}
+</form>
+{% endcall %}

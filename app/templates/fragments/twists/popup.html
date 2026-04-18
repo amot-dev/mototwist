@@ -1,11 +1,13 @@
 
-<h3>{{ twist.name }}</h3>
-<p class="subtitle">Created by {{ twist.author_name }} • {{ twist.length_str }}</p>
-{% if twist.description %}
-<p class="description">{{ twist.description }}</p>
-{% endif %}
+<header id="twist-">
+    <h3>{{ twist.name }}</h3>
+    <p class="subtitle">Created by {{ twist.author_name }} • {{ twist.length_str }}</p>
+    {% if twist.description %}
+    <p class="description">{{ twist.description }}</p>
+    {% endif %}
+</header>
 
-<header>
+<section class="center-flex">
     <h4 id="twist-{{ twist.id }}-average-rating">Average Rating</h4>
     {% if user %}
     <button class="button button-very-small button-block" onclick="document.querySelector('#modal-ride-twist').showModal()"
@@ -16,7 +18,7 @@
         Ride
     </button>
     {% endif %}
-</header>
+</section>
 
 <form id="twist-{{ twist.id }}-ride-filter-form" class="filter-form"
     hx-ext="form-json,morph"
@@ -44,21 +46,23 @@
     hx-trigger="load">
 </ul>
 
-<footer
+<footer class="center-flex"
     hx-ext="form-json"
     hx-post="/twists/{{ twist.id }}/rides/templates/view_all_button"
     hx-target="find button"
     hx-include="#twist-filter-form,#twist-{{ twist.id }}-ride-filter-form"
     hx-swap="outerHTML"
     hx-trigger="load,
-        change from:#twist-{{ twist.id }}-ride-filter-form
+        change from:#twist-{{ twist.id }}-ride-filter-form,
         {{ EVENTS.REFRESH_AVERAGES }}[event.detail.value == '{{ twist.id }}'] from:body">
 
     {% include "fragments/rides/view_all.html" %}
 
-    {% if editable %}
     <div class="twist-popup-buttons">
-        <button id="edit-twist" class="button button-very-small button-link" type="button" data-twist-id="{{ twist.id }}"
+        {% include "fragments/twists/export_toggle.html" %}
+        {% if editable %}
+        <button id="edit-twist" class="button button-very-small button-link" type="button" title="Edit Twist"
+            data-twist-id="{{ twist.id }}"
             hx-get="/twists/templates/create-edit-modal?twist_id={{ twist.id }}"
             hx-params="none"
             hx-target="#modal-create-edit-twist"
@@ -66,7 +70,8 @@
 
             <i class="fa-solid fa-pen-to-square"></i>
         </button>
-        <button class="button button-very-small button-link" type="button" onclick="document.querySelector('#modal-delete-twist').showModal()"
+        <button class="button button-very-small button-link" type="button" title="Delete Twist"
+            onclick="document.querySelector('#modal-delete-twist').showModal()"
             hx-get="/twists/{{ twist.id }}/templates/delete-modal"
             hx-params="none"
             hx-target="#modal-delete-twist"
@@ -74,6 +79,6 @@
 
             <i class="fa-solid fa-trash"></i>
         </button>
+        {% endif %}
     </div>
-    {% endif %}
 </footer>
