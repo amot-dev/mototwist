@@ -1,4 +1,5 @@
 from copy import deepcopy
+from math import isqrt
 from geoalchemy2 import Geometry
 from shapely.geometry import LineString, Point
 from shapely.ops import nearest_points
@@ -7,6 +8,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.sql.expression import ColumnExpressionArgument
 from typing import Any
 
+from app.components.core.redis_client import redis_client
 from app.components.core.config import logger
 from app.components.core.models import Criterion, Ride, Twist, User
 from app.components.twists.schema import FilterMap, FilterOwnership, FilterPavement, FilterRide, TwistFilter, TwistListItem
@@ -83,6 +85,88 @@ def simplify_route(coordinates: list[Coordinate]) -> list[Coordinate]:
     simplified_coordinates = [Coordinate(lat=x, lng=y) for x, y in simplified_line.coords]
 
     return simplified_coordinates
+
+
+async def get_bayesian_constants(session: AsyncSession) -> tuple[float, float]:
+    """
+    Retrieve or recalculate the Bayesian constants m and c for Twist filtering.
+
+    The function implements a dynamic caching strategy via Redis to avoid expensive
+    SQL aggregation on every request. Invalidation occurs after 24 hours or if the
+    cache is empty or if the number of new ratings since the last calculation exceeds a
+    sliding threshold: max(10, sqrt(total_ratings) * 2).
+
+    Bayesian Components:
+    * **m (Prior Mean):** The global average rating across all rides.
+    * **c (Confidence Weight):** The number of ratings required to be
+        considered statistically significant.
+    """
+    # Fetch cached constants and the total ratings baseline
+    cached_m: str | None = await redis_client.get("twist_filter_bayes_m")
+    cached_c: str | None = await redis_client.get("twist_filter_bayes_c")
+    cached_total_str = await redis_client.get("twist_filter_bayes_total_ratings")
+
+    # Fetch mutation count
+    new_ratings_count = int(await redis_client.get("twist_filter_ratings_since_bayes_calculation") or 0)
+
+    # Determine the dynamic new rating threshold with the square root formula, with a minimum threshold of 10
+    cached_total = int(cached_total_str) if cached_total_str else 0
+    threshold = max(10, isqrt(cached_total) * 2)
+
+    # Invalidate cache if missing OR if new ratings exceed the dynamic threshold
+    if cached_m is None or cached_c is None or new_ratings_count >= threshold:
+        paved_criteria_slugs = [c.slug for c in await Criterion.get_list(session, is_paved=True)]
+        unpaved_criteria_slugs = [c.slug for c in await Criterion.get_list(session, is_paved=False)]
+
+        # Dynamically build the total calculations
+        def build_total_expression(slugs: list[str]):
+            if not slugs:
+                return literal(0.0)
+
+            # We just sum the keys for the current row and divide by the count
+            total_rating = sum(
+                (Ride.ratings[slug].as_integer() for slug in slugs),
+                start=literal(0.0)
+            )
+            return total_rating / len(slugs)
+        paved_total = build_total_expression(paved_criteria_slugs)
+        unpaved_total = build_total_expression(unpaved_criteria_slugs)
+
+        calculated_m = await session.scalar(
+            select(case(
+                (Twist.is_paved, paved_total),
+                else_=unpaved_total
+            ))
+            .join(Ride.twist)
+        ) or 0.0
+
+        # Calculate c (nth percentile of ride counts per Twist)
+        rides_per_twist_subquery = (
+            select(func.count(Ride.id).label("ride_count"))
+            .select_from(Ride)
+            .group_by(Ride.twist_id)
+            .subquery()
+        )
+        calculated_c = await session.scalar(
+            select(func.percentile_cont(settings.INSIGNIFICANT_RIDE_COUNT_PERCENTILE / 100).within_group(rides_per_twist_subquery.c.ride_count))
+        ) or 1.0
+
+        # Calculate the new baseline total
+        ratings_count = await session.scalar(
+            select(func.count(Ride.id))
+        ) or 0
+
+        # Save to Redis with a 24-hour TTL
+        await redis_client.setex("twist_filter_bayes_m", 86400, calculated_m)
+        await redis_client.setex("twist_filter_bayes_c", 86400, calculated_c)
+        await redis_client.setex("twist_filter_bayes_total_ratings", 86400, ratings_count)
+
+        # Reset the mutation counter
+        await redis_client.set("twist_filter_ratings_since_bayes_calculation", 0)
+
+        return calculated_m, calculated_c
+
+    return float(cached_m), float(cached_c)
 
 
 async def calculate_map_bounds_condition(map: FilterMap) -> ColumnElement[bool]:

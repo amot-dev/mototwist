@@ -23,6 +23,7 @@ class Settings(BaseSettings):
     OSRM_URL: str = Field(default="https://router.project-osrm.org", exclude=False)
     TWIST_SIMPLIFICATION_TOLERANCE_M: int = Field(default=0, exclude=True)
     AVERAGE_ROUNDING_DIGITS: int = Field(default=1, ge=0, exclude=True)
+    INSIGNIFICANT_RIDE_COUNT_PERCENTILE: int = Field(default=25, ge=1, le=99, exclude=True)
     DEFAULT_TWISTS_LOADED: int = Field(default=20, ge=1, exclude=True)
     MAX_TWISTS_LOADED: int = Field(default=100, ge=1, exclude=True)
     RIDES_FETCHED_PER_QUERY: int = Field(default=20, ge=1, exclude=True)
@@ -64,12 +65,12 @@ class Settings(BaseSettings):
     # This is set properly by GitHub Actions during the release flow
     MOTOTWIST_VERSION: str = Field(default="dev", exclude=False)
 
-
     # @computed_field - by dropping computed_field, this field is exclude=True
     @property
     def SQLALCHEMY_DATABASE_URL(self) -> str:
         """Construct the database URL from individual components."""
         return f"postgresql+asyncpg://{self.POSTGRES_USER}:{self.POSTGRES_PASSWORD}@{self.POSTGRES_HOST}:{self.POSTGRES_PORT}/{self.POSTGRES_DB}"
+
 
     @field_validator("LOG_LEVEL")
     @classmethod
@@ -86,11 +87,13 @@ class Settings(BaseSettings):
             )
         return upper_value
 
+
     @field_validator("MOTOTWIST_BASE_URL")
     @classmethod
     def remove_trailing_slash_from_base_url(cls, value: str) -> str:
         """Removes the trailing slash from the base URL."""
         return value.rstrip("/")
+
 
     @field_validator("TWIST_SIMPLIFICATION_TOLERANCE_M", mode="before")
     @classmethod
@@ -105,6 +108,7 @@ class Settings(BaseSettings):
                 raise ValueError(f"Invalid tolerance value: '{value}'")
         raise TypeError("Tolerance value must be a string or integer")
 
+
     @field_validator("AUTH_COOKIE_MAX_AGE", mode="after")
     @classmethod
     def to_session_cookie(cls, v: int | None) -> int | None:
@@ -113,6 +117,7 @@ class Settings(BaseSettings):
 
         return v
 
+
     @model_validator(mode='after')
     def check_default_twists_loaded_against_max(self) -> Self:
         if self.DEFAULT_TWISTS_LOADED > self.MAX_TWISTS_LOADED:
@@ -120,6 +125,7 @@ class Settings(BaseSettings):
                 f"DEFAULT_TWISTS_LOADED ({self.DEFAULT_TWISTS_LOADED}) must be less than or equal to MAX_TWISTS_LOADED ({self.MAX_TWISTS_LOADED})"
             )
         return self
+
 
     @model_validator(mode='after')
     def check_auth_expiry_warning_offset_against_max(self) -> Self:
