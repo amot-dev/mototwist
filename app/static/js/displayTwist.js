@@ -433,14 +433,14 @@ export function registerTwistListeners(map) {
     });
 
     const PAN_THRESHOLD_METERS = 5000;
-    /** @type {L.LatLng} */
-    let cachedMapCenter = getVisualMapCenter(map);
+    /** @type {L.LatLngBounds} */
+    let cachedMapBounds = map.getBounds();
 
     // Show button to manually update Twists on map move
     function updateManualUpdateButtonVisibility() {
         if (!manualUpdateButton) throw new Error("Critical element #refresh-twists-button is missing!");
 
-        const distanceMoved = map.distance(cachedMapCenter, getVisualMapCenter(map));
+        const distanceMoved = map.distance(cachedMapBounds.getCenter(), getVisualMapCenter(map));
         if (distanceMoved > PAN_THRESHOLD_METERS) {
             manualUpdateButton.classList.add('button--visible');
         }
@@ -468,16 +468,18 @@ export function registerTwistListeners(map) {
                 p['pages'] = numPagesLoaded;
             }
 
-            // If it's the first page or the map center cache is empty, update the map center cache
+            // If it's the first page or the map bounds cache is empty, update the map bounds cache
             const pageNum = parseInt(p['page'], 10) || 1;
-            if (pageNum === 1 || !cachedMapCenter) {
-                cachedMapCenter = getVisualMapCenter(map);
+            if (pageNum === 1 || !cachedMapBounds) {
+                cachedMapBounds = map.getBounds()
             }
 
-            // Always apply the cached map center to ensure pagination remains consistent
-            if (cachedMapCenter) {
-                p['map_center.lat'] = cachedMapCenter.lat;
-                p['map_center.lng'] = cachedMapCenter.lng;
+            // Always apply the cached map bounds to ensure pagination remains consistent
+            if (cachedMapBounds) {
+                p['map.south_west.lat'] = cachedMapBounds.getSouthWest().lat;
+                p['map.south_west.lng'] = cachedMapBounds.getSouthWest().lng;
+                p['map.north_east.lat'] = cachedMapBounds.getNorthEast().lat;
+                p['map.north_east.lng'] = cachedMapBounds.getNorthEast().lng;
             }
         }
     });

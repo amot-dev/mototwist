@@ -2,7 +2,7 @@ from copy import deepcopy
 from geoalchemy2 import Geometry
 from shapely.geometry import LineString, Point
 from shapely.ops import nearest_points
-from sqlalchemy import ColumnElement, Numeric, and_, case, cast, false, func, literal, select, type_coerce
+from sqlalchemy import ColumnElement, Numeric, and_, case, cast, false, func, literal, or_, select, type_coerce
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.sql.expression import ColumnExpressionArgument
 from typing import Any
@@ -126,6 +126,38 @@ async def filter_twist_list(
         # If user is not logged in, they can't have Twists with submitted rides
         statement = statement.where(false())
 
+    # Map Bounds Filtering
+    if filter.map.south_west.lng > filter.map.north_east.lng:
+        # Bounding box crosses the antimeridian, need to split it into two envelopes
+        bounds_condition = or_(
+            # Box 1: From the southwest corner east to the antimeridian (+180)
+            Twist.route_geometry.intersects(
+                func.ST_MakeEnvelope(
+                    filter.map.south_west.lng, filter.map.south_west.lat,
+                    180.0, filter.map.north_east.lat,
+                    Coordinate.SRID
+                )
+            ),
+            # Box 2: From the antimeridian (-180) east to the southwest corner
+            Twist.route_geometry.intersects(
+                func.ST_MakeEnvelope(
+                    -180.0, filter.map.south_west.lat,
+                    filter.map.north_east.lng, filter.map.north_east.lat,
+                    Coordinate.SRID
+                )
+            )
+        )
+    else:
+        # Standard bounding box (does not cross the antimeridian)
+        bounds_condition = Twist.route_geometry.intersects(
+            func.ST_MakeEnvelope(
+                filter.map.south_west.lng, filter.map.south_west.lat,
+                filter.map.north_east.lng, filter.map.north_east.lat,
+                Coordinate.SRID
+            )
+        )
+    statement = statement.where(bounds_condition)
+
     # Ride Rating Range Filtering
     has_overall_filter = filter.overall_rating_range.is_active
     active_individual_filters = filter.active_individual_rating_ranges
@@ -212,9 +244,9 @@ async def filter_twist_list(
     # Ordering
     order_criteria: list[ColumnExpressionArgument[Any]] = []
 
-    if filter.map_center:
+    if filter.map.center:
         distance: ColumnExpressionArgument[float] = Twist.route_geometry.distance_centroid(
-            type_coerce(filter.map_center.to_spatial(), Geometry)
+            type_coerce(filter.map.center.to_spatial(), Geometry)
         )
         order_criteria.append(distance)
 

@@ -3,7 +3,7 @@ from humanize import intcomma
 from pydantic import BaseModel, ConfigDict, Field, computed_field, field_validator, model_validator
 from sqlalchemy import Label, literal
 from sqlalchemy.orm.attributes import InstrumentedAttribute
-from typing import Annotated, ClassVar
+from typing import Annotated, ClassVar, cast
 from uuid import UUID
 
 from app.components.core.models import Criterion, Twist, User
@@ -48,6 +48,50 @@ class FilterRide(str, Enum):
     ALL = "all"
     SUBMITTED = "submitted"
     UNSUBMITTED = "unsubmitted"
+
+
+class FilterMap(BaseModel):
+    south_west: Annotated[Coordinate, Field(description="South-West corner")]
+    north_east: Annotated[Coordinate, Field(description="North-East corner")]
+
+    # Generated
+    center: Annotated[Coordinate | None, Field(exclude=True)] = None
+
+    @model_validator(mode="before")
+    @classmethod
+    def process_spatial_data(cls, data: dict[str, object] | object) -> dict[str, object] | object:
+        try:
+        # Ensure we are working with a raw dictionary payload
+            if isinstance(data, dict):
+                data = cast(dict[str, object], data)
+                sw = data.get("south_west")
+                ne = data.get("north_east")
+
+                if isinstance(sw, dict) and isinstance(ne, dict):
+                    sw = cast(dict[str, str | float], sw)
+                    ne = cast(dict[str, str | float], ne)
+                    sw_lat, sw_lng = float(sw["lat"]), float(sw["lng"])
+                    ne_lat, ne_lng = float(ne["lat"]), float(ne["lng"])
+
+                    # Calculate center before normalizing bounds
+                    center_lat = (sw_lat + ne_lat) / 2.0
+                    center_lng = (sw_lng + ne_lng) / 2.0
+
+                    # Assign the normalized center
+                    data["center"] = {
+                        "lat": center_lat,
+                        "lng": (center_lng + 180) % 360 - 180
+                    }
+
+                    # Normalize the bounds in the raw payload
+                    sw["lng"] = (sw_lng + 180) % 360 - 180
+                    ne["lng"] = (ne_lng + 180) % 360 - 180
+
+            return data
+
+        except (KeyError, ValueError, TypeError):
+            # Pydantic's standard validation will catch the exact error
+            pass
 
 
 class FilterRatingRange(BaseModel):
@@ -95,6 +139,9 @@ class TwistFilter(BaseModel):
     pavement: Annotated[FilterPavement, Field()] = FilterPavement.ALL
     rides: Annotated[FilterRide, Field()] = FilterRide.ALL
 
+    # Map Filtering and Ordering
+    map: Annotated[FilterMap, Field()]
+
     # Range Filtering
     overall_rating_range: Annotated[FilterRatingRange, Field()] = FilterRatingRange()
     individual_rating_ranges: Annotated[dict[str, FilterRatingRange], Field()] = {}
@@ -116,10 +163,6 @@ class TwistFilter(BaseModel):
     # Weather Filtering
     weather: Annotated[FilterWeather, Field()] = FilterWeather()
 
-    # Ordering
-    map_center: Annotated[Coordinate | None, Field()] = None
-
-
     # Ensure excluded criteria slugs is a set
     @field_validator("excluded_criteria_slugs", mode="before")
     @classmethod
@@ -128,16 +171,6 @@ class TwistFilter(BaseModel):
             return {value}
         else:
             return set(value)
-
-
-    @model_validator(mode="after")
-    def normalize_map_center(self) -> TwistFilter:
-        """
-        Normalize map longitude from potentially "unwrapped" values (ex. 388) to the required [-180, 180] range.
-        """
-        if self.map_center is not None:
-            self.map_center.lng = (self.map_center.lng + 180) % 360 - 180
-        return self
 
 
 class TwistFilterWithRideOwnership(TwistFilter):
