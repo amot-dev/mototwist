@@ -51,14 +51,15 @@ Below is an overview of all available environment variables for MotoTwist.
 | Variable | Description | Default |
 | - | - | - |
 | `MOTOTWIST_INSTANCE_NAME` | The friendly name for your instance. Used in email templates and the site title/header. | `"MotoTwist"` |
-| `MOTOTWIST_BASE_URL` | The base URL at which MotoTwist is expecting to be hosted. | **This must be changed for production!** | `"http://localhost:8000"` |
+| `MOTOTWIST_BASE_URL` | The base URL at which MotoTwist is expecting to be hosted. **This must be changed for production!** | `"http://localhost:8000"` |
 | `MOTOTWIST_SECRET_KEY` | A long, random string used to cryptographically sign session cookies, preventing tampering. **This must be changed for production!** | `"changethis"` |
 | `OSM_URL` | The URL template for the OpenStreetMap tile server, which provides the visual base map. | `"https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"` |
 | `OSRM_URL` | The base URL for the OSRM routing engine, used for calculating routes for new Twists. | `"https://router.project-osrm.org"` |
 | `TWIST_SIMPLIFICATION_TOLERANCE_M` | Sets the simplification tolerance for new Twist routes. [More details](#storage-vs-accuracy-route-simplification). Set to `"0m"` to disable. | `"5m"` |
 | `AVERAGE_ROUNDING_DIGITS` | Sets number of digits after the decimal to round to when calculating and displaying rating averages. | `1` |
+| `INSIGNIFICANT_RIDE_COUNT_PERCENTILE` | Sets the percentile of ride counts used to establish the confidence threshold for sorting. [More details](#tuning-the-sorting-algorithm). | `25` |
+| `HIDDEN_GEM_AVERAGE_MULTIPLIER` | The multiplier applied to the global average to determine the minimum quality of a "Hidden Gem". [More details](#tuning-the-sorting-algorithm). | `1.5` |
 | `DEFAULT_TWISTS_LOADED` | Sets the default number of Twists that are loaded at once. This affects both the infinitely scrolling Twist list and the map. | `20` |
-| `MAX_TWISTS_LOADED` | Sets the maximum number of Twists that can be loaded at once. Setting a high number can have performance impacts. (UNUSED) | `100` |
 | `RIDES_FETCHED_PER_QUERY` | Sets the number of rides fetched per query during the infinite scroll when viewing all rides. Setting it too low or high can have performance impacts. | `20` |
 
 > [!WARNING]
@@ -137,6 +138,20 @@ You can configure the simplification tolerance in your `.env` file via `TWIST_SI
 
 -   **`30m+` (Danger Zone):**
     At this level, the algorithm aggressively flattens geometries. Short, intricate features like roundabouts and cul-de-sacs will be completely destroyed and rendered as straight lines. Use with extreme caution.
+
+
+#### Tuning the Sorting Algorithm
+MotoTwist uses a Bayesian sorting algorithm to ensure that highly-rated Twists with very few rides don't unfairly dominate the top of the list. Instead of just looking at the raw average, MotoTwist weighs a Twists's overall average against the global average and the total volume of rides.
+
+You can tune this behavior using two variables in your `.env` file:
+
+1.  **`INSIGNIFICANT_RIDE_COUNT_PERCENTILE`**:
+    Before MotoTwist fully trusts a Twist's rating, it needs to prove itself by accumulating enough rides. This variable sets that threshold by looking at the bottom percentile of your instance's ride counts.
+    * If a Twist is below the threshold, its rating is pulled heavily toward the global average.
+    * If a Twist is above the threshold, the algorithm trusts the its actual rating.
+
+2.  **`HIDDEN_GEM_AVERAGE_MULTIPLIER`**:
+    The "Hidden Gems" sort explicitly looks for Twists that are below the above threshold but are highly rated. This multiplier defines what "highly rated" means by comparing it to the global average rating. At the `1.5` default, a Twist must be 50% better than the global average to be considered a gem.
 
 
 ## Usage

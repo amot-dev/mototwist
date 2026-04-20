@@ -21,12 +21,11 @@ class Settings(BaseSettings):
     MOTOTWIST_SECRET_KEY: str = Field(default="mototwist", exclude=True)
     OSM_URL: str = Field(default="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", exclude=False)
     OSRM_URL: str = Field(default="https://router.project-osrm.org", exclude=False)
-    TWIST_SIMPLIFICATION_TOLERANCE_M: int = Field(default=0, exclude=True)
+    TWIST_SIMPLIFICATION_TOLERANCE_M: int = Field(default=5, exclude=True)
     AVERAGE_ROUNDING_DIGITS: int = Field(default=1, ge=0, exclude=True)
     INSIGNIFICANT_RIDE_COUNT_PERCENTILE: int = Field(default=25, ge=1, le=99, exclude=True) # TODO: docs
     HIDDEN_GEM_AVERAGE_MULTIPLIER: float = Field(default=1.5, ge=1, exclude=True) # TODO: docs
     DEFAULT_TWISTS_LOADED: int = Field(default=20, ge=1, exclude=True)
-    MAX_TWISTS_LOADED: int = Field(default=100, ge=1, exclude=True)
     RIDES_FETCHED_PER_QUERY: int = Field(default=20, ge=1, exclude=True)
 
     # User Options
@@ -112,20 +111,11 @@ class Settings(BaseSettings):
 
     @field_validator("AUTH_COOKIE_MAX_AGE", mode="after")
     @classmethod
-    def to_session_cookie(cls, v: int | None) -> int | None:
-        if not v:
+    def to_session_cookie(cls, value: int | None) -> int | None:
+        if not value:
             return None
 
-        return v
-
-
-    @model_validator(mode='after')
-    def check_default_twists_loaded_against_max(self) -> Self:
-        if self.DEFAULT_TWISTS_LOADED > self.MAX_TWISTS_LOADED:
-            raise ValueError(
-                f"DEFAULT_TWISTS_LOADED ({self.DEFAULT_TWISTS_LOADED}) must be less than or equal to MAX_TWISTS_LOADED ({self.MAX_TWISTS_LOADED})"
-            )
-        return self
+        return value
 
 
     @model_validator(mode='after')
