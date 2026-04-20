@@ -1,5 +1,5 @@
 import { EVENTS, SETTINGS } from './constants.js';
-import { removeTwistLayer, setTwistVisibility, toggleTwistItemEye } from './displayTwist.js';
+import { openTwistPopup, removeTwistLayer, setTwistVisibility, toggleTwistItemEye } from './displayTwist.js';
 import { flash } from './flash.js';
 import {
     startIcon,
@@ -616,7 +616,8 @@ export function registerTwistEditingListeners(map) {
             // Stop editing, remove old geometry layer (if any), then load new geometry and display
             stopTwistEdit(map);
             removeTwistLayer(map, newTwistId);
-            setTwistVisibility(map, newTwistId, true, true);
+            setTwistVisibility(map, newTwistId, true);
+            openTwistPopup(map, newTwistId);
         }
     });
 
