@@ -1,8 +1,9 @@
+from datetime import UTC, datetime, timedelta
 from enum import Enum
 from math import isqrt
 from geoalchemy2 import Geometry
-from pydantic import BaseModel, Field, field_validator, model_validator
-from sqlalchemy import ColumnElement, ColumnExpressionArgument, Numeric, and_, case, cast as sqlalchemy_cast, false, func, literal, or_, select, type_coerce
+from pydantic import BaseModel, Field, ValidationInfo, field_validator, model_validator
+from sqlalchemy import ColumnElement, ColumnExpressionArgument, Label, Numeric, Select, and_, case, cast as sqlalchemy_cast, false, func, literal, or_, select, type_coerce
 from sqlalchemy.ext.asyncio import AsyncSession
 from typing import Annotated, Any, cast
 
@@ -11,6 +12,12 @@ from app.components.core.models import Criterion, Ride, Twist, User
 from app.components.core.schema import Coordinate, Weather
 from app.components.core.settings import settings
 from app.components.twists.schema import TwistListItem
+
+
+class FilterView(str, Enum):
+    ALL = "all"
+    TRENDING = "trending"
+    HIDDEN_GEMS = "hidden_gems"
 
 
 class FilterOwnership(str, Enum):
@@ -173,7 +180,6 @@ class FilterSortOrder(str, Enum):
     BEST = "best"
     CLOSEST = "closest"
     TRENDING = "trending"
-    HIDDEN_GEMS = "hidden_gems"
 
 
 class TwistFilter(BaseModel):
@@ -211,8 +217,10 @@ class TwistFilter(BaseModel):
     # Weather Filtering
     weather: Annotated[FilterWeather, Field()] = FilterWeather()
 
-    # Ordering
+    # View and Ordering
+    view: Annotated[FilterView, Field()] = FilterView.ALL
     sort_order: Annotated[FilterSortOrder, Field()] = FilterSortOrder.BEST
+
 
     # Ensure excluded criteria slugs is a set
     @field_validator("excluded_criteria_slugs", mode="before")
@@ -222,6 +230,73 @@ class TwistFilter(BaseModel):
             return {value}
         else:
             return set(value)
+
+
+    @field_validator("sort_order", mode="after")
+    @classmethod
+    def sync_sort_order_with_view(cls, value: FilterSortOrder, info: ValidationInfo) -> FilterSortOrder:
+        view = info.data.get("view")
+
+        if view == FilterView.TRENDING:
+            return FilterSortOrder.TRENDING
+
+        if view == FilterView.HIDDEN_GEMS:
+            return FilterSortOrder.BEST
+
+        return value
+
+
+    @staticmethod
+    def _get_overall_average_label(
+        paved_slugs: list[str],
+        unpaved_slugs: list[str]
+    ) -> Label[float]:
+        # Dynamically build the average calculations
+        def build_rounded_avg_expression(slugs: list[str]):
+            if not slugs:
+                return literal(0.0)
+
+            avg = sum(
+                (func.avg(Ride.ratings[slug].as_integer()) for slug in slugs),
+                start=literal(0.0)
+            ) / len(slugs)
+
+            # Round same as UI before comparing to avoid user confusion
+            return func.round(sqlalchemy_cast(avg, Numeric), settings.AVERAGE_ROUNDING_DIGITS)
+        paved_avg_rounded = build_rounded_avg_expression(paved_slugs)
+        unpaved_avg_rounded = build_rounded_avg_expression(unpaved_slugs)
+
+        return case(
+            (Twist.is_paved, paved_avg_rounded),
+            else_=unpaved_avg_rounded
+        ).label("overall_average")
+
+
+    @staticmethod
+    def _get_trending_score_label(
+        paved_slugs: list[str],
+        unpaved_slugs: list[str]
+    ) -> Label[int]:
+        threshold = datetime.now(UTC) - timedelta(days=settings.TRENDING_TIMEFRAME_DAYS)
+        is_in_period = and_(
+            Ride.date >= threshold.date(),
+            Ride.date <= func.current_date()
+        )
+
+        paved_score = sum(
+            (func.coalesce(Ride.ratings[slug].as_integer()) for slug in paved_slugs),
+            start=literal(0)
+        ) / len(paved_slugs)
+        unpaved_score = sum(
+            (func.coalesce(Ride.ratings[slug].as_integer()) for slug in unpaved_slugs),
+            start=literal(0)
+        ) / len(unpaved_slugs)
+
+        return case(
+            (and_(is_in_period, Twist.is_paved), paved_score),
+            (is_in_period, unpaved_score),
+            else_=literal(0)
+        ).label("trending_score")
 
 
     @staticmethod
@@ -307,6 +382,123 @@ class TwistFilter(BaseModel):
         return float(cached_m), float(cached_c)
 
 
+    async def _apply_rating_filters_and_ordering(
+        self,
+        session: AsyncSession,
+        statement: Select[Any],
+        order_criteria: list[ColumnExpressionArgument[Any]]
+    ) -> tuple[Select[Any], list[ColumnExpressionArgument[Any]]]:
+        is_filtering_overall = self.overall_rating_range.is_active
+        is_filtering_individual = bool(self.active_individual_rating_ranges)
+
+        needs_bayesian_values = self.sort_order == FilterSortOrder.BEST or self.view == FilterView.HIDDEN_GEMS
+        needs_overall_average = is_filtering_overall or needs_bayesian_values
+        is_aggregating = needs_overall_average or self.view == FilterView.TRENDING
+        needs_labels = needs_bayesian_values or self.view == FilterView.TRENDING
+        needs_any_rating_logic = is_filtering_individual or is_aggregating
+
+        if not needs_any_rating_logic:
+            return statement, order_criteria
+
+        rating_statement = (
+            select(Twist.id)
+            .outerjoin(Ride, Twist.id == Ride.twist_id)
+            .group_by(Twist.id)
+        )
+
+        # Calculate individual averages and add each to the conditions
+        for slug, rating_range in self.active_individual_rating_ranges.items():
+            # Calculate average
+            condition_avg = func.avg(Ride.ratings[slug].as_integer())
+
+            # Round same as UI before comparing to avoid user confusion
+            condition_avg_rounded = func.round(sqlalchemy_cast(condition_avg, Numeric), settings.AVERAGE_ROUNDING_DIGITS)
+
+            # Update the having clause
+            rating_statement = rating_statement.having(
+                condition_avg_rounded.between(rating_range.min, rating_range.max)
+            )
+
+        # Aggregations require looking at criteria slugs
+        if is_aggregating:
+            # List is important here to maintain ordering (I... think?)
+            paved_criteria_slugs = [
+                c.slug for c in await Criterion.get_list(session, is_paved=True)
+                if c.slug not in self.excluded_criteria_slugs
+            ]
+            unpaved_criteria_slugs = [
+                c.slug for c in await Criterion.get_list(session, is_paved=False)
+                if c.slug not in self.excluded_criteria_slugs
+            ]
+
+            # Create label for overall average
+            if needs_overall_average:
+                overall_average = self._get_overall_average_label(paved_criteria_slugs, unpaved_criteria_slugs)
+
+                # Filter by overall average
+                if is_filtering_overall:
+                    rating_statement = rating_statement.having(
+                        overall_average.between(self.overall_rating_range.min, self.overall_rating_range.max)
+                    )
+
+                # Add columns needed by Bayesian calculations
+                if needs_bayesian_values:
+                    ride_count = func.count(Ride.id).label("ride_count")
+                    rating_statement = rating_statement.add_columns(ride_count, overall_average)
+
+            # Filter by trending score
+            if self.view == FilterView.TRENDING:
+                trending_score = self._get_trending_score_label(paved_criteria_slugs, unpaved_criteria_slugs)
+                rating_statement = rating_statement.having(trending_score > 0)
+                rating_statement = rating_statement.add_columns(trending_score)
+
+        # If labels were added, a join is needed
+        if needs_labels:
+            rating_subquery = rating_statement.subquery()
+
+            if is_filtering_overall or is_filtering_individual or self.view == FilterView.TRENDING:
+                # If there are filters applied, Twists without rides are hidden
+                statement = statement.join(rating_subquery, Twist.id == rating_subquery.c.id)
+            else:
+                # Otherwise, outer join ensures 0-ride Twists are still returned for the sort calculations
+                statement = statement.outerjoin(rating_subquery, Twist.id == rating_subquery.c.id)
+
+            # Sort by trending score
+            if self.sort_order == FilterSortOrder.TRENDING:
+                order_criteria.append(rating_subquery.c.trending_score.desc())
+
+            # Calculate Bayesian values
+            if needs_bayesian_values:
+                global_average, confident_ride_count = await self._get_bayesian_constants(session)
+                twist_average = func.coalesce(rating_subquery.c.overall_average, 0.0)
+                twist_ride_count = func.coalesce(rating_subquery.c.ride_count, 0)
+
+                # Sort by Bayesian best
+                if self.sort_order == FilterSortOrder.BEST:
+                    bayesian_calc = (
+                        (twist_average * twist_ride_count) + (confident_ride_count * global_average)
+                    ) / (twist_ride_count + confident_ride_count)
+                    order_criteria.append(bayesian_calc.desc())
+
+                # Filter by hidden gems
+                if self.view == FilterView.HIDDEN_GEMS:
+                    hidden_gem_threshold = max(
+                        Criterion.MAX_VALUE,
+                        global_average * settings.HIDDEN_GEM_AVERAGE_MULTIPLIER
+                    )
+                    statement = statement.where(and_(
+                        twist_average >= hidden_gem_threshold,
+                        twist_ride_count <= confident_ride_count,
+                        twist_ride_count > 0
+                    ))
+
+        # If no label columns added, no need to do heavy join
+        else:
+            statement = statement.where(Twist.id.in_(rating_statement))
+
+        return statement, order_criteria
+
+
     async def apply_for(
         self,
         session: AsyncSession,
@@ -355,123 +547,11 @@ class TwistFilter(BaseModel):
         statement = statement.where(map_bounds_condition)
 
         # Ride Rating Filtering and Ordering
-        is_sorting_by_rating = self.sort_order in (FilterSortOrder.BEST, FilterSortOrder.HIDDEN_GEMS)
-        is_filtering_overall = self.overall_rating_range.is_active
-        is_filtering_individual = bool(self.active_individual_rating_ranges)
-        needs_overall_average = is_sorting_by_rating or is_filtering_overall
-        needs_any_rating_logic = needs_overall_average or is_filtering_individual
-        if needs_any_rating_logic:
-            having_conditions: list[ColumnElement[bool]] = []
-            overall_average = None
-            ride_count = None
-
-            # Calculate overall average and add it to the subquery
-            if needs_overall_average:
-                # List is important here to maintain ordering (I... think?)
-                paved_criteria_slugs = [
-                    c.slug for c in await Criterion.get_list(session, is_paved=True)
-                    if c.slug not in self.excluded_criteria_slugs
-                ]
-                unpaved_criteria_slugs = [
-                    c.slug for c in await Criterion.get_list(session, is_paved=False)
-                    if c.slug not in self.excluded_criteria_slugs
-                ]
-
-                # Dynamically build the average calculations
-                def build_rounded_avg_expression(slugs: list[str]):
-                    if not slugs:
-                        return literal(0.0)
-
-                    avg = sum(
-                        (func.avg(Ride.ratings[slug].as_integer()) for slug in slugs),
-                        start=literal(0.0)
-                    ) / len(slugs)
-
-                    # Round same as UI before comparing to avoid user confusion
-                    return func.round(sqlalchemy_cast(avg, Numeric), settings.AVERAGE_ROUNDING_DIGITS)
-                paved_avg_rounded = build_rounded_avg_expression(paved_criteria_slugs)
-                unpaved_avg_rounded = build_rounded_avg_expression(unpaved_criteria_slugs)
-
-                overall_average = case(
-                    (Twist.is_paved, paved_avg_rounded),
-                    else_=unpaved_avg_rounded
-                ).label("overall_average")
-                ride_count = func.count(Ride.id).label("ride_count")
-
-                # Filter by overall average
-                if is_filtering_overall:
-                    having_conditions.append(
-                        overall_average.between(self.overall_rating_range.min, self.overall_rating_range.max)
-                    )
-
-            # Calculate individual averages and add each to the conditions
-            for slug, rating_range in self.active_individual_rating_ranges.items():
-                # Calculate average
-                condition_avg = func.avg(Ride.ratings[slug].as_integer())
-
-                # Round same as UI before comparing to avoid user confusion
-                condition_avg_rounded = func.round(sqlalchemy_cast(condition_avg, Numeric), settings.AVERAGE_ROUNDING_DIGITS)
-
-                # Update the having clause
-                having_conditions.append(
-                    condition_avg_rounded.between(rating_range.min, rating_range.max)
-                )
-
-            # Create the subquery
-            rating_statement = (
-                select(Twist.id)
-                .outerjoin(Ride, Twist.id == Ride.twist_id)
-                .group_by(Twist.id)
-            )
-
-            if having_conditions:
-                rating_statement = rating_statement.having(and_(*having_conditions))
-
-            if is_sorting_by_rating and overall_average is not None and ride_count is not None:
-                # Add overall_average and ride_count to rating subquery
-                rating_subquery = rating_statement.add_columns(overall_average, ride_count).subquery()
-
-                if having_conditions:
-                    # If there are having conditions (rating filters) applied, Twists without rides are hidden
-                    statement = statement.join(rating_subquery, Twist.id == rating_subquery.c.id)
-                else:
-                    # Otherwise, outer join ensures 0-ride Twists are still returned for the sort calculations
-                    statement = statement.outerjoin(rating_subquery, Twist.id == rating_subquery.c.id)
-
-                global_average, confident_ride_count = await self._get_bayesian_constants(session)
-                print(f"Global average: {global_average}, Confidence Weight: {confident_ride_count}")
-
-                twist_average = func.coalesce(rating_subquery.c.overall_average, 0.0)
-                twist_ride_count = func.coalesce(rating_subquery.c.ride_count, 0)
-
-                if self.sort_order == FilterSortOrder.BEST:
-                    # Use Bayesian to determine sort order
-                    bayesian_calc = (
-                        (twist_average * twist_ride_count) + (confident_ride_count * global_average)
-                    ) / (twist_ride_count + confident_ride_count)
-                    order_criteria.append(bayesian_calc.desc())
-
-                elif self.sort_order == FilterSortOrder.HIDDEN_GEMS:
-                    # Show all highly rated Twists with unconfident ride count first, then remaining
-                    hidden_gem_threshold = max(
-                        Criterion.MAX_VALUE,
-                        global_average * settings.HIDDEN_GEM_AVERAGE_MULTIPLIER
-                    )
-                    is_hidden_gem = case(
-                        (and_(
-                            twist_average >= hidden_gem_threshold,
-                            twist_ride_count <= confident_ride_count,
-                            twist_ride_count > 0
-                        ), 1),
-                        else_=0
-                    )
-                    order_criteria.extend([
-                        is_hidden_gem.desc(),
-                        twist_average.desc()
-                    ])
-            else:
-                # Not sorting (no need to do heavy join)
-                statement = statement.where(Twist.id.in_(rating_statement))
+        statement, order_criteria = await self._apply_rating_filters_and_ordering(
+            session,
+            statement,
+            order_criteria
+        )
 
         # Weather Filtering
         weather_conditions = self.weather.calculate_conditions()

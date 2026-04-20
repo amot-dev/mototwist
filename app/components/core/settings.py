@@ -23,8 +23,9 @@ class Settings(BaseSettings):
     OSRM_URL: str = Field(default="https://router.project-osrm.org", exclude=False)
     TWIST_SIMPLIFICATION_TOLERANCE_M: int = Field(default=5, exclude=True)
     AVERAGE_ROUNDING_DIGITS: int = Field(default=1, ge=0, exclude=True)
-    INSIGNIFICANT_RIDE_COUNT_PERCENTILE: int = Field(default=25, ge=1, le=99, exclude=True) # TODO: docs
-    HIDDEN_GEM_AVERAGE_MULTIPLIER: float = Field(default=1.5, ge=1, exclude=True) # TODO: docs
+    INSIGNIFICANT_RIDE_COUNT_PERCENTILE: int = Field(default=25, ge=1, le=99, exclude=True)
+    TRENDING_TIMEFRAME_DAYS: int = Field(default=7, ge=1, exclude=True) # TODO: docs
+    HIDDEN_GEM_AVERAGE_MULTIPLIER: float = Field(default=1.5, ge=1, exclude=True)
     DEFAULT_TWISTS_LOADED: int = Field(default=20, ge=1, exclude=True)
     RIDES_FETCHED_PER_QUERY: int = Field(default=20, ge=1, exclude=True)
 
