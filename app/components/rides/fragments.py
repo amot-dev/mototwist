@@ -14,8 +14,8 @@ from app.components.core.schema import Weather
 from app.components.core.settings import settings
 from app.components.core.utility import raise_http
 from app.components.rides.schema import RideList, RideListItem
-from app.components.rides.services import calculate_average_rating, weather_conditions_from
-from app.components.twists.schema import FilterOwnership, TwistBasic, TwistFilterWithRideOwnership
+from app.components.twists.filter import FilterOwnership, TwistFilterWithRideOwnership
+from app.components.twists.schema import TwistBasic
 from app.components.users.services import current_user_optional
 
 
@@ -83,7 +83,7 @@ async def serve_averages(
     except MultipleResultsFound:
         raise_http(f"Multiple twists found for id '{twist_id}'", status_code=500)
 
-    average_ratings = await calculate_average_rating(session, user, twist, filter)
+    average_ratings = await filter.calculate_average_rating_for(session, user, twist)
 
     return templates.TemplateResponse("fragments/rides/averages.html", {
         "request": request,
@@ -115,7 +115,7 @@ async def serve_view_all_button(
         filtered = True
         statement = statement.where(Ride.author_id == user.id) if user else statement.where(false())
 
-    weather_conditions = weather_conditions_from(filter.weather)
+    weather_conditions = filter.weather.calculate_conditions()
     if len(weather_conditions):
         filtered = True
         statement = statement.where(*weather_conditions)
@@ -178,7 +178,7 @@ async def serve_view_modal(
     if filter.ride_ownership == FilterOwnership.OWN:
         statement = statement.where(Ride.author_id == user.id) if user else statement.where(false())
 
-    weather_conditions = weather_conditions_from(filter.weather)
+    weather_conditions = filter.weather.calculate_conditions()
     if len(weather_conditions):
         statement = statement.where(*weather_conditions)
 
