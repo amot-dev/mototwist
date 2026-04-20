@@ -10,8 +10,7 @@ from app.components.core.redis_client import redis_client
 from app.components.core.models import Criterion, Ride, Twist, User
 from app.components.core.schema import Coordinate, Weather
 from app.components.core.settings import settings
-from app.components.rides.schema import AverageRatings
-from app.components.twists.schema import TwistBasic, TwistListItem
+from app.components.twists.schema import TwistListItem
 
 
 class FilterOwnership(str, Enum):
@@ -170,6 +169,12 @@ class FilterWeather(BaseModel):
         return conditions
 
 
+class FilterSortOrder(str, Enum):
+    BEST = "best"
+    CLOSEST = "closest"
+    HIDDEN_GEMS = "hidden_gems"
+
+
 class TwistFilter(BaseModel):
     # Display
     page: Annotated[int, Field(gt=0)] = 1
@@ -205,6 +210,8 @@ class TwistFilter(BaseModel):
     # Weather Filtering
     weather: Annotated[FilterWeather, Field()] = FilterWeather()
 
+    # Ordering
+    sort_order: Annotated[FilterSortOrder, Field()] = FilterSortOrder.BEST
 
     # Ensure excluded criteria slugs is a set
     @field_validator("excluded_criteria_slugs", mode="before")
@@ -308,9 +315,10 @@ class TwistFilter(BaseModel):
         Determine which Twists match the Filter and return them,
         ordered accordingly as well.
         """
-        # Filtering
         statement = select(*TwistListItem.get_fields(user))
+        order_criteria: list[ColumnExpressionArgument[Any]] = []
 
+        # Basic Filtering
         if self.search:
             statement = statement.where(Twist.name.icontains(self.search))
 
@@ -345,14 +353,19 @@ class TwistFilter(BaseModel):
         map_bounds_condition = await self.map.calculate_bounds_condition()
         statement = statement.where(map_bounds_condition)
 
-        # Ride Rating Range Filtering
-        has_overall_filter = self.overall_rating_range.is_active
-        active_individual_filters = self.active_individual_rating_ranges
-        if has_overall_filter or active_individual_filters:
+        # Ride Rating Filtering and Ordering
+        is_sorting_by_rating = self.sort_order in (FilterSortOrder.BEST, FilterSortOrder.HIDDEN_GEMS)
+        is_filtering_overall = self.overall_rating_range.is_active
+        is_filtering_individual = bool(self.active_individual_rating_ranges)
+        needs_overall_average = is_sorting_by_rating or is_filtering_overall
+        needs_any_rating_logic = needs_overall_average or is_filtering_individual
+        if needs_any_rating_logic:
             having_conditions: list[ColumnElement[bool]] = []
+            overall_average = None
+            ride_count = None
 
-            # Calculate overall average and add it to the conditions
-            if has_overall_filter:
+            # Calculate overall average and add it to the subquery
+            if needs_overall_average:
                 # List is important here to maintain ordering (I... think?)
                 paved_criteria_slugs = [
                     c.slug for c in await Criterion.get_list(session, is_paved=True)
@@ -378,19 +391,20 @@ class TwistFilter(BaseModel):
                 paved_avg_rounded = build_rounded_avg_expression(paved_criteria_slugs)
                 unpaved_avg_rounded = build_rounded_avg_expression(unpaved_criteria_slugs)
 
-                # Update the having clause
-                having_conditions.append(
-                    case(
-                        (Twist.is_paved, paved_avg_rounded),
-                        else_=unpaved_avg_rounded
-                    ).between(
-                        self.overall_rating_range.min,
-                        self.overall_rating_range.max
+                overall_average = case(
+                    (Twist.is_paved, paved_avg_rounded),
+                    else_=unpaved_avg_rounded
+                ).label("overall_average")
+                ride_count = func.count(Ride.id).label("ride_count")
+
+                # Filter by overall average
+                if is_filtering_overall:
+                    having_conditions.append(
+                        overall_average.between(self.overall_rating_range.min, self.overall_rating_range.max)
                     )
-                )
 
             # Calculate individual averages and add each to the conditions
-            for slug, rating_range in active_individual_filters.items():
+            for slug, rating_range in self.active_individual_rating_ranges.items():
                 # Calculate average
                 condition_avg = func.avg(Ride.ratings[slug].as_integer())
 
@@ -403,14 +417,60 @@ class TwistFilter(BaseModel):
                 )
 
             # Create the subquery
-            rating_subquery = (
+            rating_statement = (
                 select(Twist.id)
                 .outerjoin(Ride, Twist.id == Ride.twist_id)
                 .group_by(Twist.id)
-                .having(and_(*having_conditions))
             )
 
-            statement = statement.where(Twist.id.in_(rating_subquery))
+            if having_conditions:
+                rating_statement = rating_statement.having(and_(*having_conditions))
+
+            if is_sorting_by_rating and overall_average is not None and ride_count is not None:
+                # Add overall_average and ride_count to rating subquery
+                rating_subquery = rating_statement.add_columns(overall_average, ride_count).subquery()
+
+                if having_conditions:
+                    # If there are having conditions (rating filters) applied, Twists without rides are hidden
+                    statement = statement.join(rating_subquery, Twist.id == rating_subquery.c.id)
+                else:
+                    # Otherwise, outer join ensures 0-ride Twists are still returned for the sort calculations
+                    statement = statement.outerjoin(rating_subquery, Twist.id == rating_subquery.c.id)
+
+                global_average, confident_ride_count = await self._get_bayesian_constants(session)
+                print(f"Global average: {global_average}, Confidence Weight: {confident_ride_count}")
+
+                twist_average = func.coalesce(rating_subquery.c.overall_average, 0.0)
+                twist_ride_count = func.coalesce(rating_subquery.c.ride_count, 0)
+
+                if self.sort_order == FilterSortOrder.BEST:
+                    # Use Bayesian to determine sort order
+                    bayesian_calc = (
+                        (twist_average * twist_ride_count) + (confident_ride_count * global_average)
+                    ) / (twist_ride_count + confident_ride_count)
+                    order_criteria.append(bayesian_calc.desc())
+
+                elif self.sort_order == FilterSortOrder.HIDDEN_GEMS:
+                    # Show all highly rated Twists with unconfident ride count first, then remaining
+                    hidden_gem_threshold = max(
+                        Criterion.MAX_VALUE,
+                        global_average * settings.HIDDEN_GEM_AVERAGE_MULTIPLIER
+                    )
+                    is_hidden_gem = case(
+                        (and_(
+                            twist_average >= hidden_gem_threshold,
+                            twist_ride_count <= confident_ride_count,
+                            twist_ride_count > 0
+                        ), 1),
+                        else_=0
+                    )
+                    order_criteria.extend([
+                        is_hidden_gem.desc(),
+                        twist_average.desc()
+                    ])
+            else:
+                # Not sorting (no need to do heavy join)
+                statement = statement.where(Twist.id.in_(rating_statement))
 
         # Weather Filtering
         weather_conditions = self.weather.calculate_conditions()
@@ -427,15 +487,12 @@ class TwistFilter(BaseModel):
         # Pagination
         offset = (self.page - 1) * settings.DEFAULT_TWISTS_LOADED
 
-        # Ordering
-        order_criteria: list[ColumnExpressionArgument[Any]] = []
-
+        # Always fallback to ordering by proximity then name (all 0-ride Twists rank the same under BEST / HIDDEN_GEMS)
         if self.map.center:
             distance: ColumnExpressionArgument[float] = Twist.route_geometry.distance_centroid(
                 type_coerce(self.map.center.to_spatial(), Geometry)
             )
             order_criteria.append(distance)
-
         order_criteria.append(Twist.name)
 
         # Querying
@@ -443,41 +500,3 @@ class TwistFilter(BaseModel):
             statement.order_by(*order_criteria).limit(self.pages * settings.DEFAULT_TWISTS_LOADED).offset(offset)
         )
         return [TwistListItem.model_validate(result) for result in results.all()]
-
-
-class TwistFilterWithRideOwnership(TwistFilter):
-    ride_ownership: Annotated[FilterOwnership, Field()] = FilterOwnership.ALL
-
-
-    async def calculate_average_rating_for(
-        self,
-        session: AsyncSession,
-        user: User | None,
-        twist: TwistBasic
-    ) -> AverageRatings:
-        """
-        Calculate the average ratings for a Twist.
-        """
-        criteria = await Criterion.get_list(session, is_paved=twist.is_paved)
-
-        # Query averages for target ratings columns for this twist
-        statement = select(*[
-            func.avg(Ride.ratings[c.slug].as_integer()).label(c.slug)
-            for c in criteria
-        ]).where(
-            Ride.twist_id == twist.id,
-            *self.weather.calculate_conditions()
-        )
-
-        # Filtering
-        if self.ride_ownership == FilterOwnership.OWN:
-            statement = statement.where(Ride.author_id == user.id) if user else statement.where(false())
-
-        result = await session.execute(statement)
-        averages = result.first()
-
-        if not averages:
-            return AverageRatings(overall=None, by_criteria={})
-        averages_dict = averages._asdict()  # pyright: ignore [reportPrivateUsage]
-
-        return AverageRatings.from_averages(averages_dict, criteria)

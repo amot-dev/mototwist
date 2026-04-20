@@ -13,8 +13,9 @@ from app.components.core.models import Criterion, Twist, Ride, User
 from app.components.core.schema import Weather
 from app.components.core.settings import settings
 from app.components.core.utility import raise_http
+from app.components.rides.filter import RideFilter
 from app.components.rides.schema import RideList, RideListItem
-from app.components.twists.filter import FilterOwnership, TwistFilterWithRideOwnership
+from app.components.twists.filter import FilterOwnership
 from app.components.twists.schema import TwistBasic
 from app.components.users.services import current_user_optional
 
@@ -66,7 +67,7 @@ async def serve_ride_modal(
 async def serve_averages(
     request: Request,
     twist_id: int,
-    filter: TwistFilterWithRideOwnership,
+    filter: RideFilter,
     user: User | None = Depends(current_user_optional),
     session: AsyncSession = Depends(get_db)
 ) -> HTMLResponse:
@@ -98,7 +99,7 @@ async def serve_averages(
 async def serve_view_all_button(
     request: Request,
     twist_id: int,
-    filter: TwistFilterWithRideOwnership,
+    filter: RideFilter,
     user: User | None = Depends(current_user_optional),
     session: AsyncSession = Depends(get_db)
 ) -> HTMLResponse:
@@ -152,7 +153,7 @@ async def serve_view_all_button(
 async def serve_view_modal(
     request: Request,
     twist_id: int,
-    filter: TwistFilterWithRideOwnership,
+    filter: RideFilter,
     offset: int = Query(0),
     user: User | None = Depends(current_user_optional),
     session: AsyncSession = Depends(get_db)
