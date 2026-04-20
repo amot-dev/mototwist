@@ -1,6 +1,6 @@
 from typing import Annotated
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 from sqlalchemy import false, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -14,8 +14,22 @@ class RideFilter(BaseModel):
     # Basic Filtering
     ride_ownership: Annotated[FilterOwnership, Field()] = FilterOwnership.ALL
 
+    # Criteria Exclusion
+    excluded_criteria_slugs: Annotated[set[str], Field()] = set()
+
     # Weather Filtering
     weather: Annotated[FilterWeather, Field()] = FilterWeather()
+
+
+    # Ensure excluded criteria slugs is a set
+    @field_validator("excluded_criteria_slugs", mode="before")
+    @classmethod
+    def excluded_criteria_slugs_to_set(cls, value: str | list[str]) -> set[str]:
+        if not isinstance(value, list):
+            return {value}
+        else:
+            return set(value)
+
 
     async def calculate_average_rating_for(
         self,
@@ -48,4 +62,4 @@ class RideFilter(BaseModel):
             return AverageRatings(overall=None, by_criteria={})
         averages_dict = averages._asdict()  # pyright: ignore [reportPrivateUsage]
 
-        return AverageRatings.from_averages(averages_dict, criteria)
+        return AverageRatings.from_averages(averages_dict, criteria, self.excluded_criteria_slugs)

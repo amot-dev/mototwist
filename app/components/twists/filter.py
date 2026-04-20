@@ -172,6 +172,7 @@ class FilterWeather(BaseModel):
 class FilterSortOrder(str, Enum):
     BEST = "best"
     CLOSEST = "closest"
+    TRENDING = "trending"
     HIDDEN_GEMS = "hidden_gems"
 
 
