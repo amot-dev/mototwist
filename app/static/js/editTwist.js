@@ -670,7 +670,7 @@ export function overrideXHR() {
     // Override XHR send to intercept outgoing requests
     XMLHttpRequest.prototype.send = /** @this {PatchedXMLHttpRequest} */ function(/** @type {any} */ body) {
         // Check if this is a POST/PUT request to /twists
-        const isCoreTwistEndpoint = this._url && /\/twists(\/[^\/]+)?$/.test(this._url);
+        const isCoreTwistEndpoint = this._url && /\/twists(\/\d+)?$/.test(this._url);
         const isModifying = this._method === 'POST' || this._method === 'PUT';
 
         if (isCoreTwistEndpoint && isModifying) {
