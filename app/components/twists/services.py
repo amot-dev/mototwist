@@ -9,7 +9,7 @@ from typing import Any
 
 from app.components.core.config import logger
 from app.components.core.models import Criterion, Ride, Twist, User
-from app.components.twists.schema import FilterOwnership, FilterPavement, FilterRide, TwistFilter, TwistListItem
+from app.components.twists.schema import FilterMap, FilterOwnership, FilterPavement, FilterRide, TwistFilter, TwistListItem
 from app.components.core.schema import Coordinate, Waypoint
 from app.components.rides.services import weather_conditions_from
 from app.components.core.settings import settings
@@ -85,13 +85,51 @@ def simplify_route(coordinates: list[Coordinate]) -> list[Coordinate]:
     return simplified_coordinates
 
 
+async def calculate_map_bounds_condition(map: FilterMap) -> ColumnElement[bool]:
+    """
+    Calculate map bounds condition based off map filter,
+    taking antimeridian into account.
+    """
+    if map.south_west.lng > map.north_east.lng:
+        # Bounding box crosses the antimeridian, need to split it into two envelopes
+        bounds_condition = or_(
+            # Box 1: From the southwest corner east to the antimeridian (+180)
+            Twist.route_geometry.intersects(
+                func.ST_MakeEnvelope(
+                    map.south_west.lng, map.south_west.lat,
+                    180.0, map.north_east.lat,
+                    Coordinate.SRID
+                )
+            ),
+            # Box 2: From the antimeridian (-180) east to the southwest corner
+            Twist.route_geometry.intersects(
+                func.ST_MakeEnvelope(
+                    -180.0, map.south_west.lat,
+                    map.north_east.lng, map.north_east.lat,
+                    Coordinate.SRID
+                )
+            )
+        )
+    else:
+        # Standard bounding box (does not cross the antimeridian)
+        bounds_condition = Twist.route_geometry.intersects(
+            func.ST_MakeEnvelope(
+                map.south_west.lng, map.south_west.lat,
+                map.north_east.lng, map.north_east.lat,
+                Coordinate.SRID
+            )
+        )
+    return bounds_condition
+
+
 async def filter_twist_list(
     session: AsyncSession,
     user: User | None,
     filter: TwistFilter
 ) -> list[TwistListItem]:
     """
-     Build and return the TemplateResponse for the Twist list.
+    Determine which Twists match the Filter and return them,
+    ordered accordingly as well.
     """
     # Filtering
     statement = select(*TwistListItem.get_fields(user))
@@ -127,36 +165,8 @@ async def filter_twist_list(
         statement = statement.where(false())
 
     # Map Bounds Filtering
-    if filter.map.south_west.lng > filter.map.north_east.lng:
-        # Bounding box crosses the antimeridian, need to split it into two envelopes
-        bounds_condition = or_(
-            # Box 1: From the southwest corner east to the antimeridian (+180)
-            Twist.route_geometry.intersects(
-                func.ST_MakeEnvelope(
-                    filter.map.south_west.lng, filter.map.south_west.lat,
-                    180.0, filter.map.north_east.lat,
-                    Coordinate.SRID
-                )
-            ),
-            # Box 2: From the antimeridian (-180) east to the southwest corner
-            Twist.route_geometry.intersects(
-                func.ST_MakeEnvelope(
-                    -180.0, filter.map.south_west.lat,
-                    filter.map.north_east.lng, filter.map.north_east.lat,
-                    Coordinate.SRID
-                )
-            )
-        )
-    else:
-        # Standard bounding box (does not cross the antimeridian)
-        bounds_condition = Twist.route_geometry.intersects(
-            func.ST_MakeEnvelope(
-                filter.map.south_west.lng, filter.map.south_west.lat,
-                filter.map.north_east.lng, filter.map.north_east.lat,
-                Coordinate.SRID
-            )
-        )
-    statement = statement.where(bounds_condition)
+    map_bounds_condition = await calculate_map_bounds_condition(filter.map)
+    statement = statement.where(map_bounds_condition)
 
     # Ride Rating Range Filtering
     has_overall_filter = filter.overall_rating_range.is_active
