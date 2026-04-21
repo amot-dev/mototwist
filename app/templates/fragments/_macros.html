@@ -27,9 +27,10 @@
 {% endmacro %}
 
 {# Renders a slider to be animated with only CSS #}
-{% macro render_rating(criterion_slug, rating, criterion_description, max_value) %}
-<li class="rating-slider-container">
-    <div class="rating-slider" style="--value: {{ rating }};" title="{{ criterion_description }}">
+{% macro render_rating(max_value, criterion_slug, rating, criterion_description, excluded=False) %}
+<li class="rating-slider-container" {% if excluded %}style="opacity: 0.4;"{% endif %}>
+    <div class="rating-slider" style="--value: {{ rating }};"
+        title="{{ criterion_description }} {% if excluded %}(excluded from overall rating){% endif %}">
         <div class="rating-slider-fill">
             <span>&nbsp; {{ criterion_slug.replace('_', ' ') | title }}</span>
             <span>{{ rating }}/{{ max_value }} &nbsp;</span>

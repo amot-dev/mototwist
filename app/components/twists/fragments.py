@@ -11,9 +11,9 @@ from app.components.core.models import Criterion, Twist, User
 from app.components.core.schema import Weather
 from app.components.core.settings import settings
 from app.components.core.utility import raise_http
-from app.components.twists.export import TwistExportCart, get_twist_export_cart
-from app.components.twists.schema import FilterOwnership, TwistBasic, TwistExportFormat, TwistListItem, TwistPopup, TwistFilter
-from app.components.twists.services import filter_twist_list
+from app.components.twists.export import TwistExportCart, TwistExportFormat, get_twist_export_cart
+from app.components.twists.filter import FilterAuthor, TwistFilter
+from app.components.twists.schema import TwistBasic, TwistListItem, TwistPopup
 from app.components.users.services import current_user, current_user_optional, verify
 
 
@@ -68,17 +68,17 @@ async def serve_create_edit_modal(
     })
 
 
-@router.get("/templates/advanced-filter-modal", response_class=HTMLResponse)
-async def serve_advanced_filter_modal(
+@router.get("/templates/filter-modal", response_class=HTMLResponse)
+async def serve_filter_modal(
     request: Request,
     session: AsyncSession = Depends(get_db)
 ) -> HTMLResponse:
     """
-    Serve an HTML fragment containing the advanced filter modal.
+    Serve an HTML fragment containing the filter modal.
     """
     criteria = await Criterion.get_list(session)
 
-    return templates.TemplateResponse("fragments/twists/advanced_filter_modal.html", {
+    return templates.TemplateResponse("fragments/twists/filter_modal.html", {
             "request": request,
             "criteria": criteria,
             "Weather": Weather
@@ -95,7 +95,7 @@ async def serve_list(
     """
     Serve an HTML fragment containing the sorted list of Twists.
     """
-    twists = await filter_twist_list(session, user, filter)
+    twists = await filter.apply_for(session, user)
 
     response = templates.TemplateResponse("fragments/twists/list.html", {
         "request": request,
@@ -169,7 +169,7 @@ async def serve_popup(
         "twist": twist,
         "editable": editable,
         "in_export_cart": export_cart.contains(twist_id),
-        "FilterOwnership": FilterOwnership
+        "FilterAuthor": FilterAuthor
     })
 
 

@@ -9,6 +9,7 @@ from app.components.core.settings import settings
 class AverageRating(BaseModel):
     rating: float
     description: str
+    excluded: bool = False
 
 
 class AverageRatings(BaseModel):
@@ -16,22 +17,26 @@ class AverageRatings(BaseModel):
     by_criteria: dict[str, AverageRating]
 
     @classmethod
-    def from_averages(cls, averages: dict[str, float | None], criteria: list[Criterion]) -> AverageRatings:
+    def from_averages(cls, averages: dict[str, float | None], criteria: list[Criterion], excluded_criteria_slugs: set[str]) -> AverageRatings:
         # Create a lookup dictionary for descriptions for easy access
         descriptions = {c.slug: c.description for c in criteria}
 
-        # List valid ratings to use to calculate overall average
-        valid_ratings = [v for v in averages.values() if v is not None]
+        # List valid criteria ratings to use to calculate overall average
+        valid_criteria_ratings = [
+            rating for slug, rating in averages.items()
+            if slug not in excluded_criteria_slugs and rating is not None
+        ]
 
         overall = round(
-            sum(valid_ratings) / len(valid_ratings),
+            sum(valid_criteria_ratings) / len(valid_criteria_ratings),
             settings.AVERAGE_ROUNDING_DIGITS
-        ) if valid_ratings else None
+        ) if valid_criteria_ratings else None
 
         by_criteria = {
             slug: AverageRating(
                 rating=round(rating, settings.AVERAGE_ROUNDING_DIGITS),
-                description=descriptions.get(slug) or ""
+                description=descriptions.get(slug) or "",
+                excluded=(slug in excluded_criteria_slugs)
             )
             for slug, rating in averages.items()
             if rating is not None

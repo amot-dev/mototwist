@@ -1,11 +1,11 @@
 from datetime import datetime
+from enum import Enum
 
 from fastapi import Request
 from gpxpy.gpx import GPX, GPXRoute, GPXRoutePoint, GPXTrack, GPXTrackPoint, GPXTrackSegment, GPXWaypoint
 from typing import Sequence
 
 from app.components.core.models import Twist
-from app.components.twists.schema import TwistExportFormat
 
 
 class TwistExportCart:
@@ -65,6 +65,20 @@ class TwistExportCart:
 
 def get_twist_export_cart(request: Request) -> TwistExportCart:
     return TwistExportCart(request)
+
+
+class TwistExportFormat(str, Enum):
+    JSON = "json"
+    GPX_TRACK = "gpx_track"
+    GPX_ROUTE = "gpx_route"
+
+    @property
+    def is_gpx(self) -> bool:
+        """
+        True only if the export format is a GPX type.
+        """
+        return self in [self.GPX_TRACK, self.GPX_ROUTE]
+
 
 
 def generate_gpx(twists: Sequence[Twist], export_name: str, format: TwistExportFormat) -> str:

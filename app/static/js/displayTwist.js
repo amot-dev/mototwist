@@ -23,9 +23,8 @@ let numPagesLoaded = 1;
  *
  * @param {L.Map} map The main Leaflet map instance.
  * @param {string} twistId The ID of the Twist to load.
- * @param {boolean} [show=false] If true, pan/zoom to the Twist after load.
  */
-async function loadTwistLayer(map, twistId, show = false) {
+async function loadTwistLayer(map, twistId) {
     // If layer already exists, don't re-load it
     if (mapLayers[twistId]) return;
 
@@ -120,8 +119,6 @@ async function loadTwistLayer(map, twistId, show = false) {
         routeLine.addTo(twistLayer);
         waypointMarkers.forEach(marker => marker.addTo(twistLayer));
 
-        if (show) showTwistOnMap(map, twistId);
-
     } catch (error) {
         console.error(`Failed to load route for Twist '${twistId}':`, error);
         flash(`Failed to load route for Twist '${twistId}'`, { duration: 5000, type: 'error' })
@@ -151,38 +148,26 @@ export async function removeTwistLayer(map, twistId) {
  * Opens the map popup for a specific Twist if it is loaded.
  * Does not check visibility.
  *
+ * @param {L.Map} map The main Leaflet map instance.
  * @param {string} twistId The ID of the Twist for which to open the popup.
  */
-function openTwistPopup(twistId) {
+export function openTwistPopup(map, twistId) {
     const layer = mapLayers[twistId];
     if (layer) {
         const routeLine = layer.getLayers().find(layer => layer instanceof L.Polyline);
         // Open popup (even if already open, to maintain autopan)
         if (routeLine instanceof L.Polyline) {
-            routeLine.openPopup();
+            // Find the first point that is on screen
+            const visiblePoint = routeLine.getLatLngs().find(
+                /** @param {L.LatLng} latlng */
+                latlng => map.getBounds().contains(latlng)
+            );
+
+            // Open at that point if found, otherwise use default
+            if (visiblePoint) routeLine.openPopup(visiblePoint);
+            else routeLine.openPopup();
         } else {
             console.warn(`Cannot open popup of Twist '${twistId}' because its layer has no valid route.`);
-        }
-    }
-}
-
-
-/**
- * Pans and zooms the map to fit the bounds of a specific Twist if it
- * is loaded. Does not check visibility.
- *
- * @param {L.Map} map The main Leaflet map instance.
- * @param {string} twistId The ID of the Twist to show.
- */
-function showTwistOnMap(map, twistId) {
-    const layer = mapLayers[twistId];
-    if (layer) {
-        const bounds = layer.getBounds();
-        if (bounds.isValid()) {
-            // Pan and zoom the map
-            map.fitBounds(bounds);
-        } else {
-            console.warn(`Cannot fit map to Twist '${twistId}' because its layer has no valid bounds.`);
         }
     }
 }
@@ -194,9 +179,8 @@ function showTwistOnMap(map, twistId) {
  * @param {L.Map} map The main Leaflet map instance.
  * @param {string} twistId The ID of the Twist to modify.
  * @param {boolean} makeVisible True to show the layer, false to hide it.
- * @param {boolean} [show=false] If true and `makeVisible` is true, show Twist on map.
  */
-export async function setTwistVisibility(map, twistId, makeVisible, show = false) {
+export async function setTwistVisibility(map, twistId, makeVisible) {
     const layer = mapLayers[twistId];
 
     // Unload if hiding
@@ -211,10 +195,9 @@ export async function setTwistVisibility(map, twistId, makeVisible, show = false
     if (layer) {
         // Layer is already loaded, just add it back to the map
         layer.addTo(map);
-        if (show) showTwistOnMap(map, twistId);
     } else {
         // First time showing this layer, load the Twist data
-        await loadTwistLayer(map, twistId, show);
+        await loadTwistLayer(map, twistId);
     }
 }
 
@@ -427,20 +410,19 @@ export function registerTwistListeners(map) {
             toggleTwistItemEye(twistItem);
             setTwistVisibility(map, twistId, !visibility);
         } else if (event.target.closest('.twist-header')) {
-            showTwistOnMap(map, twistId);
-            openTwistPopup(twistId);
+            openTwistPopup(map, twistId);
         }
     });
 
     const PAN_THRESHOLD_METERS = 5000;
-    /** @type {L.LatLng} */
-    let cachedMapCenter = getVisualMapCenter(map);
+    /** @type {L.LatLngBounds} */
+    let cachedMapBounds = map.getBounds();
 
     // Show button to manually update Twists on map move
     function updateManualUpdateButtonVisibility() {
         if (!manualUpdateButton) throw new Error("Critical element #refresh-twists-button is missing!");
 
-        const distanceMoved = map.distance(cachedMapCenter, getVisualMapCenter(map));
+        const distanceMoved = map.distance(cachedMapBounds.getCenter(), getVisualMapCenter(map));
         if (distanceMoved > PAN_THRESHOLD_METERS) {
             manualUpdateButton.classList.add('button--visible');
         }
@@ -468,16 +450,18 @@ export function registerTwistListeners(map) {
                 p['pages'] = numPagesLoaded;
             }
 
-            // If it's the first page or the map center cache is empty, update the map center cache
+            // If it's the first page or the map bounds cache is empty, update the map bounds cache
             const pageNum = parseInt(p['page'], 10) || 1;
-            if (pageNum === 1 || !cachedMapCenter) {
-                cachedMapCenter = getVisualMapCenter(map);
+            if (pageNum === 1 || !cachedMapBounds) {
+                cachedMapBounds = map.getBounds()
             }
 
-            // Always apply the cached map center to ensure pagination remains consistent
-            if (cachedMapCenter) {
-                p['map_center.lat'] = cachedMapCenter.lat;
-                p['map_center.lng'] = cachedMapCenter.lng;
+            // Always apply the cached map bounds to ensure pagination remains consistent
+            if (cachedMapBounds) {
+                p['map.south_west.lat'] = cachedMapBounds.getSouthWest().lat;
+                p['map.south_west.lng'] = cachedMapBounds.getSouthWest().lng;
+                p['map.north_east.lat'] = cachedMapBounds.getNorthEast().lat;
+                p['map.north_east.lng'] = cachedMapBounds.getNorthEast().lng;
             }
         }
     });

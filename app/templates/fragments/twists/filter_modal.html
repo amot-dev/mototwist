@@ -1,10 +1,97 @@
 {% from "fragments/_macros.html" import render_modal_content, render_form_buttons %}
 
-{% call render_modal_content("Advanced Filters") %}
+{% call render_modal_content("Filters") %}
 <div class="modal-form filter-form">
 
     <fieldset class="form-fieldset">
-        <legend>Individual Ratings</legend>
+        <legend>Basic Filters</legend>
+        <div class="form-group">
+            <fieldset class="filter-fieldset">
+                <legend title="Filter Twists by popularity">Popularity</legend>
+                <div class="filter-group">
+                    <input type="radio" id="view_all_twists" name="view" value="all" form="twist-filter-form" checked>
+                    <label class="label-button" for="view_all_twists">All</label>
+                    <input type="radio" id="view_trending_twists" name="view" value="trending" form="twist-filter-form">
+                    <label class="label-button" for="view_trending_twists">Trending</label>
+                    <input type="radio" id="view_hidden_gem_twists" name="view" value="hidden_gems" form="twist-filter-form">
+                    <label class="label-button" for="view_hidden_gem_twists">Hidden Gems</label>
+                </div>
+            </fieldset>
+        </div>
+
+        <div class="form-group">
+            <fieldset class="filter-fieldset">
+                <legend title="Filter Twists by pavement type">Pavement</legend>
+                <div class="filter-group">
+                    <input type="radio" id="pavement_all_twists" name="pavement" value="all" form="twist-filter-form" checked>
+                    <label class="label-button" for="pavement_all_twists">All</label>
+                    <input type="radio" id="pavement_paved_twists" name="pavement" value="paved" form="twist-filter-form">
+                    <label class="label-button" for="pavement_paved_twists">Paved</label>
+                    <input type="radio" id="pavement_unpaved_twists" name="pavement" value="unpaved" form="twist-filter-form">
+                    <label class="label-button" for="pavement_unpaved_twists">Unpaved</label>
+                </div>
+            </fieldset>
+        </div>
+
+        <div class="form-group">
+            <fieldset class="filter-fieldset">
+                <legend title="Filter Twists by author">Author</legend>
+                <div class="filter-group">
+                    <input type="radio" id="own_all_twists" name="ownership" value="all" form="twist-filter-form" checked>
+                    <label class="label-button" for="own_all_twists">All</label>
+                    <input type="radio" id="own_own_twists" name="ownership" value="own" form="twist-filter-form">
+                    <label class="label-button" for="own_own_twists">My Twists</label>
+                    <input type="radio" id="own_notown_twists" name="ownership" value="notown" form="twist-filter-form">
+                    <label class="label-button" for="own_notown_twists">Other Twists</label>
+                </div>
+            </fieldset>
+        </div>
+
+        <div class="form-group">
+            <fieldset class="filter-fieldset">
+                <legend title="Filter Twists by ride status">Ride Status</legend>
+                <div class="filter-group">
+                    <input type="radio" id="rides_all_twists" name="rides" value="all" form="twist-filter-form" checked>
+                    <label class="label-button" for="rides_all_twists">All</label>
+                    <input type="radio" id="rides_submitted_twists" name="rides" value="submitted" form="twist-filter-form">
+                    <label class="label-button" for="rides_submitted_twists">Ridden</label>
+                    <input type="radio" id="rides_unsubmitted_twists" name="rides" value="unsubmitted" form="twist-filter-form">
+                    <label class="label-button" for="rides_unsubmitted_twists">Not Ridden</label>
+                </div>
+            </fieldset>
+        </div>
+    </fieldset>
+    <br>
+
+    <fieldset class="form-fieldset">
+        <legend>Overall Rating Filter</legend>
+        <fieldset class="filter-fieldset">
+            <div class="filter-group range-filter-group" title="Filter by Overall Rating range">
+                <label></label>
+                <div class="range-slider-container" data-slug="overall">
+                    <input type="range"
+                        name="overall_rating_range.min"
+                        id="overall-rating-slider-min"
+                        min="0" max="10" step="0.1" value="0.0"
+                        form="twist-filter-form">
+                    <input type="range"
+                        name="overall_rating_range.max"
+                        id="overall-rating-slider-max"
+                        min="0" max="10" step="0.1" value="10.0"
+                        form="twist-filter-form">
+                </div>
+
+                <div class="range-values-floating">
+                    <output id="overall-rating-slider-min-out" class="range-output" style="--pos: 0;">0.0</output>
+                    <output id="overall-rating-slider-max-out" class="range-output" style="--pos: 100;">10.0</output>
+                </div>
+            </div>
+        </fieldset>
+    </fieldset>
+    <br>
+
+    <fieldset class="form-fieldset">
+        <legend>Individual Rating Filters</legend>
         <div class="form-group">
             <fieldset class="filter-fieldset">
                 {% for criterion in criteria %}
@@ -12,7 +99,6 @@
                     <label>{{ criterion.slug.replace('_', ' ') | title }}</label>
 
                     <div class="range-slider-container" data-slug="{{ criterion.slug }}">
-
                         <input type="range"
                             name="individual_rating_ranges.{{ criterion.slug }}.min"
                             id="{{ criterion.slug }}-rating-slider-min"
@@ -35,6 +121,7 @@
         </div>
     </fieldset>
     <br>
+
     <fieldset class="form-fieldset">
         <legend title="Exclude criteria from the average used by the Overall Rating slider">Exclude from Overall Rating</legend>
         <div class="form-group">
@@ -51,7 +138,7 @@
         </div>
     </fieldset>
     <br>
-    <br>
+
     <fieldset class="form-fieldset">
         <legend>Weather</legend>
         <div class="form-group">
@@ -126,6 +213,7 @@
             </fieldset>
         </div>
     </fieldset>
+
     {{ render_form_buttons(
         submit_text="Apply",
         submit_type="button",
