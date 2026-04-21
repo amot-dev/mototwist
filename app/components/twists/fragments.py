@@ -12,7 +12,7 @@ from app.components.core.schema import Weather
 from app.components.core.settings import settings
 from app.components.core.utility import raise_http
 from app.components.twists.export import TwistExportCart, TwistExportFormat, get_twist_export_cart
-from app.components.twists.filter import FilterOwnership, TwistFilter
+from app.components.twists.filter import FilterAuthor, TwistFilter
 from app.components.twists.schema import TwistBasic, TwistListItem, TwistPopup
 from app.components.users.services import current_user, current_user_optional, verify
 
@@ -169,7 +169,7 @@ async def serve_popup(
         "twist": twist,
         "editable": editable,
         "in_export_cart": export_cart.contains(twist_id),
-        "FilterOwnership": FilterOwnership
+        "FilterAuthor": FilterAuthor
     })
 
 

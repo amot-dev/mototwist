@@ -20,22 +20,22 @@ class FilterView(str, Enum):
     HIDDEN_GEMS = "hidden_gems"
 
 
-class FilterOwnership(str, Enum):
-    ALL = "all"
-    OWN = "own"
-    NOT_OWN = "notown"
-
-
 class FilterPavement(str, Enum):
     ALL = "all"
     PAVED = "paved"
     UNPAVED = "unpaved"
 
 
+class FilterAuthor(str, Enum):
+    ALL = "all"
+    OWN = "own"
+    OTHER = "other"
+
+
 class FilterRide(str, Enum):
     ALL = "all"
-    SUBMITTED = "submitted"
-    UNSUBMITTED = "unsubmitted"
+    RIDDEN = "ridden"
+    NOT_RIDDEN = "not_ridden"
 
 
 class FilterMap(BaseModel):
@@ -200,7 +200,7 @@ class TwistFilter(BaseModel):
 
     # Basic Filtering
     search: Annotated[str | None, Field()] = None
-    ownership: Annotated[FilterOwnership, Field()] = FilterOwnership.ALL
+    author: Annotated[FilterAuthor, Field()] = FilterAuthor.ALL
     pavement: Annotated[FilterPavement, Field()] = FilterPavement.ALL
     rides: Annotated[FilterRide, Field()] = FilterRide.ALL
 
@@ -240,7 +240,7 @@ class TwistFilter(BaseModel):
         """
         count = 0
 
-        if self.ownership != FilterOwnership.ALL:
+        if self.author != FilterAuthor.ALL:
             count += 1
         if self.pavement != FilterPavement.ALL:
             count += 1
@@ -549,9 +549,9 @@ class TwistFilter(BaseModel):
         if self.search:
             statement = statement.where(Twist.name.icontains(self.search))
 
-        if self.ownership == FilterOwnership.OWN:
+        if self.author == FilterAuthor.OWN:
             statement = statement.where(Twist.author_id == user.id) if user else statement.where(false())
-        elif user and self.ownership == FilterOwnership.NOT_OWN:
+        elif user and self.author == FilterAuthor.OTHER:
             statement = statement.where(Twist.author_id != user.id)
 
         if self.pavement == FilterPavement.PAVED:
@@ -566,13 +566,13 @@ class TwistFilter(BaseModel):
                 Ride.author_id == user.id
             ).exists()
 
-            if self.rides == FilterRide.SUBMITTED:
+            if self.rides == FilterRide.RIDDEN:
                 statement = statement.where(ride_exists)
 
-            elif self.rides == FilterRide.UNSUBMITTED:
+            elif self.rides == FilterRide.NOT_RIDDEN:
                 statement = statement.where(~ride_exists)
 
-        elif not user and self.rides == FilterRide.SUBMITTED:
+        elif not user and self.rides == FilterRide.RIDDEN:
             # If user is not logged in, they can't have Twists with submitted rides
             statement = statement.where(false())
 

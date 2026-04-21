@@ -6,13 +6,13 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.components.core.models import Criterion, Ride, User
 from app.components.rides.schema import AverageRatings
-from app.components.twists.filter import FilterOwnership, FilterWeather
+from app.components.twists.filter import FilterAuthor, FilterWeather
 from app.components.twists.schema import TwistBasic
 
 
 class RideFilter(BaseModel):
     # Basic Filtering
-    ride_ownership: Annotated[FilterOwnership, Field()] = FilterOwnership.ALL
+    author: Annotated[FilterAuthor, Field()] = FilterAuthor.ALL
 
     # Criteria Exclusion
     excluded_criteria_slugs: Annotated[set[str], Field()] = set()
@@ -52,7 +52,7 @@ class RideFilter(BaseModel):
         )
 
         # Filtering
-        if self.ride_ownership == FilterOwnership.OWN:
+        if self.author == FilterAuthor.OWN:
             statement = statement.where(Ride.author_id == user.id) if user else statement.where(false())
 
         result = await session.execute(statement)

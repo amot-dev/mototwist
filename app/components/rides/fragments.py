@@ -15,7 +15,7 @@ from app.components.core.settings import settings
 from app.components.core.utility import raise_http
 from app.components.rides.filter import RideFilter
 from app.components.rides.schema import RideList, RideListItem
-from app.components.twists.filter import FilterOwnership
+from app.components.twists.filter import FilterAuthor
 from app.components.twists.schema import TwistBasic
 from app.components.users.services import current_user_optional
 
@@ -112,7 +112,7 @@ async def serve_view_all_button(
         Ride.twist_id == twist_id
     )
 
-    if filter.ride_ownership == FilterOwnership.OWN:
+    if filter.author == FilterAuthor.OWN:
         filtered = True
         statement = statement.where(Ride.author_id == user.id) if user else statement.where(false())
 
@@ -176,7 +176,7 @@ async def serve_view_modal(
         Ride.twist_id == twist.id
     )
 
-    if filter.ride_ownership == FilterOwnership.OWN:
+    if filter.author == FilterAuthor.OWN:
         statement = statement.where(Ride.author_id == user.id) if user else statement.where(false())
 
     weather_conditions = filter.weather.calculate_conditions()
