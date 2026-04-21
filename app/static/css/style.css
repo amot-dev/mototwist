@@ -569,35 +569,17 @@ aside {
     }
 }
 
-.filter-dropdown {
-    > summary {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        border-radius: var(--radius-sm);
-        padding: var(--padding-md);
-        list-style: none; /* Hide the default marker in some browsers */
-        font-size: 1rem;
-        font-weight: bold;
-        color: var(--text-offwhite);
-        cursor: pointer;
+.twist-list-controls {
+    display: flex;
+    justify-content: space-evenly;
 
-        transition: background-color var(--transition-fast);
+    > button {
+        background-color: var(--panel-slate);
 
-        .chevron-icon {
-            transition: transform var(--transition-fast);
+        &:hover {
+            background-color: var(--panel-slate-hover);
         }
     }
-    &[open] > summary .chevron-icon {
-        transform: rotate(180deg);
-    }
-}
-
-.filter-panel {
-    border: var(--border-default);
-    border-radius: var(--radius-md);
-    padding: var(--padding-md);
-    background-color: var(--panel-slate);
 }
 
 

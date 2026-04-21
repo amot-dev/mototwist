@@ -68,17 +68,17 @@ async def serve_create_edit_modal(
     })
 
 
-@router.get("/templates/advanced-filter-modal", response_class=HTMLResponse)
-async def serve_advanced_filter_modal(
+@router.get("/templates/filter-modal", response_class=HTMLResponse)
+async def serve_filter_modal(
     request: Request,
     session: AsyncSession = Depends(get_db)
 ) -> HTMLResponse:
     """
-    Serve an HTML fragment containing the advanced filter modal.
+    Serve an HTML fragment containing the filter modal.
     """
     criteria = await Criterion.get_list(session)
 
-    return templates.TemplateResponse("fragments/twists/advanced_filter_modal.html", {
+    return templates.TemplateResponse("fragments/twists/filter_modal.html", {
             "request": request,
             "criteria": criteria,
             "Weather": Weather

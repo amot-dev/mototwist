@@ -82,6 +82,5 @@ overrideXHR();
 
 registerRideFormWeatherTypeListener();
 
-const filterModal = document.getElementById('modal-advanced-filter');
+const filterModal = document.getElementById('modal-filter');
 registerInitSliderListeners(filterModal);
-initRangeSlider('overall-rating');

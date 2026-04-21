@@ -152,6 +152,17 @@ class FilterWeather(BaseModel):
                 data[key] = [value]
         return data
 
+    @property
+    def active_count(self) -> int:
+        """
+        Dynamically sum the lengths of all list fields in the model.
+        """
+        return sum(
+            len(cast(list[Any], value))
+            for value in self.model_dump().values()
+            if isinstance(value, list)
+        )
+
 
     def calculate_conditions(self) -> list[ColumnExpressionArgument[bool]]:
         """
@@ -220,6 +231,29 @@ class TwistFilter(BaseModel):
     # View and Ordering
     view: Annotated[FilterView, Field()] = FilterView.ALL
     sort_order: Annotated[FilterSortOrder, Field()] = FilterSortOrder.BEST
+
+    @property
+    def active_count(self) -> int:
+        """
+        Return the number of active filters affecting the query,
+        ignoring search, pagination, map bounds, and display options.
+        """
+        count = 0
+
+        if self.ownership != FilterOwnership.ALL:
+            count += 1
+        if self.pavement != FilterPavement.ALL:
+            count += 1
+        if self.rides != FilterRide.ALL:
+            count += 1
+        if self.overall_rating_range.is_active:
+            count += 1
+
+        count += len(self.active_individual_rating_ranges)
+        count += len(self.excluded_criteria_slugs)
+        count += self.weather.active_count
+
+        return count
 
 
     # Ensure excluded criteria slugs is a set

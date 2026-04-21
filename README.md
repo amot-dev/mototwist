@@ -204,7 +204,7 @@ You can tune this behavior using two variables in your `.env` file:
 > With some, but minimal, technical knowledge, the available criteria can be changed! Eventually this may be configurable via environment variables. See [#11](https://github.com/amot-dev/mototwist/issues/11).
 
 5.  **Searching/Filtering:**
-    Twists may be searched and filtered by a few different criteria. Rides can be filtered. The "Advanced Filters" menu may be of use if you wish to filter by individual rating, ignore criteria in the overall rating, or only look at rides in certain weather conditions.
+    Twists may be searched and filtered by a few different criteria. Rides can be filtered.
 
 6.  **General Use:**
 
