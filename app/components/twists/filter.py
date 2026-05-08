@@ -431,11 +431,13 @@ class TwistFilter(BaseModel):
     ) -> tuple[Select[Any], list[ColumnExpressionArgument[Any]]]:
         is_filtering_overall = self.overall_rating_range.is_active
         is_filtering_individual = bool(self.active_individual_rating_ranges)
+        is_hiding_rideless_twists = is_filtering_overall or is_filtering_individual or self.view in [FilterView.TRENDING, FilterView.HIDDEN_GEMS]
 
         needs_bayesian_values = self.sort_order == FilterSortOrder.BEST or self.view == FilterView.HIDDEN_GEMS
+        needs_trending_score = self.sort_order == FilterSortOrder.TRENDING or self.view == FilterView.TRENDING
         needs_overall_average = is_filtering_overall or needs_bayesian_values
-        is_aggregating = needs_overall_average or self.view == FilterView.TRENDING
-        needs_labels = needs_bayesian_values or self.view == FilterView.TRENDING
+        is_aggregating = needs_overall_average or needs_trending_score
+        needs_labels = needs_bayesian_values or needs_trending_score
         needs_any_rating_logic = is_filtering_individual or is_aggregating
 
         if not needs_any_rating_logic:
@@ -487,18 +489,21 @@ class TwistFilter(BaseModel):
                     ride_count = func.count(Ride.id).label("ride_count")
                     rating_statement = rating_statement.add_columns(ride_count, overall_average)
 
-            # Filter by trending score
-            if self.view == FilterView.TRENDING:
+            # Calculate trending score
+            if needs_trending_score:
                 trending_score = self._get_trending_score_label(paved_criteria_slugs, unpaved_criteria_slugs)
-                rating_statement = rating_statement.having(trending_score > 0)
                 rating_statement = rating_statement.add_columns(trending_score)
+
+                # Filter by trending score
+                if self.view == FilterView.TRENDING:
+                    rating_statement = rating_statement.having(trending_score > 0)
 
         # If labels were added, a join is needed
         if needs_labels:
             rating_subquery = rating_statement.subquery()
 
-            if is_filtering_overall or is_filtering_individual or self.view == FilterView.TRENDING:
-                # If there are filters applied, Twists without rides are hidden
+            if is_hiding_rideless_twists:
+                # Twists without rides are hidden
                 statement = statement.join(rating_subquery, Twist.id == rating_subquery.c.id)
             else:
                 # Otherwise, outer join ensures 0-ride Twists are still returned for the sort calculations
