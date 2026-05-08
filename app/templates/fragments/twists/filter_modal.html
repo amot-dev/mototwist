@@ -53,10 +53,10 @@
                 <div class="filter-group">
                     <input type="radio" id="rides_all_twists" name="rides" value="all" form="twist-filter-form" checked>
                     <label class="label-button" for="rides_all_twists">All</label>
-                    <input type="radio" id="rides_submitted_twists" name="rides" value="submitted" form="twist-filter-form">
-                    <label class="label-button" for="rides_submitted_twists">Ridden</label>
-                    <input type="radio" id="rides_unsubmitted_twists" name="rides" value="unsubmitted" form="twist-filter-form">
-                    <label class="label-button" for="rides_unsubmitted_twists">Not Ridden</label>
+                    <input type="radio" id="twists_ridden" name="rides" value="ridden" form="twist-filter-form">
+                    <label class="label-button" for="twists_ridden">Ridden</label>
+                    <input type="radio" id="twists_not_ridden" name="rides" value="not_ridden" form="twist-filter-form">
+                    <label class="label-button" for="twists_not_ridden">Not Ridden</label>
                 </div>
             </fieldset>
         </div>
@@ -214,10 +214,11 @@
         </div>
     </fieldset>
 
-    {{ render_form_buttons(
-        submit_text="Apply",
-        submit_type="button",
-        submit_onclick="htmx.trigger(document.body, '" ~ EVENTS.REFRESH_TWISTS ~ "'); this.closest('dialog').close();"
-    ) }}
+    {% call render_form_buttons(group_classes="sticky-group") %}
+    <button class="button button-block" type="button" 
+            onclick="htmx.trigger(document.body, '{{ EVENTS.REFRESH_TWISTS }}'); this.closest('dialog').close();">
+        Apply
+    </button>
+    {% endcall %}
 </div>
 {% endcall %}

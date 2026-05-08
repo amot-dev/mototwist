@@ -12,17 +12,21 @@
 
 
 {# Render a consistent form button group #}
-{% macro render_form_buttons(submit_text="Submit", submit_extra_classes="", submit_type="submit", submit_onclick="") %}
-<div class="button-group">
+{% macro render_form_buttons(submit_text="Submit", group_classes="") %}
+<div class="button-group {{ group_classes | trim }}">
     <button class="button button-block button-cancel" type="button"
         onclick="this.closest('dialog').close()">
         Cancel
     </button>
-    <button class="button button-block {{ submit_extra_classes | trim }}"
-            type="{{ submit_type }}"
-            {% if submit_onclick %}onclick="{{ submit_onclick }}"{% endif %}>
+
+    {# Caller submit button or default #}
+    {% if caller %}
+        {{ caller() }}
+    {% else %}
+    <button class="button button-block" type="submit">
         {{ submit_text }}
     </button>
+    {% endif %}
 </div>
 {% endmacro %}
 

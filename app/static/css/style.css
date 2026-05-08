@@ -311,6 +311,16 @@ ul {
             flex-grow: 1;
         }
 
+        &.sticky-group {
+            position: sticky;
+            bottom: calc(var(--padding-xl) * -1);
+            z-index: 10;
+            border-top: var(--border-default);
+            margin: 0 2px;
+            padding: 1rem 0 var(--padding-xl);
+            background-color: var(--panel-slate);
+        }
+
         > button[type="submit"]:disabled {
             opacity: 0.6;
             background-color: var(--accent-blue);
@@ -573,7 +583,7 @@ aside {
     display: flex;
     justify-content: space-evenly;
 
-    > button {
+    > button, select {
         background-color: var(--panel-slate);
 
         &:hover {
