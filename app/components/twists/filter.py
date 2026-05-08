@@ -188,6 +188,7 @@ class FilterWeather(BaseModel):
 
 
 class FilterSortOrder(str, Enum):
+    DEFAULT = ""
     BEST = "best"
     CLOSEST = "closest"
     TRENDING = "trending"
@@ -230,7 +231,7 @@ class TwistFilter(BaseModel):
 
     # View and Ordering
     view: Annotated[FilterView, Field()] = FilterView.ALL
-    sort_order: Annotated[FilterSortOrder, Field()] = FilterSortOrder.BEST
+    sort_order: Annotated[FilterSortOrder, Field()] = FilterSortOrder.DEFAULT
 
     @property
     def active_count(self) -> int:
@@ -268,7 +269,12 @@ class TwistFilter(BaseModel):
 
     @field_validator("sort_order", mode="after")
     @classmethod
-    def sync_sort_order_with_view(cls, value: FilterSortOrder, info: ValidationInfo) -> FilterSortOrder:
+    def handle_default_sort_order(cls, value: FilterSortOrder, info: ValidationInfo) -> FilterSortOrder:
+        # Respect user selection if it exists
+        if value != FilterSortOrder.DEFAULT:
+            return value
+
+        # Otherwise, determine sort order based off view
         view = info.data.get("view")
 
         if view == FilterView.TRENDING:
@@ -277,7 +283,8 @@ class TwistFilter(BaseModel):
         if view == FilterView.HIDDEN_GEMS:
             return FilterSortOrder.BEST
 
-        return value
+        # Default to best
+        return FilterSortOrder.BEST
 
 
     @staticmethod
@@ -326,11 +333,11 @@ class TwistFilter(BaseModel):
             start=literal(0)
         ) / len(unpaved_slugs)
 
-        return case(
+        return func.sum(case(
             (and_(is_in_period, Twist.is_paved), paved_score),
             (is_in_period, unpaved_score),
             else_=literal(0)
-        ).label("trending_score")
+        )).label("trending_score")
 
 
     @staticmethod
@@ -516,7 +523,7 @@ class TwistFilter(BaseModel):
 
                 # Filter by hidden gems
                 if self.view == FilterView.HIDDEN_GEMS:
-                    hidden_gem_threshold = max(
+                    hidden_gem_threshold = min(
                         Criterion.MAX_VALUE,
                         global_average * settings.HIDDEN_GEM_AVERAGE_MULTIPLIER
                     )
