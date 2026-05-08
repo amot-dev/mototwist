@@ -7,14 +7,15 @@ from fastapi.encoders import jsonable_encoder
 from fastapi.responses import Response, StreamingResponse
 from io import BytesIO
 import json
-from random import choice, choices, randint
+from random import choice, choices, randint, sample
 from sqlalchemy import delete, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from typing import Annotated
 
 from app.components.core.database import get_db
-from app.components.core.models import Ride, Twist, User
+from app.components.core.models import Criterion, Ride, Twist, User
 from app.components.core.schema import Coordinate, Waypoint
+from app.components.core.settings import settings
 from app.components.core.utility import raise_http
 from app.components.debug.schema import SeedRidesForm
 from app.components.debug.services import generate_weights, reset_id_sequences_for, seed_twist_rides
@@ -190,28 +191,70 @@ async def seed_rides(
     user_to_exclude = choice(regular_users_to_exclude_from)
     authors = [user for user in all_users if user.id != user_to_exclude.id]
 
-    # Isolate the popular twist from the general pool
-    popular_twist = next((twist for twist in all_twists if twist.name == seed_data.popular_twist_name), None)
+    # Determine the different Twist pools
+    all_twists_pool = list(all_twists)
+
+    popular_twist = next((twist for twist in all_twists_pool if twist.name == seed_data.popular_twist_name), None)
     if not popular_twist:
-        raise_http(f"Twist '{seed_data.popular_twist_name}' not found", 422)
-    general_twists = [twist for twist in all_twists if twist.id != popular_twist.id]
+        raise_http(f"Popular Twist '{seed_data.popular_twist_name}' not found", 422)
+    all_twists_pool.remove(popular_twist)
 
-    # Generate a smaller pool of random dates to encourage date collisions
-    start_date = date.today() - timedelta(days=730)  # ~2 years ago
-    total_rides = seed_data.ride_count + seed_data.popular_twist_ride_count
-    date_pool = [
-        start_date + timedelta(days=randint(0, 730))
-        for _ in range(total_rides // 2)  # Create a pool half the size of rides
-    ]
-    if not date_pool: date_pool.append(date.today())  # Ensure pool is not empty
+    gem_twists: list[Twist] = []
+    if seed_data.hidden_gem_names:
+        gem_names = [name.strip() for name in seed_data.hidden_gem_names.split(",")]
+        for gem_name in gem_names:
+            # Look for a match
+            found_twist = next((twist for twist in all_twists_pool if twist.name == gem_name), None)
+            if not found_twist:
+                raise_http(f"Hidden Gem Twist '{gem_name}' not found", 422)
 
-    twist_ride_counts: Counter[Twist] = Counter()
+            gem_twists.append(found_twist)
+            all_twists_pool.remove(found_twist)
 
-    # Set ride count for the "popular" Twist
-    if seed_data.popular_twist_ride_count > 0:
-        twist_ride_counts[popular_twist] += seed_data.popular_twist_ride_count
+    trending_count = min(seed_data.trending_twist_count, len(all_twists_pool))
+    trending_twists = sample(all_twists_pool, trending_count) if trending_count > 0 else []
 
-    # Set ride count for remaining Twists using weighted random choices
+    general_twists = [twist for twist in all_twists_pool if twist not in trending_twists]
+
+    # Date Pools & Dynamic Thresholds
+    start_date = date.today() - timedelta(days=730)
+    standard_date_pool = [start_date + timedelta(days=randint(0, 730)) for _ in range(500)] # ~2 years ago
+    recent_date_pool = [date.today() - timedelta(days=randint(0, settings.TRENDING_TIMEFRAME_DAYS)) for _ in range(50)]
+    gem_min_bias = Criterion.MAX_VALUE - ((Criterion.MAX_VALUE - Criterion.MIN_VALUE) * 0.05) # Top 5% scores
+
+    average_rides_per_twist = seed_data.ride_count // max(1, len(all_twists))
+    hidden_gem_ride_target = max(3, int(average_rides_per_twist * 0.05)) # Hidden Gem Twists get roughly 5% of the average
+    trending_ride_target = max(12, int(average_rides_per_twist * 2)) # Trending Twists get roughly 150% of the average (boosted by recency too)
+
+    # Seed each pool
+    new_rides: list[Ride] = []
+
+    if gem_twists:
+        # +/- 50% variance, minimum 1
+        gem_counts = {
+            twist: randint(max(1, int(hidden_gem_ride_target * 0.5)), int(hidden_gem_ride_target * 1.5))
+            for twist in gem_twists
+        }
+        new_rides.extend(await seed_twist_rides(
+            session, gem_counts, authors, standard_date_pool,
+            outlier_chance=0.0, min_bias=gem_min_bias, max_bias=Criterion.MAX_VALUE
+        ))
+
+    if trending_twists:
+        # +/- 20% variance
+        trending_counts = {
+            twist: randint(int(trending_ride_target * 0.8), int(trending_ride_target * 1.2))
+            for twist in trending_twists
+        }
+        new_rides.extend(await seed_twist_rides(
+            session, trending_counts, authors, recent_date_pool, outlier_chance=0.05
+        ))
+
+    if popular_twist:
+        new_rides.extend(await seed_twist_rides(
+            session, {popular_twist: seed_data.popular_twist_ride_count}, authors, standard_date_pool
+        ))
+
     if seed_data.ride_count > 0 and general_twists:
         # Generate a list of weights to make twists in the center of the list more likely to be chosen
         # This is a poor man's numpy normal distribution
@@ -221,15 +264,12 @@ async def seed_rides(
         )
 
         # Select all the twists at once based on the generated weights
-        chosen_twists = choices(
+        general_counts = Counter(choices(
             population=general_twists,
             weights=twist_weights,
             k=seed_data.ride_count
-        )
-        twist_ride_counts.update(chosen_twists)
-
-    # Seed rides based off counts for each Twist
-    new_rides = await seed_twist_rides(session, twist_ride_counts, authors, date_pool)
+        ))
+        new_rides.extend(await seed_twist_rides(session, general_counts, authors, standard_date_pool))
 
     # Add all generated rides to the session and commit
     session.add_all(new_rides)
