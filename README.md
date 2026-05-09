@@ -9,6 +9,106 @@ Share your favorite roads with a community of fellow riders and find your next g
 ![A screenshot of MotoTwist, featuring the main view with a Twist popup open](docs/screenshot_main.png)
 
 
+## Usage
+1. **User Management:**
+    Twists may be viewed without an account, but creating a Twist requires one. If enabled by an admin, you can create your own account from the login modal.
+
+    a)  **Verification:**
+        New accounts need to be verified if `EMAIL_ENABLED` is `True`. Most actions can only be performed by verified users.
+
+    b)  **Deactivation:**
+        Accounts may be deactivated. Only an admin can reactivate it.
+
+    c)  **Deletion:**
+        Accounts may be deleted. It will be gone forever, but Twists and rides will remain.
+
+    d)  **Promotion:**
+        Only an admin can create or promote more admins. Initially, MotoTwist starts up with exactly one admin user.
+
+2.  **Drawing a New Twist:**
+    When you a creating a Twist, your map cursor will be a crosshair. Waypoints can be placed, dragged, named, and deleted.
+
+    a)  **Placing Waypoints:**
+        Placing waypoints is as easy as clicking on the map in the desired location. Note that this should be on or close to a road. Waypoints not near roads will be snapped to a road in the final route.
+
+    b)  **Dragging Waypoints:**
+        Clicking and holding a waypoint will allow you to move it around.
+
+    c)  **Naming Waypoints:**
+        Clicking on a waypoint will allow naming it. The first and last waypoints must be named.
+
+    d)  **Shaping Points:**
+        Waypoints other than the first and last are shaping points by default. These waypoints will be used to determine the Twist's final route, but will never be displayed. Use these as you would use dragging the route in Google Maps to achieve your desired route. You may name them to have them be displayed as part of the Twist.
+
+    e)  **Inserting Waypoints:**
+        Waypoints may be inserted before the last waypoint by right-clicking. This is useful for adding shaping points to modify the path taken.
+
+    f)  **Deleting Waypoints:**
+        Clicking on a waypoint will allow deleting it. Keep in mind that at least two waypoints are required to create a Twist.
+
+    g)  **Entering Twist Details:**
+        Once your route is ready, additional details can be specified for the Twist, including the name and whether it is paved or unpaved.
+
+    [Creating a new Twist.webm](https://github.com/user-attachments/assets/ac3a67c4-f46c-46a0-82cb-bcb45a68b3b8)
+
+
+> [!TIP]
+> Twists should be predominantly paved or unpaved. If they're a combination of both, select whichever was "the main attraction" of the Twist, as each type has different criteria they're rated on. If both segments are fun, consider splitting the Twist!
+
+3.  **Riding Twists:**
+    From the sidebar, you can now ride your Twist! There's a number of different criteria you can rate your ride on, and hovering over each will give a brief description. You will also need to specify the weather conditions, which can be filtered for later.
+
+    ![A screenshot of MotoTwist, featuring the ride modal open to submit a new ride](docs/screenshot_ride_modal.png)
+    ![A screenshot of MotoTwist, featuring the ride list open, showing existing rides](docs/screenshot_ride_list.png)
+
+> [!TIP]
+> With some, but minimal, technical knowledge, the available criteria can be changed! Eventually this may be configurable via environment variables. See [#11](https://github.com/amot-dev/mototwist/issues/11).
+
+4.  **Searching/Filtering:**
+    Twists can be discovered and organized using several powerful filtering layers:
+
+      * **Text Search**: Quickly find a Twist by name.
+
+      * **Views**: Toggle between "Trending" (high recent activity) or "Hidden Gems" (high quality, but low ride volume).
+
+      * **Surface Type**: Toggle between paved and unpaved (dirt/gravel) Twists.
+
+      * **Authorship & Ride History**: Filter by Twists you created vs. others, or by those you have personally ridden vs. those you haven't.
+
+      * **Weather Conditions**: Filter based on real-world conditions recorded during rides, such as temperature, light levels, or precipitation.
+
+      * **Rating Ranges**: Use sliders to filter by overall average quality or drill down into specific criteria (like "Twistyness" or "Seclusion").
+
+      ![A screenshot of MotoTwist, featuring the filter modal and its options](docs/screenshot_filter.png)
+
+5.  **Exporting:**
+    Twists can be exported, currently to either GPX Tracks or Routes. This can be useful for actually following them using a GPS!
+
+    a) Twists can be added to or removed from the export cart via the export button in the bottom right of the popup.
+
+    b) If there are items ready to export, the export cart icon will appear in the bottom right.
+
+    c) From the export cart, any number of Twists can be exported together in a collection.
+
+    ![A screenshot of MotoTwist, featuring the export cart](docs/screenshot_export.png)
+
+6.  **General Use:**
+
+    a) Clicking on a Twist in the list will pan the map to that Twist and open its popup.
+
+    b) Clicking on a Twist on the map will open its popup, revealing more information about it.
+
+    c) Twists can be hidden.
+
+    d) Clicking on a Waypoints on the map will show its name.
+
+    e) Twists can be modified or deleted.
+
+    f) Rides can be deleted, but not modified.
+
+    ![A screenshot of MotoTwist, featuring a popup open for a Twist with no rides](docs/screenshot_no_rides.png)
+
+
 ## Installation
 
 ### Prerequisites
@@ -116,7 +216,6 @@ These settings are useful for local development and debugging.
 
 ### Considerations
 
-
 #### Storage vs. Accuracy (Route Simplification)
 MotoTwist uses the Ramer-Douglas-Peucker algorithm to simplify route geometries before saving them to the database. Because standard OSRM routes contain thousands of redundant coordinate points on straightaways, simplification drastically reduces database storage and read API response times (does not affect write response times).
 
@@ -150,103 +249,6 @@ You can tune this behavior using two variables in your `.env` file:
 
 2.  **`HIDDEN_GEM_AVERAGE_MULTIPLIER`**:
     The "Hidden Gems" sort explicitly looks for Twists that are below the above threshold but are highly rated. This multiplier defines what "highly rated" means by comparing it to the global average rating. At the `1.25` default, a Twist must be 25% better than the global average to be considered a gem.
-
-
-## Usage
-1. **User Management:**
-    Twists may be viewed without an account, but creating a Twist requires one. If enabled by an admin, you can create your own account from the login modal.
-
-    a)  **Verification:**
-        New accounts need to be verified if `EMAIL_ENABLED` is `True`. Most actions can only be performed by verified users.
-
-    b)  **Deactivation:**
-        Accounts may be deactivated. Only an admin can reactivate it.
-
-    c)  **Deletion:**
-        Accounts may be deleted. It will be gone forever, but Twists and rides will remain.
-
-    d)  **Promotion:**
-        Only an admin can create or promote more admins. Initially, MotoTwist starts up with exactly one admin user.
-
-2.  **Drawing a New Twist:**
-    When you a creating a Twist, your map cursor will be a crosshair. Waypoints can be placed, dragged, named, and deleted.
-
-    a)  **Placing Waypoints:**
-        Placing waypoints is as easy as clicking on the map in the desired location. Note that this should be on or close to a road. Waypoints not near roads will be snapped to a road in the final route.
-
-    b)  **Dragging Waypoints:**
-        Clicking and holding a waypoint will allow you to move it around.
-
-    c)  **Naming Waypoints:**
-        Clicking on a waypoint will allow naming it. The first and last waypoints must be named.
-
-    d)  **Shaping Points:**
-        Waypoints other than the first and last are shaping points by default. These waypoints will be used to determine the Twist's final route, but will never be displayed. Use these as you would use dragging the route in Google Maps to achieve your desired route. You may name them to have them be displayed as part of the Twist.
-
-    e)  **Inserting Waypoints:**
-        Waypoints may be inserted before the last waypoint by right-clicking. This is useful for adding shaping points to modify the path taken.
-
-    f)  **Deleting Waypoints:**
-        Clicking on a waypoint will allow deleting it. Keep in mind that at least two waypoints are required to create a Twist.
-
-    g)  **Entering Twist Details:**
-        Once your route is ready, additional details can be specified for the Twist, including the name and whether it is paved or unpaved.
-
-> [!TIP]
-> Twists should be predominantly paved or unpaved. If they're a combination of both, select whichever was "the main attraction" of the Twist, as each type has different criteria they're rated on. If both segments are fun, consider splitting the Twist!
-
-3.  **Riding Twists:**
-    From the sidebar, you can now ride your Twist! There's a number of different criteria you can rate your ride on, and hovering over each will give a brief description. You will also need to specify the weather conditions, which can be filtered for later.
-
-    ![A screenshot of MotoTwist, featuring the ride modal open to submit a new ride](docs/screenshot_ride_modal.png)
-    ![A screenshot of MotoTwist, featuring the ride list open, showing existing rides](docs/screenshot_ride_list.png)
-
-> [!TIP]
-> With some, but minimal, technical knowledge, the available criteria can be changed! Eventually this may be configurable via environment variables. See [#11](https://github.com/amot-dev/mototwist/issues/11).
-
-4.  **Searching/Filtering:**
-    Twists can be discovered and organized using several powerful filtering layers:
-
-      * **Text Search**: Quickly find a Twist by name.
-
-      * **Views**: Toggle between "Trending" (high recent activity) or "Hidden Gems" (high quality, but low ride volume).
-
-      * **Surface Type**: Toggle between paved and unpaved (dirt/gravel) Twists.
-
-      * **Authorship & Ride History**: Filter by Twists you created vs. others, or by those you have personally ridden vs. those you haven't.
-
-      * **Weather Conditions**: Filter based on real-world conditions recorded during rides, such as temperature, light levels, or precipitation.
-
-      * **Rating Ranges**: Use sliders to filter by overall average quality or drill down into specific criteria (like "Twistyness" or "Seclusion").
-
-      ![A screenshot of MotoTwist, featuring the filter modal and its options](docs/screenshot_filter.png)
-
-5.  **Exporting:**
-    Twists can be exported, currently to either GPX Tracks or Routes. This can be useful for actually following them using a GPS!
-
-    a) Twists can be added to or removed from the export cart via the export button in the bottom right of the popup.
-
-    b) If there are items ready to export, the export cart icon will appear in the bottom right.
-
-    c) From the export cart, any number of Twists can be exported together in a collection.
-
-    ![A screenshot of MotoTwist, featuring the export cart](docs/screenshot_export.png)
-
-6.  **General Use:**
-
-    a) Clicking on a Twist in the list will pan the map to that Twist and open its popup.
-
-    b) Clicking on a Twist on the map will open its popup, revealing more information about it.
-
-    c) Twists can be hidden.
-
-    d) Clicking on a Waypoints on the map will show its name.
-
-    e) Twists can be modified or deleted.
-
-    f) Rides can be deleted, but not modified.
-
-    ![A screenshot of MotoTwist, featuring a popup open for a Twist with no rides](docs/screenshot_no_rides.png)
 
 
 ## Developing
