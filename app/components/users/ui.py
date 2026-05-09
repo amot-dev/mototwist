@@ -13,7 +13,7 @@ router = APIRouter(
 )
 
 
-@router.get("/templates/profile-modal", response_class=HTMLResponse)
+@router.get("/ui/profile-modal", response_class=HTMLResponse)
 async def render_profile_modal(
     request: Request,
     user: User = Depends(current_user)

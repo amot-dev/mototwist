@@ -12,7 +12,7 @@ router = APIRouter(
 )
 
 
-@router.get("/auth/widget", response_class=HTMLResponse)
+@router.get("/auth/ui/widget", response_class=HTMLResponse)
 async def serve_auth_widget(
     request: Request,
     user: User | None = Depends(current_user_optional)

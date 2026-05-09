@@ -53,7 +53,7 @@ async function loadTwistLayer(map, twistId) {
         const popupContent = document.createElement('div');
         popupContent.classList.add('twist-popup');
         popupContent.dataset.paved = `${twistData.is_paved}`;
-        popupContent.setAttribute('hx-get', `/twists/${twistId}/templates/popup`);
+        popupContent.setAttribute('hx-get', `/twists/${twistId}/ui/popup`);
         popupContent.setAttribute('hx-swap', 'innerHTML');
         popupContent.setAttribute('hx-trigger', `intersect, ${EVENTS.AUTH_CHANGE} from:body, ${EVENTS.EXPORT_CART_CHANGED} from:body`);
         popupContent.innerHTML = '<p class="loading">Loading details...</p>';
@@ -442,7 +442,7 @@ export function registerTwistListeners(map) {
         const customEvent = /** @type {CustomEvent<{path: string, parameters: Record<string, any>, triggeringEvent: Event | null}>} */ (event);
 
         // Check if this is a request to the Twist list endpoint
-        if (customEvent.detail.path === '/twists/templates/list') {
+        if (customEvent.detail.path === '/twists/ui/list') {
             const p = customEvent.detail.parameters;
             const trigger = customEvent.detail.triggeringEvent;
 

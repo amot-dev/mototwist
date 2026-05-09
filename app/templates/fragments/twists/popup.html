@@ -11,7 +11,7 @@
     <h4 id="twist-{{ twist.id }}-average-rating">Average Rating</h4>
     {% if user %}
     <button class="button button-very-small button-block" onclick="document.querySelector('#modal-ride-twist').showModal()"
-        hx-get="/twists/{{ twist.id }}/rides/templates/ride-modal"
+        hx-get="/twists/{{ twist.id }}/rides/ui/ride-modal"
         hx-target="#modal-ride-twist"
         hx-swap="innerHTML">
 
@@ -22,7 +22,7 @@
 
 <form id="twist-{{ twist.id }}-ride-filter-form" class="filter-form"
     hx-ext="form-json,morph"
-    hx-post="/twists/{{ twist.id }}/rides/templates/averages"
+    hx-post="/twists/{{ twist.id }}/rides/ui/averages"
     hx-target="next .averages-list"
     hx-include="#twist-filter-form"
     hx-swap="morph:innerHTML"
@@ -40,7 +40,7 @@
 
 <ul class="averages-list"
     hx-ext="form-json"
-    hx-post="/twists/{{ twist.id }}/rides/templates/averages"
+    hx-post="/twists/{{ twist.id }}/rides/ui/averages"
     hx-include="#twist-filter-form"
     hx-swap="innerHTML"
     hx-trigger="load">
@@ -48,7 +48,7 @@
 
 <footer class="center-flex"
     hx-ext="form-json"
-    hx-post="/twists/{{ twist.id }}/rides/templates/view_all_button"
+    hx-post="/twists/{{ twist.id }}/rides/ui/view_all_button"
     hx-target="find button"
     hx-include="#twist-filter-form,#twist-{{ twist.id }}-ride-filter-form"
     hx-swap="outerHTML"
@@ -63,7 +63,7 @@
         {% if editable %}
         <button id="edit-twist" class="button button-very-small button-link" type="button" title="Edit Twist"
             data-twist-id="{{ twist.id }}"
-            hx-get="/twists/templates/create-edit-modal?twist_id={{ twist.id }}"
+            hx-get="/twists/ui/create-edit-modal?twist_id={{ twist.id }}"
             hx-params="none"
             hx-target="#modal-create-edit-twist"
             hx-swap="innerHTML">
@@ -72,7 +72,7 @@
         </button>
         <button class="button button-very-small button-link" type="button" title="Delete Twist"
             onclick="document.querySelector('#modal-delete-twist').showModal()"
-            hx-get="/twists/{{ twist.id }}/templates/delete-modal"
+            hx-get="/twists/{{ twist.id }}/ui/delete-modal"
             hx-params="none"
             hx-target="#modal-delete-twist"
             hx-swap="innerHTML">

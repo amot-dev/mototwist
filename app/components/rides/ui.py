@@ -26,7 +26,7 @@ router = APIRouter(
 )
 
 
-@router.get("/templates/ride-modal", response_class=HTMLResponse)
+@router.get("/ui/ride-modal", response_class=HTMLResponse)
 async def serve_ride_modal(
     request: Request,
     twist_id: int,
@@ -62,7 +62,7 @@ async def serve_ride_modal(
     })
 
 
-@router.post("/templates/averages", response_class=HTMLResponse)
+@router.post("/ui/averages", response_class=HTMLResponse)
 async def serve_averages(
     request: Request,
     twist_id: int,
@@ -93,7 +93,7 @@ async def serve_averages(
     })
 
 
-@router.post("/templates/view_all_button", response_class=HTMLResponse)
+@router.post("/ui/view_all_button", response_class=HTMLResponse)
 async def serve_view_all_button(
     request: Request,
     twist_id: int,
@@ -146,7 +146,7 @@ async def serve_view_all_button(
     })
 
 
-@router.post("/templates/view-modal", response_class=HTMLResponse)
+@router.post("/ui/view-modal", response_class=HTMLResponse)
 async def serve_view_modal(
     request: Request,
     twist_id: int,

@@ -6,7 +6,7 @@
 
     {% if loop.last and loop.length > 1 %}
         hx-ext="form-json"
-        hx-post="/twists/templates/list"
+        hx-post="/twists/ui/list"
         hx-swap="afterend"
         hx-trigger="intersect once"
         hx-include="#twist-filter-form"

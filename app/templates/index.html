@@ -24,7 +24,7 @@
     <h1>{{ SETTINGS.MOTOTWIST_INSTANCE_NAME }}</h1>
     <form id="twist-filter-form" class="filter-form"
         hx-ext="form-json"
-        hx-post="/twists/templates/list"
+        hx-post="/twists/ui/list"
         hx-target="#twist-list"
         hx-swap="innerHTML"
         hx-trigger="change,
@@ -61,7 +61,7 @@
 
     <ul id="twist-list"
         hx-ext="form-json"
-        hx-post="/twists/templates/list"
+        hx-post="/twists/ui/list"
         hx-trigger="load"
         hx-swap="innerHTML">
 
@@ -71,7 +71,7 @@
 
 <div id="map">
     <div id="twist-action-buttons" class="fab-container"
-        hx-get="/twists/templates/action-buttons"
+        hx-get="/twists/ui/action-buttons"
         hx-trigger="load,
             {{ EVENTS.EXPORT_CART_CHANGED }} from:body,
             {{ EVENTS.AUTH_CHANGE }} from:body"
@@ -175,7 +175,7 @@
 </dialog>
 
 <dialog id="modal-profile" class="modal"
-    hx-get="/users/templates/profile-modal"
+    hx-get="/users/ui/profile-modal"
     hx-target="this"
     hx-trigger="{{ EVENTS.RELOAD_PROFILE }} from:body"
     hx-swap="innerHTML">
@@ -192,7 +192,7 @@
 </dialog>
 
 <dialog id="modal-filter" class="modal"
-    hx-get="/twists/templates/filter-modal"
+    hx-get="/twists/ui/filter-modal"
     hx-trigger="load"
     hx-swap="innerHTML">
 
@@ -208,7 +208,7 @@
 </dialog>
 
 <dialog id="modal-export-twists" class="modal"
-    hx-get="/twists/templates/export-modal"
+    hx-get="/twists/ui/export-modal"
     hx-target="#modal-export-twists"
     hx-trigger="load, {{ EVENTS.EXPORT_CART_CHANGED }} from:body"
     hx-swap="innerHTML">

@@ -23,7 +23,7 @@ router = APIRouter(
 )
 
 
-@router.get("/templates/action-buttons", response_class=HTMLResponse)
+@router.get("/ui/action-buttons", response_class=HTMLResponse)
 async def serve_action_buttons(
     request: Request,
     export_cart: TwistExportCart = Depends(get_twist_export_cart),
@@ -38,7 +38,7 @@ async def serve_action_buttons(
     })
 
 
-@router.get("/templates/create-edit-modal", response_class=HTMLResponse)
+@router.get("/ui/create-edit-modal", response_class=HTMLResponse)
 async def serve_create_edit_modal(
     request: Request,
     twist_id: int | None = None,
@@ -66,7 +66,7 @@ async def serve_create_edit_modal(
     })
 
 
-@router.get("/templates/filter-modal", response_class=HTMLResponse)
+@router.get("/ui/filter-modal", response_class=HTMLResponse)
 async def serve_filter_modal(
     request: Request,
     session: AsyncSession = Depends(get_db)
@@ -82,7 +82,7 @@ async def serve_filter_modal(
         })
 
 
-@router.post("/templates/list", response_class=HTMLResponse)
+@router.post("/ui/list", response_class=HTMLResponse)
 async def serve_list(
     request: Request,
     filter: TwistFilter,
@@ -133,7 +133,7 @@ async def build_single_list_item(
     })
 
 
-@router.get("/{twist_id}/templates/popup", response_class=HTMLResponse)
+@router.get("/{twist_id}/ui/popup", response_class=HTMLResponse)
 async def serve_popup(
     request: Request,
     twist_id: int,
@@ -182,7 +182,7 @@ async def build_twist_export_toggle(
     })
 
 
-@router.get("/templates/export-modal", response_class=HTMLResponse)
+@router.get("/ui/export-modal", response_class=HTMLResponse)
 async def serve_export_modal(
     request: Request,
     export_cart: TwistExportCart = Depends(get_twist_export_cart),
@@ -205,7 +205,7 @@ async def serve_export_modal(
     })
 
 
-@router.get("/{twist_id}/templates/delete-modal", response_class=HTMLResponse)
+@router.get("/{twist_id}/ui/delete-modal", response_class=HTMLResponse)
 async def serve_delete_modal(
     request: Request,
     twist_id: int,

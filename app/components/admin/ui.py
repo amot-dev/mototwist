@@ -15,7 +15,7 @@ router = APIRouter(
 )
 
 
-@router.get("/templates/settings-modal", response_class=HTMLResponse)
+@router.get("/ui/settings-modal", response_class=HTMLResponse)
 async def serve_settings_modal(
     request: Request,
     admin: User = Depends(verify(current_admin)),

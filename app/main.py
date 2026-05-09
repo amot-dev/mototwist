@@ -24,12 +24,12 @@ from app.components.core.utility import format_loc_for_user, raise_http, sort_sc
 from app.components.rides.services import initialize_criteria
 from app.components.users.services import current_user_optional
 
-from app.components.admin import api as admin_api, fragments as admin_fragments
-from app.components.auth import api as auth_api, fragments as auth_fragments
-from app.components.debug import api as debug_api, fragments as debug_fragments
-from app.components.rides import api as rides_api, fragments as rides_fragments
-from app.components.twists import api as twists_api, fragments as twists_fragments
-from app.components.users import api as users_api, fragments as users_fragments
+from app.components.admin import api as admin_api, ui as admin_ui
+from app.components.auth import api as auth_api, ui as auth_ui
+from app.components.debug import api as debug_api, ui as debug_ui
+from app.components.rides import api as rides_api, ui as rides_ui
+from app.components.twists import api as twists_api, ui as twists_ui
+from app.components.users import api as users_api, ui as users_ui
 
 
 @asynccontextmanager
@@ -221,17 +221,17 @@ async def get_latest_version(request: Request) -> HTMLResponse:
 
 
 app.include_router(admin_api.router)
-app.include_router(admin_fragments.router)
+app.include_router(admin_ui.router)
 app.include_router(auth_api.router)
-app.include_router(auth_fragments.router)
+app.include_router(auth_ui.router)
 app.include_router(debug_api.router)
-app.include_router(debug_fragments.router)
+app.include_router(debug_ui.router)
 app.include_router(rides_api.router)
-app.include_router(rides_fragments.router)
+app.include_router(rides_ui.router)
 app.include_router(twists_api.router)
-app.include_router(twists_fragments.router)
+app.include_router(twists_ui.router)
 app.include_router(users_api.router)
-app.include_router(users_fragments.router)
+app.include_router(users_ui.router)
 
 # TODO: fix update_schema_name no longer working
 # update_schema_name(app, auth.login, "UserLoginForm")

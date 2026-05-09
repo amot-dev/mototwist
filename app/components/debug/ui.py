@@ -19,7 +19,7 @@ router = APIRouter(
 )
 
 
-@router.get("/templates/menu-button", response_class=HTMLResponse)
+@router.get("/ui/menu-button", response_class=HTMLResponse)
 async def serve_menu_button(
     request: Request,
     user: User = Depends(current_user_optional),

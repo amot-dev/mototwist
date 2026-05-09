@@ -1,5 +1,5 @@
 <div id="auth-widget"
-    hx-get="/auth/widget"
+    hx-get="/auth/ui/widget"
     hx-trigger="{{ EVENTS.AUTH_CHANGE }} from:body"
     hx-swap="outerHTML">
 
@@ -10,7 +10,7 @@
     </button>
     <div class="auth-dropdown-menu">
         <button class="button button-block" onclick="document.querySelector('#modal-profile').showModal()"
-            hx-get="/users/templates/profile-modal"
+            hx-get="/users/ui/profile-modal"
             hx-target="#modal-profile"
             hx-swap="innerHTML">
 
@@ -19,7 +19,7 @@
 
         {% if user.is_superuser %}
         <button class="button button-block" onclick="document.querySelector('#modal-admin-settings').showModal()"
-            hx-get="/admin/templates/settings-modal"
+            hx-get="/admin/ui/settings-modal"
             hx-target="#modal-admin-settings"
             hx-swap="innerHTML">
 
