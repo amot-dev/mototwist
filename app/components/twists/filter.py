@@ -200,8 +200,8 @@ class TwistFilter(BaseModel):
 
     # Basic Filtering
     search: Annotated[str | None, Field()] = None
-    author: Annotated[FilterAuthor, Field()] = FilterAuthor.ALL
     pavement: Annotated[FilterPavement, Field()] = FilterPavement.ALL
+    author: Annotated[FilterAuthor, Field()] = FilterAuthor.ALL
     rides: Annotated[FilterRide, Field()] = FilterRide.ALL
 
     # Map Filtering and Ordering
@@ -240,9 +240,11 @@ class TwistFilter(BaseModel):
         """
         count = 0
 
-        if self.author != FilterAuthor.ALL:
+        if self.view != FilterView.ALL:
             count += 1
         if self.pavement != FilterPavement.ALL:
+            count += 1
+        if self.author != FilterAuthor.ALL:
             count += 1
         if self.rides != FilterRide.ALL:
             count += 1
@@ -560,15 +562,15 @@ class TwistFilter(BaseModel):
         if self.search:
             statement = statement.where(Twist.name.icontains(self.search))
 
-        if self.author == FilterAuthor.OWN:
-            statement = statement.where(Twist.author_id == user.id) if user else statement.where(false())
-        elif user and self.author == FilterAuthor.OTHER:
-            statement = statement.where(Twist.author_id != user.id)
-
         if self.pavement == FilterPavement.PAVED:
             statement = statement.where(Twist.is_paved == True)
         elif self.pavement == FilterPavement.UNPAVED:
             statement = statement.where(Twist.is_paved == False)
+
+        if self.author == FilterAuthor.OWN:
+            statement = statement.where(Twist.author_id == user.id) if user else statement.where(false())
+        elif user and self.author == FilterAuthor.OTHER:
+            statement = statement.where(Twist.author_id != user.id)
 
         # User-submitted Ride Filtering
         if user and self.rides != FilterRide.ALL:
