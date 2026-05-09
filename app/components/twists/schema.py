@@ -28,6 +28,14 @@ class TwistBasic(BaseModel):
     is_paved: bool
 
 
+class TwistEdit(TwistBasic):
+    model_config = ConfigDict(from_attributes=True)
+
+    fields: ClassVar = TwistBasic.fields + (Twist.description,)
+
+    description: str
+
+
 class TwistGeometry(TwistBasic):
     model_config = ConfigDict(from_attributes=True)
 

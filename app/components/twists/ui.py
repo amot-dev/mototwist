@@ -13,7 +13,7 @@ from app.components.core.settings import settings
 from app.components.core.utility import raise_http
 from app.components.twists.export import TwistExportCart, TwistExportFormat, get_twist_export_cart
 from app.components.twists.filter import FilterAuthor, TwistFilter
-from app.components.twists.schema import TwistBasic, TwistListItem, TwistPopup
+from app.components.twists.schema import TwistBasic, TwistEdit, TwistListItem, TwistPopup
 from app.components.users.services import current_user, current_user_optional, verify
 
 
@@ -53,9 +53,9 @@ async def serve_create_edit_modal(
     if twist_id is not None:
         try:
             result = await session.execute(
-                select(*TwistBasic.fields).where(Twist.id == twist_id)
+                select(*TwistEdit.fields).where(Twist.id == twist_id)
             )
-            twist = TwistBasic.model_validate(result.one())
+            twist = TwistEdit.model_validate(result.one())
         except NoResultFound:
             raise_http(f"Twist with id '{twist_id}' not found", status_code=404)
         except MultipleResultsFound:
