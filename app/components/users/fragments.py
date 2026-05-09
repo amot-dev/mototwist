@@ -22,8 +22,7 @@ async def render_profile_modal(
     Serve an HTML fragment containing the current user's profile modal.
     """
 
-    response = templates.TemplateResponse("fragments/users/profile_modal.html", {
-        "request": request,
+    response = templates.TemplateResponse(request, "fragments/users/profile_modal.html", {
         "user": user
     })
     response.headers["HX-Trigger-After-Swap"] = EventSet(

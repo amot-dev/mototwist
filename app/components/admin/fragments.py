@@ -29,8 +29,7 @@ async def serve_settings_modal(
     )
     users = result.all()
 
-    response = templates.TemplateResponse("fragments/admin/settings_modal.html", {
-        "request": request,
+    response = templates.TemplateResponse(request, "fragments/admin/settings_modal.html", {
         "users": users
     })
 

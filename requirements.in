@@ -4,11 +4,13 @@ css-inline
 fastapi
 fastapi-users[sqlalchemy]
 GeoAlchemy2
+gpxpy
 httpx
 humanize
 itsdangerous
 jinja2
 libsass
+lxml
 pydantic-settings
 python-multipart
 redis[hiredis]

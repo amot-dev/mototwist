@@ -273,9 +273,10 @@ Follow these steps to set up and run the application in development mode.
 9.  **Updating packages:**
     High-level dependencies are stored in `requirements.in` and versions are pinned in `requirements.txt`. Pending a more robust package management system than pip (too busy to switch over at the moment), the process is as follows:
     ```bash
-    # Setup
-    python -m pip install requirements.in
-    python -m pip freeze > requirements.txt
+    python -m pip install --upgrade pip pip-audit pip-tools   # Install dev dependencies
+    python -m pip install -r requirements.in                  # Install dependencies
+    python -m pip piptools compile --upgrade requirements.in  # Update requirements.txt
+    python -m pip_audit -r requirements.txt                   # Check for vulnerabilities
     ```
     Ensure the new versions are well-tested. If the Python version goes up, ensure the image is updated in the `Dockerfile` too.
 

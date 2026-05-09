@@ -32,8 +32,7 @@ async def serve_action_buttons(
     """
     Serve an HTML fragment containing the Twist creation buttons.
     """
-    return templates.TemplateResponse("fragments/twists/action_buttons.html", {
-        "request": request,
+    return templates.TemplateResponse(request, "fragments/twists/action_buttons.html", {
         "user": user,
         "export_cart_count": export_cart.count
     })
@@ -62,8 +61,7 @@ async def serve_create_edit_modal(
         except MultipleResultsFound:
             raise_http(f"Multiple Twists found for id '{twist_id}'", status_code=500)
 
-    return templates.TemplateResponse("fragments/twists/create_edit_modal.html", {
-        "request": request,
+    return templates.TemplateResponse(request, "fragments/twists/create_edit_modal.html", {
         "twist": twist
     })
 
@@ -78,8 +76,7 @@ async def serve_filter_modal(
     """
     criteria = await Criterion.get_list(session)
 
-    return templates.TemplateResponse("fragments/twists/filter_modal.html", {
-            "request": request,
+    return templates.TemplateResponse(request, "fragments/twists/filter_modal.html", {
             "criteria": criteria,
             "Weather": Weather
         })
@@ -97,8 +94,7 @@ async def serve_list(
     """
     twists = await filter.apply_for(session, user)
 
-    response = templates.TemplateResponse("fragments/twists/list.html", {
-        "request": request,
+    response = templates.TemplateResponse(request, "fragments/twists/list.html", {
         "twists": twists,
         "start_page": filter.page,
         "next_page": filter.page + filter.pages,
@@ -130,8 +126,7 @@ async def build_single_list_item(
     except MultipleResultsFound:
         raise_http(f"Multiple Twists found for id '{twist_id}'", status_code=500)
 
-    return templates.TemplateResponse("fragments/twists/list.html", {
-        "request": request,
+    return templates.TemplateResponse(request, "fragments/twists/list.html", {
         "twists": [twist_list_item],
         "start_page": 1,
         "twists_per_page": 1
@@ -164,8 +159,7 @@ async def serve_popup(
     # Check if the user is allowed to edit/delete the Twist
     editable = (user.is_superuser or user.id == twist.author_id) if user else False
 
-    return templates.TemplateResponse("fragments/twists/popup.html", {
-        "request": request,
+    return templates.TemplateResponse(request, "fragments/twists/popup.html", {
         "user": user,
         "twist": twist,
         "editable": editable,
@@ -182,8 +176,7 @@ async def build_twist_export_toggle(
     """
      Build and return the TemplateResponse for the Twist export toggle.
     """
-    return templates.TemplateResponse("fragments/twists/export_toggle.html", {
-        "request": request,
+    return templates.TemplateResponse(request, "fragments/twists/export_toggle.html", {
         "twist": {"id": twist_id}, # So {{ twist.id }} resolves in the template
         "in_export_cart": in_export_cart
     })
@@ -205,8 +198,7 @@ async def serve_export_modal(
     )
     twists = [TwistBasic.model_validate(row) for row in result.all()]
 
-    return templates.TemplateResponse("fragments/twists/export_modal.html", {
-        "request": request,
+    return templates.TemplateResponse(request, "fragments/twists/export_modal.html", {
         "twists": twists,
         "export_cart": export_cart,
         "TwistExportFormat": TwistExportFormat
@@ -232,7 +224,6 @@ async def serve_delete_modal(
     except MultipleResultsFound:
         raise_http(f"Multiple Twists found for id '{twist_id}'", status_code=500)
 
-    return templates.TemplateResponse("fragments/twists/delete_modal.html", {
-        "request": request,
+    return templates.TemplateResponse(request, "fragments/twists/delete_modal.html", {
         "twist": twist
     })

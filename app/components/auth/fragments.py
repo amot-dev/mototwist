@@ -20,8 +20,7 @@ async def serve_auth_widget(
     """
     Serve the auth widget.
     """
-    return templates.TemplateResponse("fragments/auth/widget.html", {
-        "request": request,
+    return templates.TemplateResponse(request, "fragments/auth/widget.html", {
         "user": user
     })
 
@@ -32,9 +31,7 @@ async def serve_register_page(request: Request) -> HTMLResponse:
     Serve the register page.
     """
 
-    return templates.TemplateResponse("register.html", {
-        "request": request
-    })
+    return templates.TemplateResponse(request, "register.html")
 
 
 @router.get("/verify", tags=["Index"], response_class=HTMLResponse)
@@ -46,8 +43,7 @@ async def serve_verify_page(
     Serve the verify page.
     """
 
-    return templates.TemplateResponse("verify.html", {
-        "request": request,
+    return templates.TemplateResponse(request, "verify.html", {
         "token": token
     })
 
@@ -61,7 +57,6 @@ async def serve_reset_password_page(
     Serve the password reset page.
     """
 
-    return templates.TemplateResponse("reset_password.html", {
-        "request": request,
+    return templates.TemplateResponse(request, "reset_password.html", {
         "token": token
     })

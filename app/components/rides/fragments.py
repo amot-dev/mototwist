@@ -50,8 +50,7 @@ async def serve_ride_modal(
     criterion_initial_value = int((Criterion.MIN_VALUE + Criterion.MAX_VALUE) / 2)
     criteria = await Criterion.get_list(session, twist.is_paved)
 
-    return templates.TemplateResponse("fragments/rides/ride_modal.html", {
-        "request": request,
+    return templates.TemplateResponse(request, "fragments/rides/ride_modal.html", {
         "twist": twist,
         "today": today,
         "tomorrow": tomorrow,
@@ -86,8 +85,7 @@ async def serve_averages(
 
     average_ratings = await filter.calculate_average_rating_for(session, user, twist)
 
-    return templates.TemplateResponse("fragments/rides/averages.html", {
-        "request": request,
+    return templates.TemplateResponse(request, "fragments/rides/averages.html", {
         "twist_id": twist.id,
         "overall_average": average_ratings.overall,
         "average_ratings": average_ratings.by_criteria,
@@ -141,8 +139,7 @@ async def serve_view_all_button(
     if filtered:
         ride_count_str += " (filtered)"
 
-    return templates.TemplateResponse("fragments/rides/view_all.html", {
-        "request": request,
+    return templates.TemplateResponse(request, "fragments/rides/view_all.html", {
         "twist_id": twist_id,
         "ride_count": ride_count,
         "ride_count_str": ride_count_str
@@ -232,16 +229,14 @@ async def serve_view_modal(
 
     # For offset 0 (beginning), use the template including the header, otherwise just the list
     if offset == 0:
-        return templates.TemplateResponse("fragments/rides/view_modal.html", {
-            "request": request,
+        return templates.TemplateResponse(request, "fragments/rides/view_modal.html", {
             "twist": twist,
             "ride_list": ride_list,
             "next_offset": offset + settings.RIDES_FETCHED_PER_QUERY,
             "criterion_max_value": Criterion.MAX_VALUE
         })
     else:
-        return templates.TemplateResponse("fragments/rides/view_list.html", {
-            "request": request,
+        return templates.TemplateResponse(request, "fragments/rides/view_list.html", {
             "twist": twist,
             "ride_list": ride_list,
             "next_offset": offset + settings.RIDES_FETCHED_PER_QUERY,

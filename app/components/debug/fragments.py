@@ -27,8 +27,7 @@ async def serve_menu_button(
     """
     Serve an HTML fragment containing the debug menu button.
     """
-    return templates.TemplateResponse("fragments/debug/menu_button.html", {
-        "request": request,
+    return templates.TemplateResponse(request, "fragments/debug/menu_button.html", {
         "user": user
     })
 
@@ -78,8 +77,7 @@ async def serve_debug_page(
     twist_count = results[3].scalar_one()
     ride_count = results[4].scalar_one()
 
-    return templates.TemplateResponse("debug.html", {
-        "request": request,
+    return templates.TemplateResponse(request, "debug.html", {
         "user_count": user_count,
         "admin_count": admin_count,
         "inactive_count": inactive_count,

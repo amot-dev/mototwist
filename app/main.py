@@ -173,8 +173,7 @@ async def render_index_page(
     """
     # Add a flash message if it exists in the session
     flash_message: str = request.session.pop("flash", None)
-    return templates.TemplateResponse("index.html", {
-        "request": request,
+    return templates.TemplateResponse(request, "index.html", {
         "user": user,
         "flash_message": flash_message
     })
@@ -211,8 +210,7 @@ async def get_latest_version(request: Request) -> HTMLResponse:
         )
 
     if settings.MOTOTWIST_VERSION != latest_version:
-        response = templates.TemplateResponse("fragments/new_version.html", {
-            "request": request,
+        response = templates.TemplateResponse(request, "fragments/new_version.html", {
             "latest_version": latest_version
         })
         response.headers["HX-Trigger-After-Swap"] = EventSet(

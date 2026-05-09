@@ -67,8 +67,7 @@ async def create_user(
     if settings.EMAIL_ENABLED:
         await user_manager.request_verify(user, request=request)
 
-    response = templates.TemplateResponse("fragments/admin/settings_user.html", {
-        "request": request,
+    response = templates.TemplateResponse(request, "fragments/admin/settings_user.html", {
         "user": user,
         "reset_password_link": f"{settings.MOTOTWIST_BASE_URL}/reset-password?token={user_manager.generated_token}"
     })
@@ -142,8 +141,7 @@ async def toggle_user_active(
     user_updates.is_active = not user.is_active
     await user_manager.update(user_updates, user, request=request)
 
-    response = templates.TemplateResponse("fragments/admin/settings_user.html", {
-        "request": request,
+    response = templates.TemplateResponse(request, "fragments/admin/settings_user.html", {
         "user": user
     })
 
@@ -182,8 +180,7 @@ async def toggle_user_admin(
     user_updates.is_superuser = not user.is_superuser
     await user_manager.update(user_updates, user, request=request)
 
-    response = templates.TemplateResponse("fragments/admin/settings_user.html", {
-        "request": request,
+    response = templates.TemplateResponse(request, "fragments/admin/settings_user.html", {
         "user": user
     })
 
