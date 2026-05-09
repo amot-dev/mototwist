@@ -26,10 +26,10 @@
     <ul>
         {% for slug, rating in ride.ratings.items() %}
         {{ render_rating(
+            criterion_max_value,
             slug,
             rating,
-            ride_list.criteria_descriptions[slug],
-            criterion_max_value
+            ride_list.criteria_descriptions[slug]
         ) }}
         {% endfor %}
     </ul>

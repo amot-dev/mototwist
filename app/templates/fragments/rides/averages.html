@@ -10,7 +10,7 @@
 
 {% if average_ratings %}
     {% for slug, criterion in average_ratings.items() %}
-    {{ render_rating(slug, criterion.rating, criterion.description, criterion_max_value) }}
+    {{ render_rating(criterion_max_value, slug, criterion.rating, criterion.description, criterion.excluded) }}
     {% endfor %}
 {% else %}
     <li class="rating-slider-container rating-slider-container-empty">

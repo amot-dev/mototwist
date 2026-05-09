@@ -114,7 +114,7 @@ export function initRangeSlider(idPrefix) {
  * is loaded via HTMX into the specified element.
  *
  * This function should be called once on application startup (e.g., in main.js)
- * and passed the target container, such as the advanced filter modal.
+ * and passed the target container, such as the filter modal.
  *
  * It listens for:
  * - 'htmx:afterSettle': Finds all uninitialized '.range-slider-container'

@@ -1,0 +1,223 @@
+{% from "fragments/_macros.html" import render_modal_content, render_form_buttons %}
+
+{% call render_modal_content("Filters") %}
+<div class="modal-form filter-form">
+
+    <fieldset class="form-fieldset">
+        <legend>Basic</legend>
+        <div class="form-group">
+            <fieldset class="filter-fieldset">
+                <legend title="Filter Twists by popularity">Popularity</legend>
+                <div class="filter-group">
+                    <input type="radio" id="view_all_twists" name="view" value="all" form="twist-filter-form" checked>
+                    <label class="label-button" for="view_all_twists">All</label>
+                    <input type="radio" id="view_trending_twists" name="view" value="trending" form="twist-filter-form">
+                    <label class="label-button" for="view_trending_twists">Trending</label>
+                    <input type="radio" id="view_hidden_gem_twists" name="view" value="hidden_gems" form="twist-filter-form">
+                    <label class="label-button" for="view_hidden_gem_twists">Hidden Gems</label>
+                </div>
+            </fieldset>
+        </div>
+
+        <div class="form-group">
+            <fieldset class="filter-fieldset">
+                <legend title="Filter Twists by pavement type">Pavement</legend>
+                <div class="filter-group">
+                    <input type="radio" id="pavement_all_twists" name="pavement" value="all" form="twist-filter-form" checked>
+                    <label class="label-button" for="pavement_all_twists">All</label>
+                    <input type="radio" id="pavement_paved_twists" name="pavement" value="paved" form="twist-filter-form">
+                    <label class="label-button" for="pavement_paved_twists">Paved</label>
+                    <input type="radio" id="pavement_unpaved_twists" name="pavement" value="unpaved" form="twist-filter-form">
+                    <label class="label-button" for="pavement_unpaved_twists">Unpaved</label>
+                </div>
+            </fieldset>
+        </div>
+
+        <div class="form-group">
+            <fieldset class="filter-fieldset">
+                <legend title="Filter Twists by author">Author</legend>
+                <div class="filter-group">
+                    <input type="radio" id="own_all_twists" name="ownership" value="all" form="twist-filter-form" checked>
+                    <label class="label-button" for="own_all_twists">All</label>
+                    <input type="radio" id="own_own_twists" name="ownership" value="own" form="twist-filter-form">
+                    <label class="label-button" for="own_own_twists">My Twists</label>
+                    <input type="radio" id="own_notown_twists" name="ownership" value="notown" form="twist-filter-form">
+                    <label class="label-button" for="own_notown_twists">Other Twists</label>
+                </div>
+            </fieldset>
+        </div>
+
+        <div class="form-group">
+            <fieldset class="filter-fieldset">
+                <legend title="Filter Twists by ride status">Ride Status</legend>
+                <div class="filter-group">
+                    <input type="radio" id="rides_all_twists" name="rides" value="all" form="twist-filter-form" checked>
+                    <label class="label-button" for="rides_all_twists">All</label>
+                    <input type="radio" id="twists_ridden" name="rides" value="ridden" form="twist-filter-form">
+                    <label class="label-button" for="twists_ridden">Ridden</label>
+                    <input type="radio" id="twists_not_ridden" name="rides" value="not_ridden" form="twist-filter-form">
+                    <label class="label-button" for="twists_not_ridden">Not Ridden</label>
+                </div>
+            </fieldset>
+        </div>
+    </fieldset>
+    <br>
+
+    <fieldset class="form-fieldset">
+        <legend>Weather</legend>
+
+        <div class="form-group">
+            <fieldset class="filter-fieldset">
+                <legend title="Filter by temperature">Temperature</legend>
+                <div class="filter-group">
+                    {% for item in Weather.Temperature %}
+                        <input type="checkbox" id="filter_temp_{{ item.name }}" name="weather.temperature" value="{{ item.value }}" form="twist-filter-form">
+                        <label class="label-button" for="filter_temp_{{ item.name }}">{{ item.value }}</label>
+                    {% endfor %}
+                </div>
+            </fieldset>
+        </div>
+
+        <div class="form-group">
+            <fieldset class="filter-fieldset">
+                <legend title="Filter by light level">Light Level</legend>
+                <div class="filter-group">
+                    {% for item in Weather.LightLevel %}
+                        <input type="checkbox" id="filter_light_{{ item.name }}" name="weather.light" value="{{ item.value }}" form="twist-filter-form">
+                        <label class="label-button" for="filter_light_{{ item.name }}">{{ item.value }}</label>
+                    {% endfor %}
+                </div>
+            </fieldset>
+        </div>
+
+        <div class="form-group">
+            <fieldset class="filter-fieldset">
+                <legend title="Filter by weather type">Weather Type</legend>
+                <div class="filter-group">
+                    {% for item in Weather.Type %}
+                        <input type="checkbox" id="filter_type_{{ item.name }}" name="weather.type" value="{{ item.value }}" form="twist-filter-form">
+                        <label class="label-button" for="filter_type_{{ item.name }}">{{ item.value }}</label>
+                    {% endfor %}
+                </div>
+            </fieldset>
+        </div>
+
+        <div class="form-group">
+            <fieldset class="filter-fieldset">
+                <legend title="Filter by precipitation intensity">Precipitation</legend>
+                <div class="filter-group">
+                    {% for item in Weather.Intensity %}
+                        <input type="checkbox" id="filter_precip_{{ item.name }}" name="weather.precipitation" value="{{ item.value }}" form="twist-filter-form">
+                        <label class="label-button" for="filter_precip_{{ item.name }}">{{ item.value }}</label>
+                    {% endfor %}
+                </div>
+            </fieldset>
+        </div>
+
+        <div class="form-group">
+            <fieldset class="filter-fieldset">
+                <legend title="Filter by wind intensity">Wind</legend>
+                <div class="filter-group">
+                    {% for item in Weather.Intensity %}
+                        <input type="checkbox" id="filter_wind_{{ item.name }}" name="weather.wind" value="{{ item.value }}" form="twist-filter-form">
+                        <label class="label-button" for="filter_wind_{{ item.name }}">{{ item.value }}</label>
+                    {% endfor %}
+                </div>
+            </fieldset>
+        </div>
+
+        <div class="form-group">
+            <fieldset class="filter-fieldset">
+                <legend title="Filter by fog intensity">Fog</legend>
+                <div class="filter-group">
+                    {% for item in Weather.Intensity %}
+                        <input type="checkbox" id="filter_fog_{{ item.name }}" name="weather.fog" value="{{ item.value }}" form="twist-filter-form">
+                        <label class="label-button" for="filter_fog_{{ item.name }}">{{ item.value }}</label>
+                    {% endfor %}
+                </div>
+            </fieldset>
+        </div>
+    </fieldset>
+    <br>
+
+    <fieldset class="form-fieldset">
+        <legend>Overall Rating</legend>
+        <fieldset class="filter-fieldset">
+            <div class="filter-group range-filter-group" title="Filter by Overall Rating range">
+                <label></label>
+                <div class="range-slider-container" data-slug="overall">
+                    <input type="range"
+                        name="overall_rating_range.min"
+                        id="overall-rating-slider-min"
+                        min="0" max="10" step="0.1" value="0.0"
+                        form="twist-filter-form">
+                    <input type="range"
+                        name="overall_rating_range.max"
+                        id="overall-rating-slider-max"
+                        min="0" max="10" step="0.1" value="10.0"
+                        form="twist-filter-form">
+                </div>
+
+                <div class="range-values-floating">
+                    <output id="overall-rating-slider-min-out" class="range-output" style="--pos: 0;">0.0</output>
+                    <output id="overall-rating-slider-max-out" class="range-output" style="--pos: 100;">10.0</output>
+                </div>
+            </div>
+        </fieldset>
+        <br>
+
+        <div class="form-group">
+            <fieldset class="filter-fieldset">
+                <legend title="Exclude criteria from the overall average calculation">Excluded Criteria</legend>
+                {% for row in criteria|batch(3) %}
+                <div class="filter-group">
+                    {% for criterion in row %}
+                        <input type="checkbox" id="exclude_criterion_{{ criterion.slug }}" name="excluded_criteria_slugs" value="{{ criterion.slug }}" form="twist-filter-form">
+                        <label class="label-button" for="exclude_criterion_{{ criterion.slug }}">{{ criterion.slug.replace('_', ' ') | title }}</label>
+                    {% endfor %}
+                </div>
+                {% endfor %}
+            </fieldset>
+        </div>
+    </fieldset>
+    <br>
+
+    <fieldset class="form-fieldset">
+        <legend>Individual Rating</legend>
+        <div class="form-group">
+            <fieldset class="filter-fieldset">
+                {% for criterion in criteria %}
+                <div class="filter-group range-filter-group" title="Filter by {{ criterion.slug.replace('_', ' ') | title }} range">
+                    <label>{{ criterion.slug.replace('_', ' ') | title }}</label>
+
+                    <div class="range-slider-container" data-slug="{{ criterion.slug }}">
+                        <input type="range"
+                            name="individual_rating_ranges.{{ criterion.slug }}.min"
+                            id="{{ criterion.slug }}-rating-slider-min"
+                            min="0" max="10" step="0.1" value="0.0"
+                            form="twist-filter-form">
+                        <input type="range"
+                            name="individual_rating_ranges.{{ criterion.slug }}.max"
+                            id="{{ criterion.slug }}-rating-slider-max"
+                            min="0" max="10" step="0.1" value="10.0"
+                            form="twist-filter-form">
+                    </div>
+
+                    <div class="range-values-floating">
+                        <output id="{{ criterion.slug }}-rating-slider-min-out" class="range-output" style="--pos: 0;">0.0</output>
+                        <output id="{{ criterion.slug }}-rating-slider-max-out" class="range-output" style="--pos: 100;">10.0</output>
+                    </div>
+                </div>
+                {% endfor %}
+            </fieldset>
+        </div>
+    </fieldset>
+
+    {% call render_form_buttons(group_classes="sticky-group") %}
+    <button class="button button-block" type="button" 
+            onclick="htmx.trigger(document.body, '{{ EVENTS.REFRESH_TWISTS }}'); this.closest('dialog').close();">
+        Apply
+    </button>
+    {% endcall %}
+</div>
+{% endcall %}

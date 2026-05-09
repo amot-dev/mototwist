@@ -31,6 +31,7 @@ declare namespace L {
     type LeafletEvent = any;
     type Map = any;
     type LatLng = { lat: number, lng: number };
+    type LatLngBounds = any;
     type Point = any;
     class Marker {
         [key: string]: any;

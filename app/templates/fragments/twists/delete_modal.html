@@ -9,6 +9,10 @@
     hx-target=".twist-item[data-twist-id='{{ twist.id }}']"
     hx-swap="outerHTML swap:500ms">
 
-    {{ render_form_buttons(submit_text="Delete", submit_extra_classes="button-delete") }}
+    {% call render_form_buttons() %}
+    <button class="button button-block button-delete" type="submit">
+        Delete
+    </button>
+    {% endcall %}
 </form>
 {% endcall %}

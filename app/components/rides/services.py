@@ -1,10 +1,8 @@
-from sqlalchemy import ColumnExpressionArgument, false, func, select
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.components.core.config import logger
-from app.components.core.models import Criterion, Ride, User
-from app.components.rides.schema import AverageRatings
-from app.components.twists.schema import FilterOwnership, FilterWeather, TwistBasic, TwistFilterWithRideOwnership
+from app.components.core.models import Criterion
 
 
 async def initialize_criteria(session: AsyncSession) -> bool:
@@ -82,66 +80,3 @@ async def initialize_criteria(session: AsyncSession) -> bool:
         return True
     else:
         return False
-
-
-def weather_conditions_from(weather_filter: FilterWeather) -> list[ColumnExpressionArgument[bool]]:
-    """
-    Generate a list of SQLAlchemy AND clauses based on active weather filters.
-    """
-    conditions: list[ColumnExpressionArgument[bool]] = []
-
-    # Map filter fields to db fields and dynamically build the conditions
-    weather_mappings = {
-        "temperature": Ride.__table__.c.weather_temperature,
-        "light": Ride.__table__.c.weather_light,
-        "type": Ride.__table__.c.weather_type,
-        "precipitation": Ride.__table__.c.weather_precipitation,
-        "wind": Ride.__table__.c.weather_wind,
-        "fog": Ride.__table__.c.weather_fog,
-    }
-    for filter_field, db_column in weather_mappings.items():
-        selected_conditions = getattr(weather_filter, filter_field)
-        if selected_conditions:
-            conditions.append(db_column.in_(selected_conditions))
-
-    return conditions
-
-
-async def calculate_average_rating(
-    session: AsyncSession,
-    user: User | None,
-    twist: TwistBasic,
-    filter: TwistFilterWithRideOwnership
-) -> AverageRatings:
-    """
-    Calculate the average ratings for a Twist.
-
-    :param session: The session to use for database transactions.
-    :param twist_id: The id of the Twist for which to calculate average ratings.
-    :param twist_is_paved: Whether or not the Twist is paved.
-    :param round_to: The number of decimal places to round to.
-    :return: A dictionary of each criteria and its average rating.
-    """
-    criteria = await Criterion.get_list(session, is_paved=twist.is_paved)
-
-    # Query averages for target ratings columns for this twist
-    statement = select(*[
-        func.avg(Ride.ratings[c.slug].as_integer()).label(c.slug)
-        for c in criteria
-    ]).where(
-        Ride.twist_id == twist.id,
-        *weather_conditions_from(filter.weather)
-    )
-
-    # Filtering
-    if filter.ride_ownership == FilterOwnership.OWN:
-        statement = statement.where(Ride.author_id == user.id) if user else statement.where(false())
-
-    result = await session.execute(statement)
-    averages = result.first()
-
-    if not averages:
-        return AverageRatings(overall=None, by_criteria={})
-    averages_dict = averages._asdict()  # pyright: ignore [reportPrivateUsage]
-
-    return AverageRatings.from_averages(averages_dict, criteria)

@@ -12,24 +12,29 @@
 
 
 {# Render a consistent form button group #}
-{% macro render_form_buttons(submit_text="Submit", submit_extra_classes="", submit_type="submit", submit_onclick="") %}
-<div class="button-group">
+{% macro render_form_buttons(submit_text="Submit", group_classes="") %}
+<div class="button-group {{ group_classes | trim }}">
     <button class="button button-block button-cancel" type="button"
         onclick="this.closest('dialog').close()">
         Cancel
     </button>
-    <button class="button button-block {{ submit_extra_classes | trim }}"
-            type="{{ submit_type }}"
-            {% if submit_onclick %}onclick="{{ submit_onclick }}"{% endif %}>
+
+    {# Caller submit button or default #}
+    {% if caller %}
+        {{ caller() }}
+    {% else %}
+    <button class="button button-block" type="submit">
         {{ submit_text }}
     </button>
+    {% endif %}
 </div>
 {% endmacro %}
 
 {# Renders a slider to be animated with only CSS #}
-{% macro render_rating(criterion_slug, rating, criterion_description, max_value) %}
-<li class="rating-slider-container">
-    <div class="rating-slider" style="--value: {{ rating }};" title="{{ criterion_description }}">
+{% macro render_rating(max_value, criterion_slug, rating, criterion_description, excluded=False) %}
+<li class="rating-slider-container" {% if excluded %}style="opacity: 0.4;"{% endif %}>
+    <div class="rating-slider" style="--value: {{ rating }};"
+        title="{{ criterion_description }} {% if excluded %}(excluded from overall rating){% endif %}">
         <div class="rating-slider-fill">
             <span>&nbsp; {{ criterion_slug.replace('_', ' ') | title }}</span>
             <span>{{ rating }}/{{ max_value }} &nbsp;</span>

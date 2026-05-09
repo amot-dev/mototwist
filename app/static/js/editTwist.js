@@ -1,5 +1,5 @@
 import { EVENTS, SETTINGS } from './constants.js';
-import { removeTwistLayer, setTwistVisibility, toggleTwistItemEye } from './displayTwist.js';
+import { openTwistPopup, removeTwistLayer, setTwistVisibility, toggleTwistItemEye } from './displayTwist.js';
 import { flash } from './flash.js';
 import {
     startIcon,
@@ -616,7 +616,8 @@ export function registerTwistEditingListeners(map) {
             // Stop editing, remove old geometry layer (if any), then load new geometry and display
             stopTwistEdit(map);
             removeTwistLayer(map, newTwistId);
-            setTwistVisibility(map, newTwistId, true, true);
+            setTwistVisibility(map, newTwistId, true);
+            openTwistPopup(map, newTwistId);
         }
     });
 
@@ -670,7 +671,7 @@ export function overrideXHR() {
     // Override XHR send to intercept outgoing requests
     XMLHttpRequest.prototype.send = /** @this {PatchedXMLHttpRequest} */ function(/** @type {any} */ body) {
         // Check if this is a POST/PUT request to /twists
-        const isCoreTwistEndpoint = this._url && /\/twists(\/[^\/]+)?$/.test(this._url);
+        const isCoreTwistEndpoint = this._url && /\/twists(\/\d+)?$/.test(this._url);
         const isModifying = this._method === 'POST' || this._method === 'PUT';
 
         if (isCoreTwistEndpoint && isModifying) {

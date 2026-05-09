@@ -12,9 +12,9 @@ from app.components.core.events import Event, EventSet
 from app.components.core.models import Twist, User
 from app.components.core.settings import settings
 from app.components.core.utility import raise_http
-from app.components.twists.export import TwistExportCart, generate_gpx, get_twist_export_cart
+from app.components.twists.export import TwistExportCart, TwistExportFormat, generate_gpx, get_twist_export_cart
 from app.components.twists.fragments import build_single_list_item, build_twist_export_toggle
-from app.components.twists.schema import TwistCreateForm, TwistExportFormat, TwistGeometry
+from app.components.twists.schema import TwistCreateForm, TwistGeometry
 from app.components.twists.services import simplify_route, snap_waypoints_to_route
 from app.components.users.services import current_user, verify
 

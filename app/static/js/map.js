@@ -96,9 +96,11 @@ export function initMap() {
     }
 
     // Initialize the map with the determined view (either default or loaded)
-    // We disable attributionControl to hide the default attribution
-    // worldCopyJump is not an ideal solution here but it's better than confusing the user if they pan too far
-    const map = L.map(mapContainer, {attributionControl: false, worldCopyJump: true}).setView(currentView.center, currentView.zoom);
+    const map = L.map(mapContainer, {
+        preferCanvas: true,
+        attributionControl: false,  // Hide the default attribution (re-added manually)
+        worldCopyJump: true         // Not an ideal solution but it's better than confusing the user if they pan too far
+    }).setView(currentView.center, currentView.zoom);
 
     // The attribution is re-added in the bottom left, less in the way
     L.control.attribution({

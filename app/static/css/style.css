@@ -311,6 +311,16 @@ ul {
             flex-grow: 1;
         }
 
+        &.sticky-group {
+            position: sticky;
+            bottom: calc(var(--padding-xl) * -1);
+            z-index: 10;
+            border-top: var(--border-default);
+            margin: 0 2px;
+            padding: 1rem 0 var(--padding-xl);
+            background-color: var(--panel-slate);
+        }
+
         > button[type="submit"]:disabled {
             opacity: 0.6;
             background-color: var(--accent-blue);
@@ -569,35 +579,28 @@ aside {
     }
 }
 
-.filter-dropdown {
-    > summary {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        border-radius: var(--radius-sm);
-        padding: var(--padding-md);
-        list-style: none; /* Hide the default marker in some browsers */
-        font-size: 1rem;
-        font-weight: bold;
-        color: var(--text-offwhite);
-        cursor: pointer;
+.twist-list-controls {
+    display: flex;
+    justify-content: space-evenly;
 
-        transition: background-color var(--transition-fast);
+    > button, select {
+        background-color: var(--panel-slate);
 
-        .chevron-icon {
-            transition: transform var(--transition-fast);
+        &:hover {
+            background-color: var(--panel-slate-hover);
         }
-    }
-    &[open] > summary .chevron-icon {
-        transform: rotate(180deg);
     }
 }
 
-.filter-panel {
-    border: var(--border-default);
-    border-radius: var(--radius-md);
-    padding: var(--padding-md);
-    background-color: var(--panel-slate);
+#twist-filter-button:has(#twist-filter-count-display:not(:empty)) {
+    border-color: var(--accent);
+    color: var(--accent);
+}
+
+#twist-filter-count-display {
+    /* nice (btw this is entirely necessary; the text overflows with 2 digits at 0.7em) */
+    font-size: 0.69em;
+    font-weight: normal;
 }
 
 

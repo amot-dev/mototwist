@@ -1,13 +1,12 @@
-from enum import Enum
 from humanize import intcomma
-from pydantic import BaseModel, ConfigDict, Field, computed_field, field_validator, model_validator
+from pydantic import BaseModel, ConfigDict, Field, computed_field, field_validator
 from sqlalchemy import Label, literal
 from sqlalchemy.orm.attributes import InstrumentedAttribute
-from typing import Annotated, ClassVar
+from typing import ClassVar
 from uuid import UUID
 
-from app.components.core.models import Criterion, Twist, User
-from app.components.core.schema import Coordinate, Waypoint, Weather
+from app.components.core.models import Twist, User
+from app.components.core.schema import Coordinate, Waypoint
 from app.components.core.settings import settings
 
 
@@ -17,131 +16,6 @@ class TwistCreateForm(BaseModel):
     is_paved: bool
     waypoints: list[Waypoint] = Field(..., min_length=2)
     route_geometry: list[Coordinate] = Field(..., min_length=2)
-
-
-class TwistExportFormat(str, Enum):
-    JSON = "json"
-    GPX_TRACK = "gpx_track"
-    GPX_ROUTE = "gpx_route"
-
-    @property
-    def is_gpx(self) -> bool:
-        """
-        True only if the export format is a GPX type.
-        """
-        return self in [self.GPX_TRACK, self.GPX_ROUTE]
-
-
-class FilterOwnership(str, Enum):
-    ALL = "all"
-    OWN = "own"
-    NOT_OWN = "notown"
-
-
-class FilterPavement(str, Enum):
-    ALL = "all"
-    PAVED = "paved"
-    UNPAVED = "unpaved"
-
-
-class FilterRide(str, Enum):
-    ALL = "all"
-    SUBMITTED = "submitted"
-    UNSUBMITTED = "unsubmitted"
-
-
-class FilterRatingRange(BaseModel):
-    min: Annotated[float, Field(ge=Criterion.MIN_VALUE, le=Criterion.MAX_VALUE)] = Criterion.MIN_VALUE
-    max: Annotated[float, Field(ge=Criterion.MIN_VALUE, le=Criterion.MAX_VALUE)] = Criterion.MAX_VALUE
-
-    @property
-    def is_active(self) -> bool:
-        """
-        True only if the range has been modified from the default min/max.
-        """
-        return self.min > Criterion.MIN_VALUE or self.max < Criterion.MAX_VALUE
-
-
-class FilterWeather(BaseModel):
-    temperature: Annotated[list[Weather.Temperature], Field()] = []
-    light: Annotated[list[Weather.LightLevel], Field()] = []
-    type: Annotated[list[Weather.Type], Field()] = []
-    precipitation: Annotated[list[Weather.Intensity], Field()] = []
-    wind: Annotated[list[Weather.Intensity], Field()] = []
-    fog: Annotated[list[Weather.Intensity], Field()] = []
-
-
-    @model_validator(mode="before")
-    @classmethod
-    def ensure_lists(cls, data: dict[str, object]) -> dict[str, object]:
-        """
-        Ensure that all input values are lists (even if just one item).
-        """
-        for key, value in data.items():
-            if key in cls.model_fields and not isinstance(value, list):
-                # Coerce single values into a list
-                data[key] = [value]
-        return data
-
-
-class TwistFilter(BaseModel):
-    # Display
-    page: Annotated[int, Field(gt=0)] = 1
-    pages: Annotated[int, Field(gt=0)] = 1
-
-    # Basic Filtering
-    search: Annotated[str | None, Field()] = None
-    ownership: Annotated[FilterOwnership, Field()] = FilterOwnership.ALL
-    pavement: Annotated[FilterPavement, Field()] = FilterPavement.ALL
-    rides: Annotated[FilterRide, Field()] = FilterRide.ALL
-
-    # Range Filtering
-    overall_rating_range: Annotated[FilterRatingRange, Field()] = FilterRatingRange()
-    individual_rating_ranges: Annotated[dict[str, FilterRatingRange], Field()] = {}
-
-    @property
-    def active_individual_rating_ranges(self) -> dict[str, FilterRatingRange]:
-        """
-        Return only the individual rating ranges that are currently active.
-        """
-        return {
-            slug: rating_range
-            for slug, rating_range in self.individual_rating_ranges.items()
-            if rating_range.is_active
-        }
-
-    # Criteria Exclusion
-    excluded_criteria_slugs: Annotated[set[str], Field()] = set()
-
-    # Weather Filtering
-    weather: Annotated[FilterWeather, Field()] = FilterWeather()
-
-    # Ordering
-    map_center: Annotated[Coordinate | None, Field()] = None
-
-
-    # Ensure excluded criteria slugs is a set
-    @field_validator("excluded_criteria_slugs", mode="before")
-    @classmethod
-    def excluded_criteria_slugs_to_set(cls, value: str | list[str]) -> set[str]:
-        if not isinstance(value, list):
-            return {value}
-        else:
-            return set(value)
-
-
-    @model_validator(mode="after")
-    def normalize_map_center(self) -> TwistFilter:
-        """
-        Normalize map longitude from potentially "unwrapped" values (ex. 388) to the required [-180, 180] range.
-        """
-        if self.map_center is not None:
-            self.map_center.lng = (self.map_center.lng + 180) % 360 - 180
-        return self
-
-
-class TwistFilterWithRideOwnership(TwistFilter):
-    ride_ownership: Annotated[FilterOwnership, Field()] = FilterOwnership.ALL
 
 
 class TwistBasic(BaseModel):

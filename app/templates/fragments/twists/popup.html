@@ -30,9 +30,9 @@
 
     <fieldset class="filter-fieldset">
         <div class="filter-group" title="Filter between all or your Twists">
-            <input type="radio" id="all-rides-in-{{ twist.id }}" name="ride_ownership" value="{{ FilterOwnership.ALL.value }}" checked>
+            <input type="radio" id="all-rides-in-{{ twist.id }}" name="ride_ownership" value="{{ FilterAuthor.ALL.value }}" checked>
             <label class="label-button" for="all-rides-in-{{ twist.id }}">All Rides</label>
-            <input type="radio" id="own-rides-in-{{ twist.id }}" name="ride_ownership" value="{{ FilterOwnership.OWN.value }}">
+            <input type="radio" id="own-rides-in-{{ twist.id }}" name="ride_ownership" value="{{ FilterAuthor.OWN.value }}">
             <label class="label-button" for="own-rides-in-{{ twist.id }}">My Rides</label>
         </div>
     </fieldset>

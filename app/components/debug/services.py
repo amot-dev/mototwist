@@ -202,7 +202,9 @@ async def seed_twist_rides(
     twist_ride_counts: dict[Twist, int],
     authors: list[User],
     date_pool: list[date],
-    outlier_chance: float = 0.1
+    outlier_chance: float = 0.1,
+    min_bias: float = Criterion.MIN_VALUE,
+    max_bias: float = Criterion.MAX_VALUE
 ) -> list[Ride]:
     """
     Take a dictionary mapping Twists to the number of rides they need.
@@ -219,7 +221,7 @@ async def seed_twist_rides(
 
     for twist, count in twist_ride_counts.items():
         # Determine the target average for the whole twist
-        twist_bias = uniform(Criterion.MIN_VALUE, Criterion.MAX_VALUE)
+        twist_bias = uniform(min_bias, max_bias)
 
         # Generate the specific road profile
         criteria_slugs = await Criterion.get_set(session, twist.is_paved)
