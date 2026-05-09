@@ -4,7 +4,7 @@
 <div class="modal-form filter-form">
 
     <fieldset class="form-fieldset">
-        <legend>Basic Filters</legend>
+        <legend>Basic</legend>
         <div class="form-group">
             <fieldset class="filter-fieldset">
                 <legend title="Filter Twists by popularity">Popularity</legend>
@@ -64,83 +64,8 @@
     <br>
 
     <fieldset class="form-fieldset">
-        <legend>Overall Rating Filter</legend>
-        <fieldset class="filter-fieldset">
-            <div class="filter-group range-filter-group" title="Filter by Overall Rating range">
-                <label></label>
-                <div class="range-slider-container" data-slug="overall">
-                    <input type="range"
-                        name="overall_rating_range.min"
-                        id="overall-rating-slider-min"
-                        min="0" max="10" step="0.1" value="0.0"
-                        form="twist-filter-form">
-                    <input type="range"
-                        name="overall_rating_range.max"
-                        id="overall-rating-slider-max"
-                        min="0" max="10" step="0.1" value="10.0"
-                        form="twist-filter-form">
-                </div>
-
-                <div class="range-values-floating">
-                    <output id="overall-rating-slider-min-out" class="range-output" style="--pos: 0;">0.0</output>
-                    <output id="overall-rating-slider-max-out" class="range-output" style="--pos: 100;">10.0</output>
-                </div>
-            </div>
-        </fieldset>
-    </fieldset>
-    <br>
-
-    <fieldset class="form-fieldset">
-        <legend>Individual Rating Filters</legend>
-        <div class="form-group">
-            <fieldset class="filter-fieldset">
-                {% for criterion in criteria %}
-                <div class="filter-group range-filter-group" title="Filter by {{ criterion.slug.replace('_', ' ') | title }} range">
-                    <label>{{ criterion.slug.replace('_', ' ') | title }}</label>
-
-                    <div class="range-slider-container" data-slug="{{ criterion.slug }}">
-                        <input type="range"
-                            name="individual_rating_ranges.{{ criterion.slug }}.min"
-                            id="{{ criterion.slug }}-rating-slider-min"
-                            min="0" max="10" step="0.1" value="0.0"
-                            form="twist-filter-form">
-                        <input type="range"
-                            name="individual_rating_ranges.{{ criterion.slug }}.max"
-                            id="{{ criterion.slug }}-rating-slider-max"
-                            min="0" max="10" step="0.1" value="10.0"
-                            form="twist-filter-form">
-                    </div>
-
-                    <div class="range-values-floating">
-                        <output id="{{ criterion.slug }}-rating-slider-min-out" class="range-output" style="--pos: 0;">0.0</output>
-                        <output id="{{ criterion.slug }}-rating-slider-max-out" class="range-output" style="--pos: 100;">10.0</output>
-                    </div>
-                </div>
-                {% endfor %}
-            </fieldset>
-        </div>
-    </fieldset>
-    <br>
-
-    <fieldset class="form-fieldset">
-        <legend title="Exclude criteria from the average used by the Overall Rating slider">Exclude from Overall Rating</legend>
-        <div class="form-group">
-            <fieldset class="filter-fieldset">
-                {% for row in criteria|batch(3) %}
-                <div class="filter-group">
-                    {% for criterion in row %}
-                        <input type="checkbox" id="exclude_criterion_{{ criterion.slug }}" name="excluded_criteria_slugs" value="{{ criterion.slug }}" form="twist-filter-form">
-                        <label class="label-button" for="exclude_criterion_{{ criterion.slug }}">{{ criterion.slug.replace('_', ' ') | title }}</label>
-                    {% endfor %}
-                </div>
-                {% endfor %}
-            </fieldset>
-        </div>
-    </fieldset>
-    <br>
-
-    <fieldset class="form-fieldset">
         <legend>Weather</legend>
+
         <div class="form-group">
             <fieldset class="filter-fieldset">
                 <legend title="Filter by temperature">Temperature</legend>
@@ -210,6 +135,80 @@
                         <label class="label-button" for="filter_fog_{{ item.name }}">{{ item.value }}</label>
                     {% endfor %}
                 </div>
+            </fieldset>
+        </div>
+    </fieldset>
+    <br>
+
+    <fieldset class="form-fieldset">
+        <legend>Overall Rating</legend>
+        <fieldset class="filter-fieldset">
+            <div class="filter-group range-filter-group" title="Filter by Overall Rating range">
+                <label></label>
+                <div class="range-slider-container" data-slug="overall">
+                    <input type="range"
+                        name="overall_rating_range.min"
+                        id="overall-rating-slider-min"
+                        min="0" max="10" step="0.1" value="0.0"
+                        form="twist-filter-form">
+                    <input type="range"
+                        name="overall_rating_range.max"
+                        id="overall-rating-slider-max"
+                        min="0" max="10" step="0.1" value="10.0"
+                        form="twist-filter-form">
+                </div>
+
+                <div class="range-values-floating">
+                    <output id="overall-rating-slider-min-out" class="range-output" style="--pos: 0;">0.0</output>
+                    <output id="overall-rating-slider-max-out" class="range-output" style="--pos: 100;">10.0</output>
+                </div>
+            </div>
+        </fieldset>
+        <br>
+
+        <div class="form-group">
+            <fieldset class="filter-fieldset">
+                <legend title="Exclude criteria from the overall average calculation">Excluded Criteria</legend>
+                {% for row in criteria|batch(3) %}
+                <div class="filter-group">
+                    {% for criterion in row %}
+                        <input type="checkbox" id="exclude_criterion_{{ criterion.slug }}" name="excluded_criteria_slugs" value="{{ criterion.slug }}" form="twist-filter-form">
+                        <label class="label-button" for="exclude_criterion_{{ criterion.slug }}">{{ criterion.slug.replace('_', ' ') | title }}</label>
+                    {% endfor %}
+                </div>
+                {% endfor %}
+            </fieldset>
+        </div>
+    </fieldset>
+    <br>
+
+    <fieldset class="form-fieldset">
+        <legend>Individual Rating</legend>
+        <div class="form-group">
+            <fieldset class="filter-fieldset">
+                {% for criterion in criteria %}
+                <div class="filter-group range-filter-group" title="Filter by {{ criterion.slug.replace('_', ' ') | title }} range">
+                    <label>{{ criterion.slug.replace('_', ' ') | title }}</label>
+
+                    <div class="range-slider-container" data-slug="{{ criterion.slug }}">
+                        <input type="range"
+                            name="individual_rating_ranges.{{ criterion.slug }}.min"
+                            id="{{ criterion.slug }}-rating-slider-min"
+                            min="0" max="10" step="0.1" value="0.0"
+                            form="twist-filter-form">
+                        <input type="range"
+                            name="individual_rating_ranges.{{ criterion.slug }}.max"
+                            id="{{ criterion.slug }}-rating-slider-max"
+                            min="0" max="10" step="0.1" value="10.0"
+                            form="twist-filter-form">
+                    </div>
+
+                    <div class="range-values-floating">
+                        <output id="{{ criterion.slug }}-rating-slider-min-out" class="range-output" style="--pos: 0;">0.0</output>
+                        <output id="{{ criterion.slug }}-rating-slider-max-out" class="range-output" style="--pos: 100;">10.0</output>
+                    </div>
+                </div>
+                {% endfor %}
             </fieldset>
         </div>
     </fieldset>
