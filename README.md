@@ -59,7 +59,7 @@ Below is an overview of all available environment variables for MotoTwist.
 | `AVERAGE_ROUNDING_DIGITS` | Sets number of digits after the decimal to round to when calculating and displaying rating averages. | `1` |
 | `INSIGNIFICANT_RIDE_COUNT_PERCENTILE` | Sets the percentile of ride counts used to establish the confidence threshold for sorting. [More details](#tuning-the-sorting-algorithm). | `25` |
 | `TRENDING_TIMEFRAME_DAYS` | Sets the window (in days) used to calculate the "Trending" score based on recent ride activity. | `7` |
-| `HIDDEN_GEM_AVERAGE_MULTIPLIER` | The multiplier applied to the global average to determine the minimum quality of a "Hidden Gem". [More details](#tuning-the-sorting-algorithm). | `1.5` |
+| `HIDDEN_GEM_AVERAGE_MULTIPLIER` | The multiplier applied to the global average to determine the minimum quality of a "Hidden Gem". [More details](#tuning-the-sorting-algorithm). | `1.25` |
 | `DEFAULT_TWISTS_LOADED` | Sets the default number of Twists that are loaded at once. This affects both the infinitely scrolling Twist list and the map. | `20` |
 | `RIDES_FETCHED_PER_QUERY` | Sets the number of rides fetched per query during the infinite scroll when viewing all rides. Setting it too low or high can have performance impacts. | `20` |
 
@@ -152,7 +152,7 @@ You can tune this behavior using two variables in your `.env` file:
     * If a Twist is above the threshold, the algorithm trusts the its actual rating.
 
 2.  **`HIDDEN_GEM_AVERAGE_MULTIPLIER`**:
-    The "Hidden Gems" sort explicitly looks for Twists that are below the above threshold but are highly rated. This multiplier defines what "highly rated" means by comparing it to the global average rating. At the `1.5` default, a Twist must be 50% better than the global average to be considered a gem.
+    The "Hidden Gems" sort explicitly looks for Twists that are below the above threshold but are highly rated. This multiplier defines what "highly rated" means by comparing it to the global average rating. At the `1.25` default, a Twist must be 25% better than the global average to be considered a gem.
 
 
 ## Usage

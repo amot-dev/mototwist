@@ -326,11 +326,11 @@ class TwistFilter(BaseModel):
         )
 
         paved_score = sum(
-            (func.coalesce(Ride.ratings[slug].as_integer()) for slug in paved_slugs),
+            (Ride.ratings[slug].as_integer() for slug in paved_slugs),
             start=literal(0)
         ) / len(paved_slugs)
         unpaved_score = sum(
-            (func.coalesce(Ride.ratings[slug].as_integer()) for slug in unpaved_slugs),
+            (Ride.ratings[slug].as_integer() for slug in unpaved_slugs),
             start=literal(0)
         ) / len(unpaved_slugs)
 
@@ -387,12 +387,21 @@ class TwistFilter(BaseModel):
             paved_total = build_total_expression(paved_criteria_slugs)
             unpaved_total = build_total_expression(unpaved_criteria_slugs)
 
-            calculated_m = await session.scalar(
-                select(case(
-                    (Twist.is_paved, paved_total),
-                    else_=unpaved_total
-                ))
+            # Calculate the average rating for each Twist, then average those results together
+            # This results in m being the average Twist rating, unweighted by Ride count
+            twist_averages_subquery = (
+                select(
+                    func.avg(case(
+                        (Twist.is_paved, paved_total),
+                        else_=unpaved_total
+                    )).label("average_rating")
+                )
                 .join(Ride.twist)
+                .group_by(Twist.id)
+                .subquery()
+            )
+            calculated_m = await session.scalar(
+                select(func.avg(twist_averages_subquery.c.average_rating))
             ) or 0.0
 
             # Calculate c (nth percentile of ride counts per Twist)
@@ -416,8 +425,8 @@ class TwistFilter(BaseModel):
             await redis_client.setex("twist_filter_bayes_c", 86400, calculated_c)
             await redis_client.setex("twist_filter_bayes_total_ratings", 86400, ratings_count)
 
-            # Reset the mutation counter
-            await redis_client.set("twist_filter_ratings_since_bayes_calculation", 0)
+            # Decrement the mutation counter
+            await redis_client.decrby("twist_filter_ratings_since_bayes_calculation", threshold)
 
             return calculated_m, calculated_c
 
@@ -517,8 +526,8 @@ class TwistFilter(BaseModel):
             # Calculate Bayesian values
             if needs_bayesian_values:
                 global_average, confident_ride_count = await self._get_bayesian_constants(session)
-                twist_average = func.coalesce(rating_subquery.c.overall_average, 0.0)
-                twist_ride_count = func.coalesce(rating_subquery.c.ride_count, 0)
+                twist_average = rating_subquery.c.overall_average
+                twist_ride_count = rating_subquery.c.ride_count
 
                 # Sort by Bayesian best
                 if self.sort_order == FilterSortOrder.BEST:
@@ -533,6 +542,9 @@ class TwistFilter(BaseModel):
                         Criterion.MAX_VALUE,
                         global_average * settings.HIDDEN_GEM_AVERAGE_MULTIPLIER
                     )
+                    print(f"Global average: {global_average}")
+                    print(f"Threshold: {hidden_gem_threshold}")
+                    print(f"Ride Count: {confident_ride_count}")
                     statement = statement.where(and_(
                         twist_average >= hidden_gem_threshold,
                         twist_ride_count <= confident_ride_count,
