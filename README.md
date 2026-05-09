@@ -58,6 +58,7 @@ Below is an overview of all available environment variables for MotoTwist.
 | `TWIST_SIMPLIFICATION_TOLERANCE_M` | Sets the simplification tolerance for new Twist routes. [More details](#storage-vs-accuracy-route-simplification). Set to `"0m"` to disable. | `"5m"` |
 | `AVERAGE_ROUNDING_DIGITS` | Sets number of digits after the decimal to round to when calculating and displaying rating averages. | `1` |
 | `INSIGNIFICANT_RIDE_COUNT_PERCENTILE` | Sets the percentile of ride counts used to establish the confidence threshold for sorting. [More details](#tuning-the-sorting-algorithm). | `25` |
+| `TRENDING_TIMEFRAME_DAYS` | Sets the window (in days) used to calculate the "Trending" score based on recent ride activity. | `7` |
 | `HIDDEN_GEM_AVERAGE_MULTIPLIER` | The multiplier applied to the global average to determine the minimum quality of a "Hidden Gem". [More details](#tuning-the-sorting-algorithm). | `1.5` |
 | `DEFAULT_TWISTS_LOADED` | Sets the default number of Twists that are loaded at once. This affects both the infinitely scrolling Twist list and the map. | `20` |
 | `RIDES_FETCHED_PER_QUERY` | Sets the number of rides fetched per query during the infinite scroll when viewing all rides. Setting it too low or high can have performance impacts. | `20` |
@@ -204,7 +205,19 @@ You can tune this behavior using two variables in your `.env` file:
 > With some, but minimal, technical knowledge, the available criteria can be changed! Eventually this may be configurable via environment variables. See [#11](https://github.com/amot-dev/mototwist/issues/11).
 
 5.  **Searching/Filtering:**
-    Twists may be searched and filtered by a few different criteria. Rides can be filtered.
+    Twists can be discovered and organized using several powerful filtering layers:
+
+      * **Text Search**: Quickly find a Twist by name.
+
+      * **Views**: Toggle between "Trending" (high recent activity) or "Hidden Gems" (high quality, but low ride volume).
+
+      * **Surface Type**: Toggle between paved and unpaved (dirt/gravel) Twists.
+
+      * **Authorship & Ride History**: Filter by Twists you created vs. others, or by those you have personally ridden vs. those you haven't.
+
+      * **Weather Conditions**: Filter based on real-world conditions recorded during rides, such as temperature, light levels, or precipitation.
+
+      * **Rating Ranges**: Use sliders to filter by overall average quality or drill down into specific criteria (like "Twistyness" or "Seclusion").
 
 6.  **General Use:**
 
