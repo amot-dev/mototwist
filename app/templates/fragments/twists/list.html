@@ -30,3 +30,7 @@
     </header>
 </li>
 {% endfor %}
+
+<span id="twist-filter-count-display" hx-swap-oob="innerHTML">
+    {%- if active_filter_count > 0 -%}({{ active_filter_count }}){%- endif -%}
+</span>

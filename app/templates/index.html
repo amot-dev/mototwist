@@ -42,10 +42,11 @@
         </div>
 
         <div class="twist-list-controls">
-            <button class="button button-block" type="button"
+            <button id="twist-filter-button" class="button button-block" type="button"
                 onclick="document.querySelector('#modal-filter').showModal()">
 
                 Filter <i class="fa-solid fa-filter"></i>
+                <span id="twist-filter-count-display"></span>
             </button>
             <div class="select-wrapper">
                 <select class="button button-block" name="sort_order">

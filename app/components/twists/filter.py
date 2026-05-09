@@ -155,12 +155,11 @@ class FilterWeather(BaseModel):
     @property
     def active_count(self) -> int:
         """
-        Dynamically sum the lengths of all list fields in the model.
+        Count how many weather categories are being filtered on.
         """
         return sum(
-            len(cast(list[Any], value))
-            for value in self.model_dump().values()
-            if isinstance(value, list)
+            1 for value in self.model_dump().values()
+            if isinstance(value, list) and len(cast(list[Any], value)) > 0
         )
 
 

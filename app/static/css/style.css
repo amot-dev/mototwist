@@ -592,6 +592,17 @@ aside {
     }
 }
 
+#twist-filter-button:has(#twist-filter-count-display:not(:empty)) {
+    border-color: var(--accent);
+    color: var(--accent);
+}
+
+#twist-filter-count-display {
+    /* nice (btw this is entirely necessary; the text overflows with 2 digits at 0.7em) */
+    font-size: 0.69em;
+    font-weight: normal;
+}
+
 
 /* --- Rating Filter Slider --- */
 

@@ -102,7 +102,8 @@ async def serve_list(
         "twists": twists,
         "start_page": filter.page,
         "next_page": filter.page + filter.pages,
-        "twists_per_page": settings.DEFAULT_TWISTS_LOADED
+        "twists_per_page": settings.DEFAULT_TWISTS_LOADED,
+        "active_filter_count": filter.active_count
     })
     response.headers["HX-Trigger-After-Settle"] = EventSet(
         EventSet.TWISTS_LOADED(filter.page, filter.pages)
