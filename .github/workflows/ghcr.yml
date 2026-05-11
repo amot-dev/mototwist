@@ -1,4 +1,4 @@
-name: MotoTwist GHCR
+name: GHCR
 
 on:
   push:
