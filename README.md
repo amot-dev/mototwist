@@ -8,7 +8,7 @@ _Track the Thrill. Rate the Road._
 
 **[📑 Documentation](https://docs.mototwist.app)** | **[🏍 Web App (Coming Maybe)](https://docs.mototwist.app/coming-maybe)**
 
-MotoTwist is the ultimate companion for every motorcycle enthusiast. Discover, track, and save your most epic journeys. MotoTwist allows you to rate Twists on key criteria like scenery, road quality, and twistiness. Or, for the offroad enthusiasts, you can rate them on surface consistency, technicality, and general flow.
+MotoTwist is the ultimate companion for every motorcycle enthusiast. Discover, track, and save your most epic journeys. MotoTwist allows you to define and rate motorcycle roads, both paved and unpaved, on various criteria. Weather conditions at the time of ride are also recorded: maybe a rainy day ruined a certain ride, but it's amazing in the sun! MotoTwist has support for multiple users, advanced filters help anyone find the exact road for them and the current conditions, and an ability to export it all to GPX and take it with you.
 
 Share your favorite roads with a community of fellow riders and find your next great adventure, recommended by those who've ridden it before.
 
