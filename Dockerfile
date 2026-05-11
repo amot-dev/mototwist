@@ -24,4 +24,3 @@ USER mototwist
 EXPOSE 8000
 
 ENTRYPOINT ["python3", "-m", "app.main"]
-
