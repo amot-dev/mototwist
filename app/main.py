@@ -211,7 +211,8 @@ async def get_latest_version(request: Request) -> HTMLResponse:
 
     if settings.MOTOTWIST_VERSION != latest_version:
         response = templates.TemplateResponse(request, "fragments/new_version.html", {
-            "latest_version": latest_version
+            "latest_version": latest_version,
+            "release_link": f"https://github.com/{settings.MOTOTWIST_UPSTREAM}/releases/latest"
         })
         response.headers["HX-Trigger-After-Swap"] = EventSet(
             EventSet.FLASH(f"MotoTwist {latest_version} is now available!")
