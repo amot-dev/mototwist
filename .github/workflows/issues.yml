@@ -1,0 +1,21 @@
+name: Close Issues on Release
+
+on:
+  release:
+    types: [published]
+
+jobs:
+  close-issues:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Close issues mentioned in release
+        run: |
+          # Extract issue numbers (e.g., #123) from the release body
+          ISSUES=$(echo "${{ github.event.release.body }}" | grep -oP '#\d+' | sed 's/#//')
+
+          for ISSUE in $ISSUES; do
+            echo "Closing issue #$ISSUE"
+            gh issue close "$ISSUE" --comment "Automatically closed by Release ${{ github.event.release.tag_name }}"
+          done
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
