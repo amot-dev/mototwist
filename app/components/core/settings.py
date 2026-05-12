@@ -19,6 +19,7 @@ class Settings(BaseSettings):
     MOTOTWIST_INSTANCE_NAME: str = Field(default="MotoTwist", exclude=False)
     MOTOTWIST_BASE_URL: str = Field(default="http://localhost:8000", exclude=True)
     MOTOTWIST_SECRET_KEY: str = Field(default="mototwist", exclude=True)
+    NEW_VERSION_NOTIFICATION_INTERVAL_S: int = Field(default=86400, ge=-1, exclude=True)
     OSM_URL: str = Field(default="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", exclude=False)
     OSRM_URL: str = Field(default="https://router.project-osrm.org", exclude=False)
     TWIST_SIMPLIFICATION_TOLERANCE_M: int = Field(default=5, exclude=True)

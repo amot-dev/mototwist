@@ -8,6 +8,7 @@
 | `MOTOTWIST_INSTANCE_NAME` | The friendly name for your instance. Used in email templates and the site title/header. | `"MotoTwist"` |
 | `MOTOTWIST_BASE_URL` | The base URL at which MotoTwist is expecting to be hosted. **This must be changed for production!** | `"http://localhost:8000"` |
 | `MOTOTWIST_SECRET_KEY` | A long, random string used to cryptographically sign session cookies, preventing tampering. **This must be changed for production!** | `"changethis"` |
+| `NEW_VERSION_NOTIFICATION_INTERVAL_S` | The duration in seconds between new version notifications, per user. Set to `-1` to disable notifications. | `86400` |
 | `OSM_URL` | The URL template for the OpenStreetMap tile server, which provides the visual base map. | `"https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"` |
 | `OSRM_URL` | The base URL for the OSRM routing engine, used for calculating routes for new Twists. | `"https://router.project-osrm.org"` |
 | `TWIST_SIMPLIFICATION_TOLERANCE_M` | Sets the simplification tolerance for new Twist routes. [More details](#storage-vs-accuracy-route-simplification). Set to `"0m"` to disable. | `"5m"` |

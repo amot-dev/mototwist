@@ -16,7 +16,6 @@ from app.components.admin.services import create_first_admin
 from app.components.auth.services import login_and_set_response_cookie
 from app.components.core.config import logger, tags_metadata, templates
 from app.components.core.database import apply_migrations, create_automigration, get_db, wait_for_db
-from app.components.core.events import EventSet
 from app.components.core.models import User
 from app.components.core.redis_client import redis_client
 from app.components.core.settings import Settings, settings
@@ -194,30 +193,33 @@ async def get_latest_version(request: Request) -> HTMLResponse:
             content="<strong title='To limit use of the GitHub API, the latest version is not checked on dev builds'>Unchecked</strong>"
         )
 
-    url = f"https://api.github.com/repos/{settings.MOTOTWIST_UPSTREAM}/releases/latest"
+    cache_key = "cache:latest_version"
+    latest_version = await redis_client.get(cache_key)
 
-    try:
-        async with AsyncClient() as client:
-            response = await client.get(url, follow_redirects=True)
-            response.raise_for_status()  # Raise an exception for 4XX/5XX responses
-            data = response.json()
-            latest_version = data.get("tag_name")
-    except HTTPStatusError as e:
-        # Handle cases where the repo is not found or there are no releases
-        raise_http("Could not read latest version from GitHub API",
-            status_code=e.response.status_code,
-            exception=e
-        )
+    if not latest_version:
+        url = f"https://api.github.com/repos/{settings.MOTOTWIST_UPSTREAM}/releases/latest"
+        try:
+            async with AsyncClient() as client:
+                response = await client.get(url, follow_redirects=True)
+                response.raise_for_status()  # Raise an exception for 4XX/5XX responses
+                data = response.json()
+                latest_version = data.get("tag_name")
+
+                # Store in Redis for 1 hour
+                await redis_client.setex(cache_key, 3600, latest_version)
+        except HTTPStatusError as e:
+            # Handle cases where the repo is not found or there are no releases
+            raise_http("Could not read latest version from GitHub API",
+                status_code=e.response.status_code,
+                exception=e
+            )
 
     if settings.MOTOTWIST_VERSION != latest_version:
-        response = templates.TemplateResponse(request, "fragments/new_version.html", {
+        return templates.TemplateResponse(request, "fragments/new_version.html", {
             "latest_version": latest_version,
             "release_link": f"https://github.com/{settings.MOTOTWIST_UPSTREAM}/releases/latest"
         })
-        response.headers["HX-Trigger-After-Swap"] = EventSet(
-            EventSet.FLASH(f"MotoTwist {latest_version} is now available!")
-        ).dump()
-        return response
+
     return HTMLResponse(content=f"<strong>{latest_version}</strong>")
 
 

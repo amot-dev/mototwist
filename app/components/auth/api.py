@@ -8,11 +8,12 @@ from uuid import UUID
 
 from app.components.auth.schema import ForgotPasswordForm, ResetPasswordForm, VerifyAccountForm
 from app.components.auth.services import login_and_set_response_cookie, logout_and_set_response_cookie
-from app.components.core.events import EventSet
+from app.components.core.events import EventKey, EventSet
 from app.components.core.models import User
-from app.components.core.redis_client import get_redis_strategy
+from app.components.core.redis_client import get_redis_strategy, redis_client
 from app.components.core.utility import raise_http
 from app.components.users.services import UserManager, current_user_optional, get_user_manager
+from app.components.core.settings import settings
 
 
 router = APIRouter(
@@ -41,11 +42,29 @@ async def login(
 
     await login_and_set_response_cookie(response, strategy=strategy, user=user)
 
-    response.headers["HX-Trigger-After-Swap"] = EventSet(
+    # Initialize events
+    events: list[tuple[EventKey, str]] = [
         EventSet.FLASH(f"Welcome back, {user.name}!"),
         EventSet.AUTH_CHANGE,
         EventSet.CLOSE_MODAL
-    ).dump()
+    ]
+
+    # Check for update notification eligibility (only if enabled)
+    if settings.NEW_VERSION_NOTIFICATION_INTERVAL_S != -1:
+        latest_version = await redis_client.get("cache:latest_version")
+        if latest_version:
+            cooldown_key = f"version_notify_cooldown:{user.id}"
+
+            # Only notify if version is different AND cooldown has expired
+            if settings.MOTOTWIST_VERSION != latest_version and not await redis_client.exists(cooldown_key):
+                # Set cooldown for specified interval
+                await redis_client.setex(cooldown_key, settings.NEW_VERSION_NOTIFICATION_INTERVAL_S, "1")
+
+                # Add version flash and remove vanilla flash
+                events.append(EventSet.FLASH(f"Welcome back, {user.name}! MotoTwist {latest_version} is now available."))
+                events.pop(0)
+
+    response.headers["HX-Trigger-After-Swap"] = EventSet(*events).dump()
     return response
 
 
