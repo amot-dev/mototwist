@@ -1,0 +1,50 @@
+[
+    {
+        "slug": "seclusion",
+        "description": "Infrequency of other vehicles on the road",
+        "for_paved": true,
+        "for_unpaved": true
+    },
+    {
+        "slug": "scenery",
+        "description": "Visual appeal of surroundings",
+        "for_paved": true,
+        "for_unpaved": true
+    },
+    {
+        "slug": "pavement",
+        "description": "Quality of road surface",
+        "for_paved": true,
+        "for_unpaved": false
+    },
+    {
+        "slug": "twistyness",
+        "description": "Tightness and frequency of turns",
+        "for_paved": true,
+        "for_unpaved": false
+    },
+    {
+        "slug": "intensity",
+        "description": "Overall riding energy the road draws out",
+        "for_paved": true,
+        "for_unpaved": false
+    },
+    {
+        "slug": "surface_consistency",
+        "description": "Predictability of traction across the route",
+        "for_paved": false,
+        "for_unpaved": true
+    },
+    {
+        "slug": "technicality",
+        "description": "Challenge level from terrain features like rocks, ruts, sand, or mud",
+        "for_paved": false,
+        "for_unpaved": true
+    },
+    {
+        "slug": "flow",
+        "description": "Smoothness of the trail without constant disruptions or awkward sections",
+        "for_paved": false,
+        "for_unpaved": true
+    }
+]

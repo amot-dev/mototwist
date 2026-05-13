@@ -18,6 +18,7 @@ WORKDIR /app
 ENV PYTHONPATH "/"
 COPY --from=builder /install /usr/local
 COPY --chown=mototwist:mototwist ./app .
+COPY --chown=mototwist:mototwist ./criteria.json /config/criteria.json
 
 USER mototwist
 

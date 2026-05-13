@@ -3,6 +3,11 @@ services:
     image: ghcr.io/amot-dev/mototwist:latest
     env_file:
       - .env
+    # volumes:
+      # Uncomment the line below to use custom rating criteria
+      # NOTE: This only works BEFORE the first launch. Once the database is
+      # initialized, changing this file will have no effect on existing data
+      # - ./criteria.json:/config/criteria.json:ro
     ports:
       - "8000:8000"
     restart: unless-stopped

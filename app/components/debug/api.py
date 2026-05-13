@@ -6,7 +6,7 @@ from fastapi import APIRouter, Depends, File, Form, Request, UploadFile
 from fastapi.encoders import jsonable_encoder
 from fastapi.responses import Response, StreamingResponse
 from io import BytesIO
-import json
+from json import dumps, loads
 from random import choice, choices, randint, sample
 from sqlalchemy import delete, select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -53,7 +53,7 @@ async def save_state(
     }
 
     # Convert the Python dictionary to a JSON string
-    json_data = json.dumps(jsonable_encoder(db_state)).encode("utf-8")
+    json_data = dumps(jsonable_encoder(db_state)).encode("utf-8")
 
     # Compress the json
     compressed_bytes = compress(json_data)
@@ -87,7 +87,7 @@ async def load_state(
         if json_file.filename and json_file.filename.endswith('.gz'):
             contents = decompress(contents)
 
-        data = json.loads(contents)
+        data = loads(contents)
     except Exception as e:
         raise_http("Invalid JSON", status_code=422, exception=e)
 

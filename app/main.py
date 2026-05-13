@@ -45,7 +45,9 @@ async def lifespan(app: FastAPI):
         await create_first_admin(session)
 
         # Initialize criteria on first run
-        await initialize_criteria(session)
+        criteria_present = await initialize_criteria(session)
+        if not criteria_present:
+            raise RuntimeError("Mandatory database seeding failed.")
 
     yield
 
