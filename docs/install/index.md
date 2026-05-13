@@ -12,8 +12,8 @@ next:
 
 To get MotoTwist application running, you will need to have **Docker** and **Docker Compose** installed on your system.
 
-* **Docker:** [Installation Guide](https://docs.docker.com/get-docker/)
-* **Docker Compose:** [Installation Guide](https://docs.docker.com/compose/install/)
+- **Docker:** [Installation Guide](https://docs.docker.com/get-docker/)
+- **Docker Compose:** [Installation Guide](https://docs.docker.com/compose/install/)
 
 
 ## Steps
@@ -32,6 +32,10 @@ To get MotoTwist application running, you will need to have **Docker** and **Doc
     > Keep in mind the [OSM Tile Policy](https://operations.osmfoundation.org/policies/tiles/) and [OSRM Usage Policy](https://map.project-osrm.org/about.html) if you do not plan on changing OSM_URL and/or OSRM_URL.
 
     See the full list of environment variables [here](/install/env.md).
+
+3.  **(Optional) Configure criteria:**
+    MotoTwist allows using whatever criteria you choose for rating. See [custom criteria](/install/criteria.md) for more information.
+
 
 3.  **Run the containers:**
     From the directory containing your `docker-compose.yml`, run:

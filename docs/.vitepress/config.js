@@ -32,6 +32,7 @@ export default {
           items: [
             { text: 'Environment Variables', link: '/install/env.md' },
             { text: 'Considerations', link: '/install/considerations.md' },
+            { text: 'Custom Criteria', link: '/install/criteria.md'},
           ],
         },
       ],
