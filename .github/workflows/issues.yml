@@ -1,32 +1,21 @@
 name: Close Issues on Release
-run-name: Close Issues for Release ${{ github.event.release.tag_name }}
+run-name: Close Issues for Release ${{ github.event.release.tag_name || inputs.manual_tag }}
 
 on:
   release:
     types: [published]
+  workflow_dispatch:
+    inputs:
+      manual_tag:
+        description: 'Tag to process (e.g., v1.0.1)'
+        required: true
+      manual_body:
+        description: 'Release notes / body to parse'
+        required: true
 
 jobs:
   close-issues:
-    runs-on: ubuntu-latest
-    permissions:
-      issues: write
-      contents: read
-    steps:
-      - name: Close issues mentioned in release
-        env:
-          RELEASE_BODY: ${{ github.event.release.body }}
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          ISSUES=$(echo "$RELEASE_BODY" | grep -oP '#\d+' | sed 's/#//' || true)
-
-          if [ -z "$ISSUES" ]; then
-            echo "No issue numbers found."
-            exit 0
-          fi
-
-          for ISSUE in $ISSUES; do
-            echo "Closing issue #$ISSUE"
-            gh issue close "$ISSUE" \
-              --repo "${{ github.repository }}" \
-              --comment "Automatically closed by Release [${{ github.event.release.tag_name }}](${{ github.event.release.html_url }})."
-          done
+    uses: amot-dev/actions/.github/workflows/close-issues.yml@v1
+    with:
+      tag_name: ${{ github.event.release.tag_name || inputs.manual_tag }}
+      release_body: ${{ github.event.release.body || inputs.manual_body }}
