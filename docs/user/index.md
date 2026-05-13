@@ -64,9 +64,6 @@ From the sidebar, you can now ride your Twist! There's a number of different cri
 ![A screenshot of MotoTwist, featuring the ride modal open to submit a new ride](/screenshot_ride_modal.png)
 ![A screenshot of MotoTwist, featuring the ride list open, showing existing rides](/screenshot_ride_list.png)
 
-> [!TIP]
-> With some, but minimal, technical knowledge, the available criteria can be changed! Eventually this may be configurable via environment variables. See [#11](https://github.com/amot-dev/mototwist/issues/11).
-
 
 ## Searching/Filtering
 
