@@ -28,5 +28,5 @@ jobs:
             echo "Closing issue #$ISSUE"
             gh issue close "$ISSUE" \
               --repo "${{ github.repository }}" \
-              --comment "Automatically closed by Release ${{ github.event.release.tag_name }}"
+              --comment "Automatically closed by Release [${{ github.event.release.tag_name }}](${{ github.event.release.html_url }})."
           done
