@@ -1,4 +1,5 @@
 name: GHCR
+run-name: Build and Push ${{ github.ref_name }} to GHCR
 
 on:
   push:
@@ -29,7 +30,6 @@ jobs:
         with:
           images: ghcr.io/${{ github.repository }}
           tags: |
-            # This is the key change: add 'v' to the pattern
             type=semver,pattern=v{{version}}
             type=semver,pattern=v{{major}}.{{minor}}
             type=sha

@@ -1,4 +1,5 @@
 name: Close Issues on Release
+run-name: Close Issues for Release ${{ github.event.release.tag_name }}
 
 on:
   release:
@@ -7,15 +8,25 @@ on:
 jobs:
   close-issues:
     runs-on: ubuntu-latest
+    permissions:
+      issues: write
+      contents: read
     steps:
       - name: Close issues mentioned in release
+        env:
+          RELEASE_BODY: ${{ github.event.release.body }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          # Extract issue numbers (e.g., #123) from the release body
-          ISSUES=$(echo "${{ github.event.release.body }}" | grep -oP '#\d+' | sed 's/#//')
+          ISSUES=$(echo "$RELEASE_BODY" | grep -oP '#\d+' | sed 's/#//' || true)
+
+          if [ -z "$ISSUES" ]; then
+            echo "No issue numbers found."
+            exit 0
+          fi
 
           for ISSUE in $ISSUES; do
             echo "Closing issue #$ISSUE"
-            gh issue close "$ISSUE" --comment "Automatically closed by Release ${{ github.event.release.tag_name }}"
+            gh issue close "$ISSUE" \
+              --repo "${{ github.repository }}" \
+              --comment "Automatically closed by Release ${{ github.event.release.tag_name }}"
           done
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
